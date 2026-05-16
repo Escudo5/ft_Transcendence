@@ -1,55 +1,44 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+const cards = [
+  { id: 1, name: "Cadete", rarity: "common", attack: 4, defense: 3 },
+  { id: 2, name: "Piscinero", rarity: "rare", attack: 6, defense: 4 },
+  { id: 3, name: "Evaluator", rarity: "epic", attack: 7, defense: 6 },
+  { id: 4, name: "Black Hole", rarity: "rare", attack: 8, defense: 2 },
+  { id: 5, name: "Coalition", rarity: "common", attack: 3, defense: 7 },
+];
 
 export default function App() {
-  const [health, setHealth] = useState("cargando...");
-  const [cards, setCards] = useState([]);
-  const [error, setError] = useState("");
+  const [showOnlyRare, setShowOnlyRare] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const healthResponse = await fetch(`${apiUrl}/health/`);
-        if (!healthResponse.ok) {
-          throw new Error("No se pudo leer /health");
-        }
-        const healthJson = await healthResponse.json();
-        setHealth(healthJson.status);
+  const filteredCards = showOnlyRare
+    ? cards.filter((card) => card.rarity === "rare")
+    : cards;
 
-        const cardsResponse = await fetch(`${apiUrl}/cards/`);
-        if (!cardsResponse.ok) {
-          throw new Error("No se pudo leer /cards");
-        }
-        const cardsJson = await cardsResponse.json();
-        setCards(cardsJson);
-      } catch (err) {
-        setError(err.message);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const toggleFilter = () => {
+    setShowOnlyRare((prev) => !prev);
+  };
 
   return (
     <main className="container">
-      <h1>ft_Transcendence - Arranque Web</h1>
-      <p>
-        Estado backend: <strong>{health}</strong>
-      </p>
-      {error ? <p className="error">{error}</p> : null}
-      <section>
-        <h2>Cartas guardadas</h2>
-        {cards.length === 0 ? (
-          <p>No hay cartas todavía. Puedes crear desde el endpoint POST /api/cards/.</p>
+      <h1>Album</h1>
+
+      <button onClick={toggleFilter}>
+        {showOnlyRare ? "Mostrar todas" : "Filtrar rare"}
+      </button>
+
+      <section className="grid">
+        {filteredCards.length === 0 ? (
+          <p>No hay cartas para este filtro.</p>
         ) : (
-          <ul>
-            {cards.map((card) => (
-              <li key={card.id}>
-                <strong>{card.name}</strong> | ATK {card.attack} | DEF {card.defense} | {card.rarity}
-              </li>
-            ))}
-          </ul>
+          filteredCards.map((card) => (
+            <article key={card.id} className="card">
+              <h3>{card.name}</h3>
+              <p>Rareza: {card.rarity}</p>
+              <p>ATK: {card.attack}</p>
+              <p>DEF: {card.defense}</p>
+            </article>
+          ))
         )}
       </section>
     </main>
