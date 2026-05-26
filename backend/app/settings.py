@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "cards",
+    "users"
 ]
 
 MIDDLEWARE = [
@@ -91,3 +92,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+AUTH_USER_MODEL = "users.CustomUser"
