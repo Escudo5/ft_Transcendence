@@ -1,52 +1,554 @@
+/* ==========================================================================
+   1. IMPORTACIÓN DE FUENTES Y CONFIGURACIÓN GENERAL
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap');
+
+/* ':root' almacena variables globales (Custom Properties).
+   Son equivalentes a las variables de programación, pero en CSS. 
+   Permiten cambiar un color o fuente en todo el proyecto desde un único sitio. */
 :root {
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  color: #f5f5f5;
-  background: #151515;
+  /* Paleta de colores base del tema oscuro */
+  --bg-main: #0c0f16;         /* Fondo de la página */
+  --bg-card-base: #141a29;    /* Fondo de la carta */
+  --bg-control: #1a2333;      /* Fondo de los selectores e inputs */
+  --bg-input-focus: #222e45;  /* Fondo cuando seleccionas/escribes en un input */
+  --text-primary: #f8fafc;    /* Texto principal (blanco roto) */
+  --text-secondary: #94a3b8;  /* Texto secundario (gris) */
+  --border-color: #2e3e5c;    /* Borde por defecto */
+  --accent-color: #38bdf8;    /* Azul brillante para acentos interactivos */
+  
+  /* Variables de colores y resplandores por tipo de rareza */
+  --rarity-common: #94a3b8;
+  --rarity-common-glow: rgba(148, 163, 184, 0.1);
+  --rarity-common-bg: linear-gradient(135deg, #1e293b, #0f172a);
+  
+  --rarity-rare: #0284c7;
+  --rarity-rare-glow: rgba(2, 132, 199, 0.3);
+  --rarity-rare-bg: linear-gradient(135deg, #0c4a6e, #0c1c30);
+
+  --rarity-epic: #c084fc;
+  --rarity-epic-glow: rgba(192, 132, 252, 0.4);
+  --rarity-epic-bg: linear-gradient(135deg, #581c87, #1e1135);
+
+  --rarity-legendary: #fbbf24;
+  --rarity-legendary-glow: rgba(251, 191, 36, 0.5);
+  --rarity-legendary-bg: linear-gradient(135deg, #78350f, #251205);
+
+  /* Tipografías */
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+/* El selector '*' aplica estilos a absolutamente todos los elementos HTML.
+   'box-sizing: border-box' asegura que los márgenes (margin) y rellenos (padding) 
+   se calculen dentro del tamaño total del elemento, evitando desbordamientos molestos. */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  margin: 0;
+  background-color: var(--bg-main); /* Usamos la variable de fondo */
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  overflow-x: hidden; /* Evita barra de desplazamiento horizontal no deseada */
 }
 
-.container {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 2rem 1rem 3rem;
+/* Contenedor que envuelve a toda la aplicación */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;       /* Centra el contenedor en la pantalla */
+  display: flex;
+  flex-direction: column; /* Apila los hijos verticalmente (cabecera, filtros, cartas, paginador) */
+  gap: 2rem;            /* Espacio de separación entre los bloques */
 }
 
-h1,
-h2 {
+/* Cabecera del Álbum */
+.app-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
   margin-bottom: 0.5rem;
 }
 
-section {
-  margin-top: 2rem;
+.logo-icon {
+  font-size: 2.25rem;
+  /* Resplandor decorativo debajo del emoji usando sombra de filtro */
+  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.6));
 }
 
-ul {
-  padding-left: 1rem;
+.app-header h1 {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  font-weight: 800;
+  /* Efecto de degradado multicolor en el texto */
+  background: linear-gradient(to right, #38bdf8, #818cf8, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.025em;
 }
 
-.error {
-  color: #ff7676;
-}
-
-
-.container {
-  max-width: 900px;
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  max-width: 600px;
   margin: 0 auto;
-  padding: 24px;
 }
 
-.grid {
-  margin-top: 16px;
+/* ==========================================================================
+   2. PANEL DE CONTROL (FILTROS Y BUSQUEDA)
+   ========================================================================== */
+.control-panel {
+  background-color: var(--bg-card-base);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.5rem;
+  
+  /* CSS Grid: coloca los inputs en columnas que se ajustan solas según la pantalla.
+     'repeat(auto-fit, minmax(250px, 1fr))' hace que cada columna ocupe mínimo 250px,
+     y si cabe en pantalla se colocan en fila, si no se van bajando automáticamente. */
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-.card {
-  border: 1px solid #333;
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-group label {
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.control-panel input,
+.control-panel select {
+  background-color: var(--bg-control);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.75rem 1rem;
   border-radius: 8px;
-  padding: 12px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  outline: none;
+  /* Transición suave para cambiar de color al hacer focus */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Estado de enfoque ':focus' (cuando haces clic para escribir o seleccionar) */
+.control-panel input:focus,
+.control-panel select:focus {
+  border-color: var(--accent-color);
+  background-color: var(--bg-input-focus);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); /* Efecto aro celeste de selección */
+}
+
+/* ==========================================================================
+   3. CUADRÍCULA DE CARTAS (ALBUM GRID)
+   ========================================================================== */
+.album-grid-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Fila superior con estadísticas rápidas */
+.grid-meta {
+  display: flex;
+  justify-content: space-between; /* Uno a la izquierda, otro a la derecha */
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  padding: 0 0.5rem;
+}
+
+.grid-meta strong {
+  color: var(--text-primary);
+}
+
+/* CUADRÍCULA EXACTA DE 4 COLUMNAS POR FILA (ESCRITORIO)
+   Aquí forzamos que haya exactamente 4 elementos en línea con 'repeat(4, 1fr)'. */
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+/* Estado Vacío */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background-color: var(--bg-card-base);
+  border: 2px dashed var(--border-color);
+  border-radius: 16px;
+  color: var(--text-secondary);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+/* ==========================================================================
+   4. DISEÑO DE CARTAS INDIVIDUALES (TCG CARD STYLE)
+   ========================================================================== */
+.card-item {
+  background-color: var(--bg-card-base);
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+  /* 'transition' hace que los movimientos y resplandores se suavicen en 0.4s */
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+
+/* EFECTO HOVER (Al pasar el ratón por encima):
+   La carta sube -8px en vertical ('translateY') y se agranda ligeramente ('scale(1.02)').
+   El 'z-index' alto hace que la carta activa se dibuje por encima de las de al lado. */
+.card-item:hover {
+  transform: translateY(-8px) scale(1.02);
+  z-index: 10;
+}
+
+/* ESTILOS ESPECÍFICOS SEGÚN LA RAREZA
+   Modificamos el color del borde y el color del resplandor de la sombra para cada rareza. */
+
+/* COMÚN */
+.card-item.rarity-common {
+  border-color: var(--rarity-common);
+  box-shadow: 0 4px 12px var(--rarity-common-glow), 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+.card-item.rarity-common:hover {
+  box-shadow: 0 12px 24px var(--rarity-common-glow), 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+}
+
+/* RARA */
+.card-item.rarity-rare {
+  border-color: var(--rarity-rare);
+  box-shadow: 0 4px 12px var(--rarity-rare-glow), 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+.card-item.rarity-rare:hover {
+  box-shadow: 0 12px 24px var(--rarity-rare-glow), 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+}
+
+/* ÉPICA */
+.card-item.rarity-epic {
+  border-color: var(--rarity-epic);
+  box-shadow: 0 4px 12px var(--rarity-epic-glow), 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+.card-item.rarity-epic:hover {
+  box-shadow: 0 12px 24px var(--rarity-epic-glow), 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+}
+
+/* LEGENDARIA: Tiene más brillo y una animación constante en el borde ('shine-border') */
+.card-item.rarity-legendary {
+  border-color: var(--rarity-legendary);
+  box-shadow: 0 4px 12px var(--rarity-legendary-glow), 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+.card-item.rarity-legendary:hover {
+  box-shadow: 0 15px 30px var(--rarity-legendary-glow), 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+  /* Lanza la animación que definimos abajo llamada 'shine-border' */
+  animation: shine-border 2s infinite linear;
+}
+
+/* Cabecera de la carta */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-heading);
+}
+
+.card-type {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.rarity-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 40px;
+  letter-spacing: 0.05em;
+}
+
+.badge-common { background-color: var(--rarity-common); color: #0c0f16; }
+.badge-rare { background-color: var(--rarity-rare); color: #ffffff; }
+.badge-epic { background-color: var(--rarity-epic); color: #0c0f16; }
+.badge-legendary { background-color: var(--rarity-legendary); color: #0c0f16; }
+
+/* Ilustración / Obra de arte central de la carta */
+.card-artwork {
+  height: 140px;
+  border-radius: 10px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Asignamos los fondos degradados únicos de cada rareza */
+.rarity-common .card-artwork { background: var(--rarity-common-bg); }
+.rarity-rare .card-artwork { background: var(--rarity-rare-bg); }
+.rarity-epic .card-artwork { background: var(--rarity-epic-bg); }
+.rarity-legendary .card-artwork { background: var(--rarity-legendary-bg); }
+
+/* Globo de resplandor difuso dentro de la carta */
+.artwork-glow {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  filter: blur(20px);
+  opacity: 0.6;
+}
+.rarity-common .artwork-glow { background-color: var(--rarity-common); }
+.rarity-rare .artwork-glow { background-color: var(--rarity-rare); }
+.rarity-epic .artwork-glow { background-color: var(--rarity-epic); }
+.rarity-legendary .artwork-glow { background-color: var(--rarity-legendary); }
+
+.artwork-id {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: 700;
+}
+
+.artwork-symbol {
+  font-size: 3rem;
+  z-index: 2; /* Dibuja el emoji por encima del resplandor de fondo */
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  transition: transform 0.3s ease;
+}
+
+/* Cuando pasas el ratón por la carta, el emoji interno gira un poco y se agranda */
+.card-item:hover .artwork-symbol {
+  transform: scale(1.15) rotate(5deg);
+}
+
+/* Contenido de la carta */
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex-grow: 1; /* Permite que el cuerpo de la carta empuje el pie hacia el fondo */
+}
+
+.card-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.card-description {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  /* Recorta el texto si es demasiado largo y añade tres puntos (...) */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Barra inferior de estadísticas */
+.card-stats {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 0.5rem 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stat-divider {
+  width: 1px;
+  height: 24px;
+  background-color: var(--border-color);
+  opacity: 0.5;
+}
+
+/* ==========================================================================
+   5. NAVEGADOR DE PÁGINAS (PAGINATION)
+   ========================================================================== */
+.pagination-container {
+  display: flex;
+  justify-content: center; /* Alinea al centro del álbum */
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem 0;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pagination-btn {
+  background-color: var(--bg-card-base);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none; /* Evita que el usuario seleccione texto al hacer clic repetidos */
+}
+
+/* Efectos visuales de los botones al pasar el ratón */
+.pagination-btn:hover:not(:disabled) {
+  border-color: var(--accent-color);
+  background-color: var(--bg-input-focus);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
+/* Efecto al presionar un botón */
+.pagination-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* Botones desactivados (ej. Anterior en página 1) */
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.pagination-btn.number-btn {
+  padding: 0.6rem 0.9rem;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* Botón de la página que está activa en ese momento */
+.pagination-btn.number-btn.active {
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #0c0f16;
+  font-weight: 700;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+}
+
+/* ==========================================================================
+   6. RESPONSIVIDAD (MEDIA QUERIES)
+   ========================================================================== */
+
+/* Breakpoint para pantallas medianas (Tabletas grandes / Portátiles pequeños: <= 1024px)
+   Reducimos a exactamente 3 columnas por fila. */
+@media (max-width: 1024px) {
+  .album-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+/* Breakpoint para pantallas pequeñas (Tabletas / Móviles horizontales: <= 768px)
+   Reducimos a exactamente 2 columnas por fila.
+   Cambiamos los inputs de filtro para que se apilen uno debajo del otro. */
+@media (max-width: 768px) {
+  .album-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  .control-panel {
+    grid-template-columns: 1fr;
+  }
+  .app-header h1 {
+    font-size: 2rem;
+  }
+}
+
+/* Breakpoint para móviles verticales: <= 480px
+   Reducimos a 1 sola columna (1 carta por fila).
+   El paginador se coloca en vertical para que no se salga de los márgenes. */
+@media (max-width: 480px) {
+  .album-grid {
+    grid-template-columns: 1fr;
+  }
+  .pagination-container {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .arrow-btn {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   7. ANIMACIONES DE ANIMATION KEYFRAMES
+   ========================================================================== */
+
+/* Animación de pulso para el borde de las cartas legendarias.
+   Va alternando la tonalidad del borde de amarillo oro a amarillo claro y de vuelta. */
+@keyframes shine-border {
+  0% {
+    border-color: var(--rarity-legendary);
+  }
+  50% {
+    border-color: #ffe082;
+  }
+  100% {
+    border-color: var(--rarity-legendary);
+  }
 }
