@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Crear Carta de Estudiante</title>
+</head>
+<body>
+    <h1>Crear Nueva Carta (42 Estudiante)</h1>
+    
+    <form method="POST">
+        {% csrf_token %}  <!-- Llave de seguridad obligatoria de Django -->
+        {{ form.as_p }}   <!-- Django dibuja los inputs automáticamente metidos en párrafos -->
+        <button type="submit">Guardar Carta</button>
+    </form>
+</body>
+</html>

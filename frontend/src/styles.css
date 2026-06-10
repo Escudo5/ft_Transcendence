@@ -93,6 +93,7 @@ body {
   /* Efecto de degradado multicolor en el texto */
   background: linear-gradient(to right, #38bdf8, #818cf8, #c084fc);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.025em;
 }
@@ -381,6 +382,7 @@ body {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
 }
 
@@ -551,4 +553,35 @@ body {
   100% {
     border-color: var(--rarity-legendary);
   }
+}
+
+/* ==========================================================================
+   8. ESTILOS ADICIONALES DE NAVEGACIÓN
+   ========================================================================== */
+
+/* Alineación de la navegación en la cabecera */
+.header-navigation {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+/* Enlace "Volver al Inicio" con estilo de botón premium */
+.back-btn-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card-base);
+  transition: all 0.3s ease;
+}
+
+.back-btn-link:hover {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  background-color: var(--bg-input-focus);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
 }
