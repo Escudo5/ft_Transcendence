@@ -3,22 +3,30 @@ from django.conf import settings
 
 
 class Card(models.Model):
-   # parte visible  
-    login = models.CharField(max_length=10)
-    coalition = models.CharField(max_length=50)
-    coalition_points = models.IntegerField()
-    title = models.CharField(max_length=100)
-    altarians = models.IntegerField()
-    cursus_lvl = models.FloatField()
-    eval_point = models.IntegerField()
-    #photo = models.ImageField()
+    # ==========================================
+    # PARTE VISIBLE
+    # ==========================================
+    login = models.CharField(max_length=10, unique=True) # ¡Añadido unique=True para que no haya dos cartas de 'tomas'!
+    coalition = models.CharField(max_length=50, blank=True, null=True) # Por si no tiene coalición
+    coalition_points = models.IntegerField(default=0)
+    title = models.CharField(max_length=100, blank=True, null=True)      # Por si no tiene título seleccionado
+    altarians = models.IntegerField(default=0)                            # Tus wallets de la intra
+    cursus_lvl = models.FloatField(default=0.0)
+    eval_point = models.IntegerField(default=0)
+    
+    # 📸 ARREGLADO: max_length=500 para evitar que el CDN de 42 rompa el límite de caracteres
+    photo = models.URLField(max_length=500, blank=True, null=True)
     
 
-#part no visible
-    tier = models.CharField(max_length=50)
+    # ==========================================
+    # PARTE NO VISIBLE
+    # ==========================================
+    tier = models.CharField(max_length=50, default="Bronce") # Un valor por defecto para empezar
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # 🛠️ ARREGLADO: Cambiado 'self.name' por 'self.login' para evitar que explote Django
     def __str__(self) -> str:
-        return self.name
+        return f"Carta de {self.login}"
 
 class UserCard(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='album')

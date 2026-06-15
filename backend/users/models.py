@@ -5,9 +5,8 @@ from django.db import models
 class CustomUser(AbstractUser):
     id_42 = models.IntegerField(unique=True, null=True, blank=True)
     profile_image = models.URLField(max_length=500, blank=True, null=True)
-    puntos_moneda = models.PositiveIntegerField(default=100)
-    elo_pong = models.IntegerField(default=1000)
-    
+    elo= models.IntegerField(default=1000)
+    is_alumni = models.BooleanField(default=False)
     STATUS_CHOICES = [
         ('online', 'Online'),
         ('offline', 'Offline'),

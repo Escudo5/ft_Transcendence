@@ -7,5 +7,6 @@ urlpatterns = [
     path('home/',home,name='home'),
     path('crear/',crear_carta, name='crear_carta'),
     path('catalogo/',lista_cartas,name='lista_cartas'),
+    path('api/users/', include('users.urls')),
 
 ]
