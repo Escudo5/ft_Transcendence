@@ -11,7 +11,7 @@ class Command(BaseCommand):
         CLIENT_SECRET = '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'
         
         # 👤 ¡PON AQUÍ TU LOGIN DE 42! (Ejemplo: 'tomas')
-        MI_LOGIN = "pablalva"
+        MI_LOGIN = "ksudyn"
 
         self.stdout.write(self.style.SUCCESS("🔑 Solicitando token de acceso..."))
 
@@ -58,24 +58,32 @@ class Command(BaseCommand):
                     titulo = raw_titulo.replace("%login",MI_LOGIN)
                     break
 
-        import json
-        print(json.dumps(datos_perfil, indent=4, ensure_ascii=False))
-        
-        return
 
         # Sacamos tu nivel de Cursus con el bucle
         nivel_cursus = 0.0
         for item in datos_perfil.get("cursus_users", []):
-            if item.get("cursus", {}).get("name") == "42 Cursus":
-                nivel_cursus = item.get("level", 0.0)
+            print(item.get("cursus", {}).get("name"))
+            if item.get("cursus", {}).get("name") == "42cursus":
+                nivel_cursus = item.get("level")
                 break
-
+        url_mi_perfil_coali = f"https://api.intra.42.fr/v2/users/{MI_LOGIN}/coalitions"
+        response_coali = requests.get(url_mi_perfil_coali,headers=headers)
+        if response_coali.status_code != 200:
+            self.stdout.write(self.style.ERROR(f"❌ Error al buscar tu perfil: {response_coali.text}"))
+            return
+        datos_coali = response_coali.json()
+        coalition = datos_coali[0].get("name")
+        # print(coalition)
+        # import json
+        # print(json.dumps(datos_coali, indent=4, ensure_ascii=False))
+        
+        # return
         # 🃏 5. GUARDAR O ACTUALIZAR TU CARTA EN LA BASE DE DATOS
         carta, creada = Card.objects.get_or_create(
             login=MI_LOGIN,
             defaults={
                 'photo': url_foto,
-                'coalition': "The Federation", # Esto lo automatizaremos luego si quieres
+                'coalition': coalition, # Esto lo automatizaremos luego si quieres
                 'coalition_points': 1000,
                 'title': titulo,
                 'altarians': wallets,

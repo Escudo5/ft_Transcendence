@@ -8,7 +8,6 @@ class Card(models.Model):
     # ==========================================
     login = models.CharField(max_length=10, unique=True) # ¡Añadido unique=True para que no haya dos cartas de 'tomas'!
     coalition = models.CharField(max_length=50, blank=True, null=True) # Por si no tiene coalición
-    coalition_points = models.IntegerField(default=0)
     title = models.CharField(max_length=100, blank=True, null=True)      # Por si no tiene título seleccionado
     altarians = models.IntegerField(default=0)                            # Tus wallets de la intra
     cursus_lvl = models.FloatField(default=0.0)
