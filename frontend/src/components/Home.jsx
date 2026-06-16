@@ -67,7 +67,7 @@ function Home() {
       {/* PARTE 2: EN EL MEDIO (Los dos botones principales) */}
       <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
         {/* Botón Álbum */}
-        <Link to="/catalogo" className="back-btn-link" style={{ textAlign: 'center', padding: '1.5rem', fontSize: '1.25rem', display: 'block' }}>
+        <Link to="/inventario" className="back-btn-link" style={{ textAlign: 'center', padding: '1.5rem', fontSize: '1.25rem', display: 'block' }}>
           📂 Ver Álbum
         </Link>
 
