@@ -277,6 +277,7 @@ import Home from './components/Home';
 import Catalogo from './components/Catalogo';
 import CrearCarta from './components/CrearCarta';
 import Game from './components/Game';
+import Inventario from './components/Inventario';
 
 function App() {
   return (
@@ -290,6 +291,7 @@ function App() {
         <Route path="/catalogo" element={<Catalogo />} />
         <Route path="/crear" element={<CrearCarta />} />
         <Route path="/game" element={<Game />} />
+        <Route path="/inventario" element={<Inventario />} />
       </Routes>
     </Router>
   );
