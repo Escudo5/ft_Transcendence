@@ -273,47 +273,56 @@
 //     </main>
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import Home from './components/Home';
-import Catalogo from './components/Catalogo';
-import CrearCarta from './components/CrearCarta';
+import Home from './components/Home'; // Esta será la futura Portada de Konrad
+import Catalogo from './components/Catalogo'; // Tu Álbum de la foto
 import Game from './components/Game';
+import CrearCarta from './components/CrearCarta';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const URL_LOGIN_42 = "https://api.intra.42.fr/oauth/authorize?client_id=u-s4t2ud-85745739c040c37d065eeef72dafbd19dea1e46b50172daac4f20c1907d34b47&redirect_uri=http%3A%2F%2Flocalhost%3A3000&response_type=code&scope=public";
 
   useEffect(() => {
-    // Verificamos si en la barra de direcciones del navegador viene el "?code=" de 42
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
     if (code) {
-      // Si la URL trae el código de la escuela, le damos paso
+      // Si venimos de la Intra con el código, el alumno ya está validado
       setIsAuthenticated(true);
+      setLoading(false);
+    } else {
+      // 🚨 SI NO TIENE CÓDIGO (Llega de nuevas por la mañana):
+      // Le mandamos DIRECTAMENTE a la Intra de 42. No ve la portada hasta que autorice.
+      window.location.href = URL_LOGIN_42;
     }
   }, []);
+
+  if (loading) {
+    return (
+      <div style={{ backgroundColor: '#1e1e1e', color: 'white', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <h2>Redirigiendo a la Intra de 42...</h2>
+      </div>
+    );
+  }
 
   return (
     <Router>
       <Routes>
-        {/* La pantalla de bienvenida/login siempre disponible en la raíz */}
+        {/* LA PORTADA: Aquí irá el diseño de Konrad con los dos botones (Álbum y Juego) */}
         <Route path="/" element={<Home />} />
         
-        {/* 🛡️ RUTAS PROTEGIDAS: Si el alumno no se ha logueado en 42, 
-            cualquier intento de ir al catálogo o juego lo mandará de vuelta a la raíz (Home) */}
+        {/* EL ÁLBUM: Tu página con las cartas y las interrogaciones */}
         <Route 
           path="/catalogo" 
           element={isAuthenticated ? <Catalogo /> : <Navigate to="/" replace />} 
         />
-        <Route 
-          path="/game" 
-          element={isAuthenticated ? <Game /> : <Navigate to="/" replace />} 
-        />
-        <Route 
-          path="/crear" 
-          element={isAuthenticated ? <CrearCarta /> : <Navigate to="/" replace />} 
-        />
-
-        {/* Cualquier otra ruta inventada redirige al Home */}
+        
+        {/* El resto de rutas protegidas */}
+        <Route path="/game" element={isAuthenticated ? <Game /> : <Navigate to="/" replace />} />
+        <Route path="/crear" element={isAuthenticated ? <CrearCarta /> : <Navigate to="/" replace />} />
+        
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
