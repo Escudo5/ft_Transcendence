@@ -271,25 +271,50 @@
 //         </nav>
 //       )}
 //     </main>
-// =======
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import Home from './components/Home';
 import Catalogo from './components/Catalogo';
 import CrearCarta from './components/CrearCarta';
 import Game from './components/Game';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Verificamos si en la barra de direcciones del navegador viene el "?code=" de 42
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    if (code) {
+      // Si la URL trae el código de la escuela, le damos paso
+      setIsAuthenticated(true);
+    }
+  }, []);
+
   return (
     <Router>
       <Routes>
-        {/* Si entras a la raíz http://localhost:5173/, te redirige automáticamente a /home */}
-        <Route path="/" element={<Navigate to="/home" />} />
+        {/* La pantalla de bienvenida/login siempre disponible en la raíz */}
+        <Route path="/" element={<Home />} />
+        
+        {/* 🛡️ RUTAS PROTEGIDAS: Si el alumno no se ha logueado en 42, 
+            cualquier intento de ir al catálogo o juego lo mandará de vuelta a la raíz (Home) */}
+        <Route 
+          path="/catalogo" 
+          element={isAuthenticated ? <Catalogo /> : <Navigate to="/" replace />} 
+        />
+        <Route 
+          path="/game" 
+          element={isAuthenticated ? <Game /> : <Navigate to="/" replace />} 
+        />
+        <Route 
+          path="/crear" 
+          element={isAuthenticated ? <CrearCarta /> : <Navigate to="/" replace />} 
+        />
 
-        {/* Definición de las rutas del frontend */}
-        <Route path="/home" element={<Home />} />
-        <Route path="/catalogo" element={<Catalogo />} />
-        <Route path="/crear" element={<CrearCarta />} />
-        <Route path="/game" element={<Game />} />
+        {/* Cualquier otra ruta inventada redirige al Home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
