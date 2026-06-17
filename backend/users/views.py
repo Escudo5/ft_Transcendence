@@ -1,15 +1,14 @@
 import requests
+import os
 from django.http import JsonResponse
 from django.utils import timezone
 from .models import CustomUser
 
 # 🔑 Las llaves reales copiadas directamente de tu captura de la Intra
-CLIENT_ID = 'u-s4t2ud-85745739c040c37d065eeef72dafbd19dea1e46b50172daac4f20c1907d34b47'
-CLIENT_SECRET = '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'
-
+CLIENT_ID = os.environ.get('CLIENT_ID_NACHO')
+CLIENT_SECRET = os.environ.get('CLIENT_SECRET_NACHO')
 # 🌐 La URL exacta que tenéis guardada en la casilla "Redirect URI" de la captura
-REDIRECT_URI = 'http://localhost:3000'
-
+REDIRECT_URI = os.environ.get('FORTYTWO_REDIRECT_URI')
 def login_42_callback(request):
     """
     Punto de encuentro: Aquí redirige 42 al alumno tras loguearse en la escuela.
@@ -22,7 +21,7 @@ def login_42_callback(request):
 
     try:
         # PASO 2: Intercambiamos el código por la pulsera VIP (Access Token)
-        url_token = "https://api.intra.42.fr/oauth/token"
+        url_token = os.environ.get('URL_TOKEN')
         credenciales = {
             "grant_type": "authorization_code", # 👈 ¡OJO! Ahora es authorization_code, no client_credentials
             "client_id": CLIENT_ID,
@@ -38,7 +37,7 @@ def login_42_callback(request):
             return JsonResponse({"error": "No se pudo obtener el token de acceso", "detalles": respuesta_token}, status=400)
 
         # PASO 3: Con el token, pedimos los datos del alumno real que está iniciando sesión
-        url_perfil = "https://api.intra.42.fr/v2/me" # 👈 /v2/me nos da el perfil de quien está logueándose ahora mismo
+        url_perfil = os.environ.get('URL_PERFIL') # 👈 /v2/me nos da el perfil de quien está logueándose ahora mismo
         cabeceras = {"Authorization": f"Bearer {token_de_acceso}"}
         datos_perfil = requests.get(url_perfil, headers=cabeceras).json()
 
