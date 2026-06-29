@@ -2,7 +2,6 @@
 // // 1. IMPORTACIONES: Traemos herramientas de React
 // // 'useState' sirve para que la página recuerde datos (estado) que pueden cambiar (ej. qué página estamos viendo).
 // // 'useEffect' sirve para ejecutar código automáticamente cuando cambian ciertas cosas (ej. resetear la página al buscar).
-// import { useState, useEffect } from "react";
 
 // // 2. BASE DE DATOS LOCAL (Array de objetos):
 // // Aquí guardamos la información de todas las cartas del álbum. Cada carta es un objeto {} con sus atributos.
@@ -272,28 +271,47 @@
 //       )}
 //     </main>
 // =======
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import DotField from "./components/Fondo_animado";
 import Home from './components/Home';
 import Catalogo from './components/Catalogo';
 import CrearCarta from './components/CrearCarta';
 import Game from './components/Game';
 import Inventario from './components/Inventario';
 
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Navigate to="/home" replace />,
+  },
+  {
+    path: "/home",
+    element: <Home />,
+  },
+  {
+    path: "/catalogo",
+    element: <Catalogo />,
+  },
+  {
+    path: "/crear",
+    element: <CrearCarta />,
+  },
+  {
+    path: "/game",
+    element: <Game />,
+  },
+  {
+    path: "/inventario",
+    element: <Inventario />,
+  },
+]);
+
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Si entras a la raíz http://localhost:5173/, te redirige automáticamente a /home */}
-        <Route path="/" element={<Navigate to="/home" />} />
-
-        {/* Definición de las rutas del frontend */}
-        <Route path="/home" element={<Home />} />
-        <Route path="/catalogo" element={<Catalogo />} />
-        <Route path="/crear" element={<CrearCarta />} />
-        <Route path="/game" element={<Game />} />
-        <Route path="/inventario" element={<Inventario />} />
-      </Routes>
-    </Router>
+    <>
+      <DotField style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
+      <RouterProvider router={router} />
+    </>
   );
 }
 

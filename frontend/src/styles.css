@@ -562,7 +562,7 @@ body {
 /* Alineación de la navegación en la cabecera */
 .header-navigation {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   width: 100%;
 }
 
