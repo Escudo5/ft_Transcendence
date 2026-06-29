@@ -12,7 +12,6 @@ class Card(models.Model):
     altarians = models.IntegerField(default=0)                            # Tus wallets de la intra
     cursus_lvl = models.FloatField(default=0.0)
     eval_point = models.IntegerField(default=0)
-    is_alumni = models.BooleanField(default=False)
     is_blackhole = models.BooleanField(default=False)
     
     # 📸 ARREGLADO: max_length=500 para evitar que el CDN de 42 rompa el límite de caracteres
