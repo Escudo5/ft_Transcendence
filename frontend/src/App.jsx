@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // 1. IMPORTACIONES: Traemos herramientas de React
 // 'useState' sirve para que la página recuerde datos (estado) que pueden cambiar (ej. qué página estamos viendo).
 // 'useEffect' sirve para ejecutar código automáticamente cuando cambian ciertas cosas (ej. resetear la página al buscar).
@@ -271,26 +270,6 @@ export default function App() {
         </nav>
       )}
     </main>
-=======
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Home from './components/Home';
-import Catalogo from './components/Catalogo';
-import CrearCarta from './components/CrearCarta';
-
-function App() {
-  return (
-    <Router>
-      <Routes>
-        {/* Si entras a la raíz http://localhost:5173/, te redirige automáticamente a /home */}
-        <Route path="/" element={<Navigate to="/home" />} />
-
-        {/* Definición de las rutas del frontend */}
-        <Route path="/home" element={<Home />} />
-        <Route path="/catalogo" element={<Catalogo />} />
-        <Route path="/crear" element={<CrearCarta />} />
-      </Routes>
-    </Router>
->>>>>>> 5cf48df3fc5290ad6d31b2931dce37cbb0912238
   );
 }
 
