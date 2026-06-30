@@ -44,7 +44,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # 🔑 1. OBTENER TOKEN DE ACCESO
-        headers = self._obtener_headers_auth()
+        headers = _obtener_headers_auth()
         if not headers:
             return
 
@@ -282,7 +282,7 @@ class Command(BaseCommand):
 
     def _parsear_titulo_usuario(self, perfil_completo, login_alumno):
         """Extrae el título marcado como seleccionado y formatea el tag %login."""
-        titulo = "Recruit"
+        titulo = login_alumno
         title_id = 0
         
         for t in perfil_completo.get("titles_users", []):
@@ -293,7 +293,7 @@ class Command(BaseCommand):
         if title_id and title_id != 0:
             for t in perfil_completo.get("titles", []):
                 if t.get("id") == title_id:
-                    titulo = t.get("name", "Recruit").replace("%login", login_alumno)
+                    titulo = t.get("name", login_alumno).replace("%login", login_alumno)
                     break
         return titulo
 
