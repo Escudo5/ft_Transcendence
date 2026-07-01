@@ -199,6 +199,8 @@ class Command(BaseCommand):
             tier = "Transcender"
         if grade == "Alumni":
             tier = "Alumni"
+        if blackhole == True:
+            tier = "Blackhole"
         url_foto = registro.get("user",{}).get("image",{}).get("versions",{}).get("medium")
         puntos_eval = registro.get("user",{}).get("correction_point")
         wallets = registro.get("user",{}).get("wallet")
@@ -309,7 +311,6 @@ class Command(BaseCommand):
                 'altarians': altarians,
                 'cursus_lvl': cursus_lvl,
                 'eval_point': eval_point,
-                'is_blackhole': is_blackhole,
                 'tier': tier
             }
         )
@@ -324,6 +325,5 @@ class Command(BaseCommand):
             carta.eval_point = eval_point
             carta.title = title
             carta.tier = tier
-            carta.is_blackhole = is_blackhole
             carta.save()
             self.stdout.write(self.style.SUCCESS(f"      🔄 Cromo Actualizado: {login}"))

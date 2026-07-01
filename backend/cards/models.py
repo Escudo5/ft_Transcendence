@@ -12,7 +12,6 @@ class Card(models.Model):
     altarians = models.IntegerField(default=0)                            # Tus wallets de la intra
     cursus_lvl = models.FloatField(default=0.0)
     eval_point = models.IntegerField(default=0)
-    is_blackhole = models.BooleanField(default=False)
     
     # 📸 ARREGLADO: max_length=500 para evitar que el CDN de 42 rompa el límite de caracteres
     photo = models.URLField(max_length=500, blank=True, null=True)
@@ -39,3 +38,26 @@ class UserCard(models.Model):
 
     def __str__(self):
         return f"{self.user.username} tiene {self.cantidad}x {self.card.nombre}"
+class UserPack(models.Model):
+    TIPOS_SOBRE = [
+        ('comun', 'Sobre Común'),
+        ('raro', 'Sobre Raro'),
+        ('epico', 'Sobre Épico'),
+    ]
+
+    # Apunta al usuario usando settings, igual que en tu UserCard
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='inventario_sobres'
+    )
+
+    tipo_sobre = models.CharField(max_length=20, choices=TIPOS_SOBRE)
+    cantidad = models.PositiveIntegerField(default=0)
+    last_daily = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('user', 'tipo_sobre')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.cantidad}x {self.tipo_sobre}"

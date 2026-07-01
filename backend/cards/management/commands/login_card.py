@@ -3,7 +3,7 @@ import time
 import requests
 from django.core.management.base import BaseCommand
 from cards.models import Card
-from cards.management.commands.poblar_catalogo import _obtener_headers_auth
+from cards.management.commands.fill_db import _obtener_headers_auth
 import json
 
 class Command(BaseCommand):
@@ -66,6 +66,8 @@ class Command(BaseCommand):
             tier = "Transcender"
         elif grade == "Alumni":
             tier = "Alumni"
+        if blackhole == True:
+            tier = "Blackhole"
         else:
             self.stdout.write(self.style.WARNING(f"⚠️ Advertencia: Grado '{grade}' desconocido o no pertenece a 42cursus para {login}."))
 
@@ -115,7 +117,6 @@ class Command(BaseCommand):
                     'altarians': wallet,
                     'cursus_lvl': lvl,
                     'eval_point': correction_point,
-                    'is_blackhole': blackhole,
                     'tier': tier
                 }
             )
@@ -130,7 +131,6 @@ class Command(BaseCommand):
                 carta.eval_point = correction_point
                 carta.title = title
                 carta.tier = tier
-                carta.is_blackhole = blackhole
                 carta.save()
                 self.stdout.write(self.style.SUCCESS(f"     🔄 Cromo Actualizado: {login}"))
                 

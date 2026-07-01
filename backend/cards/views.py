@@ -33,3 +33,36 @@ def lista_cartas(request):
 
 def home(request):
     return render(request,'cards/home.html')
+
+CONFIGURACION_SOBRES = {
+    "comun": {
+        "probabilidades": {
+            "Blackhole": 40,
+            "Junior": 35,
+            "Senior": 18,
+            "Alumni": 5,
+            "Transcender": 2
+        },
+        "cartas_por_sobre": 5
+    },
+    "raro": {
+        "probabilidades": {
+            "Blackhole": 15,
+            "Junior": 25,
+            "Senior": 40,
+            "Alumni": 12,
+            "Transcender": 8
+        },
+        "cartas_por_sobre": 5
+    },
+    "epico": {
+        "probabilidades": {
+            "Blackhole": 2,
+            "Junior": 8,
+            "Senior": 25,
+            "Alumni": 30,
+            "Transcender": 35
+        },
+        "cartas_por_sobre": 5
+    }
+}
