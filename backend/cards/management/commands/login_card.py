@@ -66,10 +66,10 @@ class Command(BaseCommand):
             tier = "Transcender"
         elif grade == "Alumni":
             tier = "Alumni"
-        if blackhole == True:
-            tier = "Blackhole"
         else:
             self.stdout.write(self.style.WARNING(f"⚠️ Advertencia: Grado '{grade}' desconocido o no pertenece a 42cursus para {login}."))
+        if blackhole == True:
+            tier = "Blackhole"
 
         # Gestión de Títulos
         title = login
