@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function Inventario() {
@@ -11,6 +12,9 @@ function Inventario() {
     navigate('/sobre');
   };
 
+  const irTiendaSobres = () => {
+    navigate('/tienda-sobre');
+  }
   const renderBotonVolver = () => {
     return (
       <button
@@ -144,7 +148,61 @@ function Inventario() {
           TIENDA DE SOBRES
         </div>
 
-        <div></div>
+        {/* CUERPO CENTRAL: Contenedor del sobre */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <div 
+            onClick={irTiendaSobres}
+            style={{
+              width: '140px',
+              height: '90px',
+              backgroundColor: '#1a1a24',
+              border: '3px solid #00ffcc',
+              borderRadius: '8px',
+              position: 'relative',
+              cursor: 'pointer',
+              boxShadow: '0 0 15px rgba(0, 255, 204, 0.3)',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.08)';
+              e.currentTarget.style.boxShadow = '0 0 25px rgba(0, 255, 204, 0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 255, 204, 0.3)';
+            }}
+          >
+            {/* Triángulo superior del sobre (Efecto carta clásica) */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: 0,
+              height: 0,
+              borderStyle: 'solid',
+              borderWidth: '40px 67px 0 67px',
+              borderColor: 'rgba(0, 255, 204, 0.15) transparent transparent transparent'
+            }} />
+            
+            {/* Sello central místico estilo Bakugan / Orbe de Energía */}
+            <div style={{
+              width: '24px',
+              height: '24px',
+              backgroundColor: '#ff9ffc',
+              borderRadius: '50%',
+              zIndex: 2,
+              boxShadow: '0 0 10px #ff9ffc',
+              border: '2px solid #fff'
+            }} />
+
+            <span style={{ position: 'absolute', bottom: '5px', fontSize: '0.65rem', color: '#00ffcc', fontWeight: 'bold', letterSpacing: '1px', zIndex: 2 }}>
+              COMPRAR
+            </span>
+          </div>
+        </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}></div>
       </div>
@@ -153,7 +211,7 @@ function Inventario() {
 
   const PaginaInventario = () => {
     return (
-      <div className="app-container" style={{ position: 'relative', minHeight: '100vh', padding: '2rem' }}>
+      <div className="app-container" style={{ position: 'relative', minHeight: '95vh', padding: '2rem' }}>
         
         {renderBotonVolver()}
 

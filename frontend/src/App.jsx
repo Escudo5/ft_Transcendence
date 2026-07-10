@@ -278,6 +278,7 @@ import Catalogo from './components/Catalogo';
 import CrearCarta from './components/CrearCarta';
 import Game from './components/Game';
 import Inventario from './components/Inventario';
+import TiendaSobres from './components/TiendaSobres';
 
 const router = createBrowserRouter([
   {
@@ -303,6 +304,10 @@ const router = createBrowserRouter([
   {
     path: "/inventario",
     element: <Inventario />,
+  },
+  {
+    path: "/tienda-sobre",
+    element: <TiendaSobres />,
   },
 ]);
 
