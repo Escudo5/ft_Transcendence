@@ -72,7 +72,6 @@ def login_42_callback(request):
                 username=username,
                 elo=1000,               # ELO base para el juego de cartas
                 last_login_date=hoy,    # Su primer login con sobres es hoy
-                daily_packs_claimed=0,  # Empieza con 0 sobres reclamados
             )
             # Las cuentas que entran por 42 no tienen contraseña propia: así Django
             # la marca como "inutilizable" y nadie puede colarse por ese hueco
@@ -87,11 +86,10 @@ def login_42_callback(request):
         usuario.profile_image = datos_perfil.get("image", {}).get("versions", {}).get("medium")
         usuario.estado = 'online'  # Se acaba de conectar
 
-        # PASO 6: 🔄 Control de sobres diarios: si cambió el día desde su última
-        # conexión, actualizamos la fecha y reiniciamos el contador a 0
+        # PASO 6: 🔄 Guardamos el día de esta conexión. El contador de sobres
+        # diarios reclamados ahora se lleva en la tabla UserPack (tarea de Pablo)
         if not creado and usuario.last_login_date < hoy:
             usuario.last_login_date = hoy
-            usuario.daily_packs_claimed = 0
 
         usuario.save()  # Guardamos todo en PostgreSQL
 
@@ -99,7 +97,9 @@ def login_42_callback(request):
         # desde ahora request.user será este usuario en todas sus peticiones
         login(request, usuario, backend='django.contrib.auth.backends.ModelBackend')
 
-        sobres_restantes = max(0, SOBRES_DIARIOS - usuario.daily_packs_claimed)
+        # TODO: cuando Pablo mueva el control diario a UserPack, calcular aquí
+        # los sobres que le quedan de verdad consultando esa tabla
+        sobres_restantes = SOBRES_DIARIOS
         if creado:
             mensaje = f'¡Bienvenido por primera vez al Álbum, {usuario.username}!'
         else:
@@ -138,7 +138,8 @@ def me(request):
         'elo': u.elo,
         'estado': u.estado,
         'is_alumni': u.is_alumni,
-        'sobres_disponibles_hoy': max(0, SOBRES_DIARIOS - u.daily_packs_claimed),
+        # TODO: calcular desde UserPack cuando el control diario viva allí
+        'sobres_disponibles_hoy': SOBRES_DIARIOS,
     })
 
 
