@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 // 👥 Tarjetas fijas de presentación del equipo de desarrollo
@@ -13,15 +13,22 @@ const INTEGRANTES = [
 function Home() {
   const navigate = useNavigate();
 
+  // Candado: el código de 42 es de UN solo uso, y React.StrictMode ejecuta los
+  // efectos dos veces en desarrollo. Esto evita canjear el mismo código dos veces.
+  const codeYaProcesado = useRef(false);
+
   // 📡 RECEPTOR AUTOMÁTICO DEL CÓDIGO DE 42
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
-    if (code) {
+    if (code && !codeYaProcesado.current) {
+      codeYaProcesado.current = true;
       console.log("¡Código de 42 detectado! Autenticando al alumno...", code);
 
-      fetch(`http://localhost:8000/api/users/auth/callback/?code=${code}`)
+      // credentials: 'include' hace que el navegador guarde la cookie de sesión
+      // que nos devuelve el backend (y la envíe en las siguientes peticiones)
+      fetch(`http://localhost:8000/api/users/auth/callback/?code=${code}`, { credentials: 'include' })
         .then(response => response.json())
         .then(data => {
           console.log("Respuesta del Backend:", data);
