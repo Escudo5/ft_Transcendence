@@ -138,9 +138,14 @@ def abrir_sobre_endpoint(request, tipo_sobre):
     if tipo_sobre not in CONFIGURACION_SOBRES:
         return JsonResponse({"error": "El tipo de sobre solicitado no es válido."}, status=400)
         
-    # USUARIO DE PRUEBAS: Obtenemos el primero que haya en tu BD local
+    # Usuario real de la sesión; si el front todavía no envía la cookie
+    # (credentials: 'include'), caemos al primer usuario de la BD como
+    # apaño temporal para poder seguir probando
     User = get_user_model()
-    user_test = User.objects.first()
+    if request.user.is_authenticated:
+        user_test = request.user
+    else:
+        user_test = User.objects.first()
     if not user_test:
         return JsonResponse({"error": "No hay usuarios creados en la base de datos."}, status=500)
     

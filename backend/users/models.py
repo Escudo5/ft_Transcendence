@@ -15,9 +15,9 @@ class CustomUser(AbstractUser):
     ]
     estado = models.CharField(max_length=10, choices=STATUS_CHOICES, default='offline')
 
-    # 🎰 VARIABLES PARA EL ÁLBUM: Control de sobres diarios gratis
-    last_login_date = models.DateField(default=timezone.now)  # Guarda el último día que se conectó
-    daily_packs_claimed = models.IntegerField(default=0)      # Contador de sobres abiertos hoy (0, 1 o 2)
+    # 🎰 Último día que se conectó (para el ciclo diario del álbum).
+    # El contador de sobres diarios ya NO vive aquí: se lleva en cards.UserPack
+    last_login_date = models.DateField(default=timezone.now)
 
     # 🛠️ Parche de seguridad obligatorio para que Django no choque consigo mismo
     groups = models.ManyToManyField(
