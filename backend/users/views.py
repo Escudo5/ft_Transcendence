@@ -3,6 +3,7 @@ import os
 from django.http import JsonResponse
 from django.utils import timezone
 from django.contrib.auth import login, logout
+from django.views.decorators.http import require_GET
 from django.views.decorators.csrf import csrf_exempt
 from .models import CustomUser
 
@@ -140,6 +141,33 @@ def me(request):
         'is_alumni': u.is_alumni,
         # TODO: calcular desde UserPack cuando el control diario viva allí
         'sobres_disponibles_hoy': SOBRES_DIARIOS,
+    })
+
+
+@require_GET
+def list_users(request):
+    """Devuelve usuarios de la base de datos para pintarlos en el front."""
+    users = CustomUser.objects.all().order_by('username')
+    logins = request.GET.get('logins')
+
+    if logins:
+        username_list = [username.strip() for username in logins.split(',') if username.strip()]
+        users = users.filter(username__in=username_list)
+
+    return JsonResponse({
+        'users': [
+            {
+                'id': user.id,
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'profile_image': user.profile_image,
+                'elo': user.elo,
+                'estado': user.estado,
+                'is_alumni': user.is_alumni,
+            }
+            for user in users
+        ]
     })
 
 

@@ -271,6 +271,7 @@
 //       )}
 //     </main>
 // =======
+import { useEffect, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import DotField from "./components/Fondo_animado";
 import Home from './components/Home';
