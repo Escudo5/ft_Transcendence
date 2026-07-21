@@ -77,6 +77,9 @@ export default function Catalogo() {
           <Link to="/home" className="back-btn-link">
             ← Volver al Inicio
           </Link>
+          <Link to="/inventario" className="back-btn-link">
+            🧰 Ir a Inventario
+          </Link>
         </div>
         <div className="logo-section" style={{ marginTop: "1rem" }}>
           <span className="logo-icon">✨</span>
