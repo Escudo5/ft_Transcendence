@@ -1,6 +1,8 @@
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view
+from rest_framework import status
 from django.shortcuts import render,get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from .models import Card
@@ -34,19 +36,23 @@ def crear_carta(request):
 def lista_cartas(request):
     cartas = Card.objects.all()
     return render(request,'cards/lista_cartas.html',{'cartas':cartas})
-def login_alumno(request,str):
+@api_view(['GET'])  # Decorador necesario para Django REST Framework
+def login_alumno(request, login):
     try:
-        # Busca en PostgreSQL: SELECT * FROM alumnos WHERE login = '...' LIMIT 1;
-        alumno = Card.objects.get(login=login)
+        # 1. Busca la carta del alumno en PostgreSQL por su login
+        card = Card.objects.get(login=login)
         
-        # Devuelve los datos en un formato JSON que React pueda entender
-        return JsonResponse({
-            "urlphoto": Card.photo,
-        })
+        # 2. Transforma el objeto de PostgreSQL a formato JSON
+        serializer = CardSerializer(card)
         
-    except Alumno.DoesNotExist:
-        # Si el alumno no existe en la BD, devuelve un error 404
-        return JsonResponse({"error": "Alumno no encontrado"}, status=404)
+        # 3. Retorna la respuesta con los datos serializados
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+    except Card.DoesNotExist:
+        return Response(
+            {"error": f"No se encontró ninguna carta para el login: {login}"}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
 def home(request):
     return render(request,'cards/home.html')
 
