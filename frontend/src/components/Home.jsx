@@ -17,7 +17,7 @@ function getUserImage(userData) {
 function Home() {
   const navigate = useNavigate();
   const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-  const usersEndpoint = import.meta.env.VITE_USERS_ENDPOINT || `${apiBaseUrl}/users/list/`;
+  const cardsEndpoint = import.meta.env.VITE_CARDS_ENDPOINT || `${apiBaseUrl}/cards`;
 
   // 2. ESTADOS (Variables dinámicas de React)
   // indiceSeleccionado guardará un número (0 a 4) si hay una carta abierta, o null si están todas cerradas.
@@ -29,33 +29,31 @@ function Home() {
 
     async function cargarUsuarios() {
       try {
-        const logins = INTEGRANTES_BASE.map((user) => user.login).join(',');
-        const response = await fetch(`${usersEndpoint}?logins=${encodeURIComponent(logins)}`, {
-          credentials: 'include',
-          signal: controller.signal,
-        });
+        const respuestas = await Promise.all(
+          INTEGRANTES_BASE.map(async (user) => {
+            const response = await fetch(`${cardsEndpoint}/${encodeURIComponent(user.login)}/`, {
+              credentials: 'include',
+              signal: controller.signal,
+            });
 
-        if (!response.ok) {
-          return;
-        }
+            if (!response.ok) {
+              return user;
+            }
 
-        const data = await response.json();
-        const usuariosDb = Array.isArray(data) ? data : (data.users ?? data.results ?? []);
-
-        setIntegrantes(
-          INTEGRANTES_BASE.map((user) => {
-            const usuarioDb = usuariosDb.find((item) => item.username === user.login);
+            const cardDb = await response.json();
 
             return {
               ...user,
-              nombre: usuarioDb?.first_name || user.nombre,
-              avatar: getUserImage(usuarioDb) || user.avatar,
+              nombre: cardDb.title || user.nombre,
+              avatar: getUserImage(cardDb) || user.avatar,
             };
           }),
         );
+
+        setIntegrantes(respuestas);
       } catch (error) {
         if (error.name !== 'AbortError') {
-          console.error('No se pudieron cargar los usuarios:', error);
+          console.error('No se pudieron cargar las cartas:', error);
         }
       }
     }
@@ -63,7 +61,7 @@ function Home() {
     cargarUsuarios();
 
     return () => controller.abort();
-  }, [usersEndpoint]);
+  }, [cardsEndpoint]);
 
   // Función que se activa al pulsar el botón de Game
   const Game = () => {
