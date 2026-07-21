@@ -34,7 +34,19 @@ def crear_carta(request):
 def lista_cartas(request):
     cartas = Card.objects.all()
     return render(request,'cards/lista_cartas.html',{'cartas':cartas})
-
+def login_alumno(request,str):
+    try:
+        # Busca en PostgreSQL: SELECT * FROM alumnos WHERE login = '...' LIMIT 1;
+        alumno = Card.objects.get(login=login)
+        
+        # Devuelve los datos en un formato JSON que React pueda entender
+        return JsonResponse({
+            "urlphoto": Card.photo,
+        })
+        
+    except Alumno.DoesNotExist:
+        # Si el alumno no existe en la BD, devuelve un error 404
+        return JsonResponse({"error": "Alumno no encontrado"}, status=404)
 def home(request):
     return render(request,'cards/home.html')
 
