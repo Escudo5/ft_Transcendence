@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-// 1. ESTRUCTURA DE DATOS: Tus 5 integrantes del equipo de 42
+// 👥 Tarjetas fijas de presentación del equipo de desarrollo
 const INTEGRANTES = [
   { login: "ksudyn", nombre: "Konrad", avatar: "imagen", rareza: "legendary" },
   { login: "pablalva", nombre: "Pablo", avatar: "imagen", rareza: "legendary" },
@@ -37,14 +37,14 @@ function Home() {
   const integranteActivo = indiceSeleccionado !== null ? INTEGRANTES[indiceSeleccionado] : null;
 
   return (
-    <div className="app-container" style={{ padding: '2rem 0' }}>
-      
-      {/* PARTE 1: ARRIBA (Título e Integrantes) */}
+    <div className="app-container" style={{ padding: '2rem 0', backgroundColor: '#1e1e1e', color: 'white', minHeight: '100vh', textAlign: 'center' }}>
       <header className="app-header">
         <div className="logo-section">
           <h1>ft_transcendence</h1>
         </div>
-        <p className="subtitle">Integrantes del grupo</p>
+        <p className="subtitle" style={{ fontSize: '1.2rem', opacity: 0.8, marginTop: '0.5rem' }}>
+          Creadores del Proyecto
+        </p>
       </header>
 
       {/* Fila con las 5 cartas de los miembros del grupo */}
@@ -63,20 +63,12 @@ function Home() {
         ))}
       </section>
 
-
-      {/* PARTE 2: EN EL MEDIO (Los dos botones principales) */}
-      <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
-        {/* Botón Álbum */}
-        <Link to="/catalogo" className="back-btn-link" style={{ textAlign: 'center', padding: '1.5rem', fontSize: '1.25rem', display: 'block' }}>
+      {/* 🧭 BOTONES DE ACCIÓN: Las dos opciones del juego */}
+      <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '4rem', padding: '0 2rem' }}>
+        <Link to="/catalogo" className="back-btn-link" style={{ textAlign: 'center', padding: '1.5rem', fontSize: '1.25rem', display: 'block', background: '#00BABC', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
           📂 Ver Álbum
         </Link>
-
-        {/* Botón Game (redirige a Game) */}
-        <button 
-          className="back-btn-link" 
-          style={{ padding: '1.5rem', fontSize: '1.25rem', cursor: 'pointer' }}
-          onClick={Game}
-        >
+        <button className="back-btn-link" style={{ padding: '1.5rem', fontSize: '1.25rem', cursor: 'pointer', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', fontWeight: 'bold' }} onClick={() => navigate('/game')}>
           🎮 Iniciar Game
         </button>
       </section>
