@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Card
+from .models import UserCard
 
 
 class CardSerializer(serializers.ModelSerializer):
@@ -16,3 +17,10 @@ class CardSerializer(serializers.ModelSerializer):
             "tier", 
         ]
         read_only_fields = ["id", "created_at"]
+class UserCardSerializer(serializers.ModelSerializer):
+    
+    card = CardSerializer(read_only=True)
+    
+    class Meta:
+        model = UserCard
+        fields = ["id","card"]

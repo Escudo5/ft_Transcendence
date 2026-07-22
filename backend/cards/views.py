@@ -1,13 +1,15 @@
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
 from rest_framework import status
 from django.shortcuts import render,get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.permissions import IsAuthenticated
 from .models import Card
 from .forms import CardForm
-from .serializers import CardSerializer
+from users.models import CustomUser
+from .serializers import CardSerializer, UserCardSerializer
 import random
 from django.contrib.auth import get_user_model
 from .models import Card, UserCard, UserPack
@@ -36,6 +38,28 @@ def crear_carta(request):
 def lista_cartas(request):
     cartas = Card.objects.all()
     return render(request,'cards/lista_cartas.html',{'cartas':cartas})
+
+@api_view(['GET'])
+def album_usuario(request, id):
+    try:
+        # 1. Verificamos que el usuario exista en PostgreSQL
+        usuario = User.objects.get(id=id)
+        
+        # 2. Obtenemos todas sus cartas optimizando la consulta SQL
+        album_cartas = UserCard.objects.filter(user=usuario).select_related('card')
+        
+        # 3. Serializamos la lista completa
+        serializer = UserCardSerializer(album_cartas, many=True)
+        
+        # 4. Devolvemos la respuesta
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+    except User.DoesNotExist:
+        return Response(
+            {"error": f"El usuario con id {id} no existe."}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+
 @api_view(['GET'])  # Decorador necesario para Django REST Framework
 def login_alumno(request, login):
     try:
@@ -88,31 +112,12 @@ CONFIGURACION_SOBRES = {
         "cartas_por_sobre": 5
     }
 }
-def open_pack(pack_type):
-    config_pack = CONFIGURACION_SOBRES.get(pack_type)
-    chances = config_pack["probabilidades"]
-    cards_nbr = config_pack["cartas_por_sobre"]
-    tiers = list(chances.keys())
-    percent = list(chances.values())
-
-    selected_cards = []
-
-    for it in range(cards_nbr):
-        selected_tier = random.choices(tiers,weights=percent,k=1)[0]
-        cards_of_tier = Card.objects.filter(tier=selected_tier)
-        if not cards_of_tier.exists():
-            cards_of_tier = Card.objects.all()
-        if not cards_of_tier.exists():
-            raise ValueError("No hay cartas cargadas en la base de datos de cartas.")
-        random_card = random.choice(cards_of_tier)
-        selected_cards.append(random_card)
-        
-    return selected_cards
 
 def open_pack(tipo_sobre):
     """
     Selecciona 5 cartas aleatorias de la base de datos basándose 
     en las probabilidades del tipo de sobre.
+    Retorna directamente las instancias de los objetos Card.
     """
     config = CONFIGURACION_SOBRES.get(tipo_sobre)
     probabilidades = config["probabilidades"]
@@ -124,102 +129,97 @@ def open_pack(tipo_sobre):
     cartas_seleccionadas = []
     
     for _ in range(num_cartas):
-        # 1. Elegimos qué rareza (Tier) toca en este hueco del sobre
         selected_tier = random.choices(tiers, weights=percent, k=1)[0]
-        
-        # 2. Filtramos las cartas de la base de datos que pertenecen a ese Tier
         cartas_del_tier = Card.objects.filter(tier=selected_tier)
         
-        # Salvaguarda por si acaso un Tier está vacío en la base de datos de pruebas
         if not cartas_del_tier.exists():
             cartas_del_tier = Card.objects.all()
             
         if not cartas_del_tier.exists():
             raise ValueError("No hay cartas registradas en la base de datos.")
             
-        # 3. Elegimos un alumno al azar de ese grupo
         carta_aleatoria = random.choice(cartas_del_tier)
+        # DEVOLVEMOS EL OBJETO CARD DIRECTAMENTE (sin instanciar Serializer aquí)
         cartas_seleccionadas.append(carta_aleatoria)
         
     return cartas_seleccionadas
 
 
-# =====================================================================
-# 3. ENDPOINT: PROCESAR APERTURA Y GUARDAR EN ÁLBUM
-# =====================================================================
-@csrf_exempt
+# Usamos los decoradores de Django REST Framework para asegurar autenticación
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def abrir_sobre_endpoint(request, tipo_sobre):
     """
-    Endpoint HTTP que maneja la lógica de negocio completa: verifica inventario,
-    resta el sobre, ejecuta el gacha, guarda en el álbum y responde a React.
+    Endpoint HTTP para abrir un sobre utilizando el usuario conectado (request.user).
     """
     if tipo_sobre not in CONFIGURACION_SOBRES:
-        return JsonResponse({"error": "El tipo de sobre solicitado no es válido."}, status=400)
+        return Response(
+            {"error": "El tipo de sobre solicitado no es válido."}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
         
-    # Usuario real de la sesión; si el front todavía no envía la cookie
-    # (credentials: 'include'), caemos al primer usuario de la BD como
-    # apaño temporal para poder seguir probando
-    User = get_user_model()
-    if request.user.is_authenticated:
-        user_test = request.user
-    else:
-        user_test = User.objects.first()
-    if not user_test:
-        return JsonResponse({"error": "No hay usuarios creados en la base de datos."}, status=500)
+    # EL USUARIO CONECTADO SE OBTIENE DIRECTAMENTE CON request.user
+    user = request.user
     
-    # 1. Comprobar si el usuario tiene este sobre en su inventario
+    # 1. Comprobar si el usuario conectado tiene el sobre en su inventario
     try:
-        sobre_inventario = UserPack.objects.get(user=user_test, tipo_sobre=tipo_sobre)
+        sobre_inventario = UserPack.objects.get(user=user, tipo_sobre=tipo_sobre)
         if sobre_inventario.cantidad < 1:
-            return JsonResponse({"error": f"No tienes sobres {tipo_sobre} disponibles."}, status=400)
+            return Response(
+                {"error": f"No tienes sobres {tipo_sobre} disponibles."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
     except UserPack.DoesNotExist:
-        return JsonResponse({"error": f"No tienes sobres {tipo_sobre} en tu inventario."}, status=400)
+        return Response(
+            {"error": f"No tienes sobres {tipo_sobre} en tu inventario."}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
         
     # 2. Restar el sobre consumido
     sobre_inventario.cantidad -= 1
     sobre_inventario.save()
     
-    # 3. Llamar al motor gacha para generar las 5 cartas
+    # 3. Generar las 5 cartas
     try:
         cartas_tocadas = open_pack(tipo_sobre)
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-    # 4. Registrar/Actualizar las cartas en el álbum del usuario (UserCard)
+    # 4. Registrar o actualizar las cartas en el álbum del usuario conectado
     try:
         for carta in cartas_tocadas:
             user_card, created = UserCard.objects.get_or_create(
-                user=user_test,
+                user=user,
                 card=carta
             )
-            # Si la carta ya existía en su álbum, aumentamos el contador de repetidas
             if not created:
                 user_card.cantidad += 1
-            
-            # Guardamos siempre, perfectamente alineado (8 espacios dentro del for)
             user_card.save()
             
     except Exception as e:
-        return JsonResponse({"error": f"Fallo al guardar en el álbum: {str(e)}"}, status=500)
+        return Response(
+            {"error": f"Fallo al guardar en el álbum: {str(e)}"}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
         
-    # 5. Estructurar la respuesta JSON adaptada al modelo Card definitivo
+    # 5. Formatear la respuesta JSON para React
     datos_cartas = []
     for c in cartas_tocadas:
         datos_cartas.append({
             "id": c.id,
-            "login": c.login,        # REFACTORIZADO: cambiado de 'nombre' a 'login'
+            "login": c.login,
             "tier": c.tier,
             "coalition": c.coalition,
             "title": c.title,
             "altarians": c.altarians,
             "cursus_lvl": c.cursus_lvl,
             "eval_point": c.eval_point,
-            "photo": c.photo         # Ideal para pintar la cara del alumno en React
+            "photo": c.photo
         })
         
-    return JsonResponse({
+    return Response({
         "success": True,
         "sobre_abierto": tipo_sobre,
         "sobres_restantes": sobre_inventario.cantidad,
         "cartas": datos_cartas
-    })
+    }, status=status.HTTP_200_OK)
