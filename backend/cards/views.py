@@ -40,10 +40,10 @@ def lista_cartas(request):
     return render(request,'cards/lista_cartas.html',{'cartas':cartas})
 
 @api_view(['GET'])
-def album_usuario(request, id):
+def album_usuario(request, id_user):
     try:
         # 1. Verificamos que el usuario exista en PostgreSQL
-        usuario = User.objects.get(id=id)
+        usuario = CustomUser.objects.get(id=id_user)
         
         # 2. Obtenemos todas sus cartas optimizando la consulta SQL
         album_cartas = UserCard.objects.filter(user=usuario).select_related('card')
@@ -54,9 +54,9 @@ def album_usuario(request, id):
         # 4. Devolvemos la respuesta
         return Response(serializer.data, status=status.HTTP_200_OK)
         
-    except User.DoesNotExist:
+    except CustomUser.DoesNotExist:
         return Response(
-            {"error": f"El usuario con id {id} no existe."}, 
+            {"error": f"El usuario con id {id_user} no existe."},
             status=status.HTTP_404_NOT_FOUND
         )
 
