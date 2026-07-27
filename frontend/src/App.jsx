@@ -271,7 +271,7 @@
 //       )}
 //     </main>
 // =======
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import DotField from "./components/Fondo_animado";
 import Home from './components/Home';
@@ -312,6 +312,11 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   const URL_LOGIN_42 = "https://api.intra.42.fr/oauth/authorize?client_id=u-s4t2ud-85745739c040c37d065eeef72dafbd19dea1e46b50172daac4f20c1907d34b47&redirect_uri=http%3A%2F%2Flocalhost%3A3000&response_type=code&scope=public";
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
+  // Candado: el código de 42 es de UN solo uso, y React.StrictMode ejecuta los
+  // efectos dos veces en desarrollo. Esto evita canjear el mismo código dos veces.
+  const codeYaProcesado = useRef(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -321,6 +326,30 @@ function App() {
       // Si venimos de la Intra con el código, el alumno ya está validado
       setIsAuthenticated(true);
       setLoading(false);
+
+      // 📡 RECEPTOR DEL CÓDIGO DE 42: canjeamos el código en el backend para que
+      // registre (o refresque) al alumno en la tabla de usuarios y abra la sesión.
+      // Sin esta llamada el login es solo decorativo: no hay usuario ni cookie.
+      if (!codeYaProcesado.current) {
+        codeYaProcesado.current = true;
+
+        // credentials: 'include' hace que el navegador guarde la cookie de sesión
+        // que devuelve el backend (y la envíe en las siguientes peticiones)
+        fetch(`${apiBaseUrl}/users/auth/callback/?code=${code}`, { credentials: 'include' })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log('Respuesta del login:', data);
+            if (data.error) {
+              alert(`Error en el login con 42: ${data.error}`);
+            } else {
+              alert(`${data.mensaje}\nSobres disponibles hoy: ${data.sobres_disponibles_hoy}`);
+            }
+          })
+          .catch((error) => {
+            console.error('Error al hablar con el backend:', error);
+            alert('Error en la autenticación con la Intra de 42');
+          });
+      }
     } else {
       // 🚨 SI NO TIENE CÓDIGO (Llega de nuevas por la mañana):
       // Le mandamos DIRECTAMENTE a la Intra de 42. No ve la portada hasta que autorice.
