@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function Inventario() {
   const navigate = useNavigate();
+  const [cargandoSobre, setCargandoSobre] = useState(false);
+  const [mensajeSobre, setMensajeSobre] = useState('');
+  const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
 
   const clickVolver = () => {
     navigate('/home');
@@ -121,6 +125,49 @@ function Inventario() {
     );
   };
 
+  const obtenerTokenCsrf = async () => {
+    const response = await fetch(`${apiBaseUrl}/users/csrf/`, {
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('No se pudo obtener el token CSRF.');
+    }
+
+    const data = await response.json();
+    return data.csrfToken;
+  };
+
+  const abrirSobreComun = async () => {
+    setCargandoSobre(true);
+    setMensajeSobre('');
+
+    try {
+      const csrfToken = await obtenerTokenCsrf();
+      const response = await fetch(`${apiBaseUrl}/cards/sobres/abrir/comun/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'No se pudo abrir el sobre.');
+      }
+
+      setMensajeSobre(`¡Sobre común abierto! Has recibido ${data.cartas?.length || 0} cartas.`);
+    } catch (error) {
+      console.error('Error al abrir el sobre:', error);
+      setMensajeSobre(error.message || 'No se pudo abrir el sobre.');
+    } finally {
+      setCargandoSobre(false);
+    }
+  };
+
   const renderTiendaSobres = () => {
     return (
       <div
@@ -128,7 +175,7 @@ function Inventario() {
         style={{
           width: '100%',
           maxWidth: '850px',
-          height: '220px',
+          minHeight: '220px',
           margin: '2rem auto',
           padding: '2.5rem',
           backgroundColor: 'rgba(20, 20, 27, 0.2)',
@@ -144,9 +191,33 @@ function Inventario() {
           TIENDA DE SOBRES
         </div>
 
-        <div></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={abrirSobreComun}
+            disabled={cargandoSobre}
+            style={{
+              padding: '0.9rem 1.2rem',
+              borderRadius: '10px',
+              border: 'none',
+              backgroundColor: cargandoSobre ? '#4b5563' : '#00c7b7',
+              color: 'white',
+              cursor: cargandoSobre ? 'not-allowed' : 'pointer',
+              fontWeight: '700'
+            }}
+          >
+            {cargandoSobre ? 'Abriendo...' : 'Abrir sobre común'}
+          </button>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}></div>
+          <span style={{ color: 'rgba(255,255,255,0.8)' }}>
+            El botón llama al endpoint del backend para abrir un sobre y registrar las cartas.
+          </span>
+        </div>
+
+        {mensajeSobre && (
+          <div style={{ color: '#8ef5e1', fontWeight: '600' }}>
+            {mensajeSobre}
+          </div>
+        )}
       </div>
     );
   };
