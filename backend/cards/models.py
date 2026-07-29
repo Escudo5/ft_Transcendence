@@ -37,7 +37,7 @@ class UserCard(models.Model):
     fecha_obtencion = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} tiene {self.cantidad}x {self.card.nombre}"
+        return f"{self.user.username} tiene {self.cantidad}x {self.card.login}"
 class UserPack(models.Model):
     TIPOS_SOBRE = [
         ('comun', 'Sobre Común'),

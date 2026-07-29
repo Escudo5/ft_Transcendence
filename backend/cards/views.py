@@ -40,25 +40,22 @@ def lista_cartas(request):
     return render(request,'cards/lista_cartas.html',{'cartas':cartas})
 
 @api_view(['GET'])
-def album_usuario(request, id_user):
-    try:
-        # 1. Verificamos que el usuario exista en PostgreSQL
-        usuario = CustomUser.objects.get(id=id_user)
-        
-        # 2. Obtenemos todas sus cartas optimizando la consulta SQL
-        album_cartas = UserCard.objects.filter(user=usuario).select_related('card')
-        
-        # 3. Serializamos la lista completa
-        serializer = UserCardSerializer(album_cartas, many=True)
-        
-        # 4. Devolvemos la respuesta
-        return Response(serializer.data, status=status.HTTP_200_OK)
-        
-    except CustomUser.DoesNotExist:
-        return Response(
-            {"error": f"El usuario con id {id_user} no existe."},
-            status=status.HTTP_404_NOT_FOUND
-        )
+@permission_classes([IsAuthenticated])  # Exige que el usuario esté autenticado
+def album_usuario(request):
+    """
+    Devuelve las cartas del usuario que tiene la sesión activa (request.user).
+    """
+    # 1. Django obtiene el usuario directamente de la sesión/token
+    usuario = request.user
+
+    # 2. Obtenemos todas sus cartas optimizando la consulta SQL
+    album_cartas = UserCard.objects.filter(user=usuario).select_related('card')
+
+    # 3. Serializamos la lista completa
+    serializer = UserCardSerializer(album_cartas, many=True)
+
+    # 4. Devolvemos la respuesta
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])  # Decorador necesario para Django REST Framework
 def login_alumno(request, login):
