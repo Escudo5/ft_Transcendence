@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.contrib.auth import login, logout
 from django.views.decorators.http import require_GET
 from django.views.decorators.csrf import csrf_exempt
+from django.middleware.csrf import get_token
 from .models import CustomUser
 
 # 🔑 Credenciales de la aplicación registrada en la Intra (vienen del .env)
@@ -40,11 +41,16 @@ def login_42_callback(request):
             "redirect_uri": REDIRECT_URI
         }
 
-        respuesta_token = requests.post(url_token, data=credenciales).json()
-        token_de_acceso = respuesta_token.get("access_token")
+        respuesta_token = requests.post(url_token, data=credenciales, timeout=15)
+        respuesta_token_json = respuesta_token.json()
+        token_de_acceso = respuesta_token_json.get("access_token")
 
         if not token_de_acceso:
-            return JsonResponse({"error": "No se pudo obtener el token de acceso", "detalles": respuesta_token}, status=400)
+            return JsonResponse({
+                "error": "No se pudo obtener el token de acceso",
+                "detalles": respuesta_token_json,
+                "redirect_uri_usado": REDIRECT_URI,
+            }, status=400)
 
         # PASO 3: Con el token, pedimos los datos del alumno que está iniciando sesión
         url_perfil = os.environ.get('URL_PERFIL')  # 👈 /v2/me nos da el perfil de quien se está logueando ahora mismo
@@ -116,6 +122,12 @@ def login_42_callback(request):
 
     except Exception as e:
         return JsonResponse({'error': f'Fallo crítico en el login: {str(e)}'}, status=500)
+
+
+@require_GET
+def csrf_token_view(request):
+    """Devuelve un token CSRF válido para que el frontend pueda enviar POSTs seguros."""
+    return JsonResponse({'csrfToken': get_token(request)})
 
 
 def me(request):
