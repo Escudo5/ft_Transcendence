@@ -2,6 +2,7 @@ import requests
 import os
 from django.http import JsonResponse
 from django.utils import timezone
+from django.shortcuts import redirect
 from django.contrib.auth import login, logout
 from django.views.decorators.http import require_GET
 from django.views.decorators.csrf import csrf_exempt
@@ -104,14 +105,10 @@ def login_42_callback(request):
         # desde ahora request.user será este usuario en todas sus peticiones
         login(request, usuario, backend='django.contrib.auth.backends.ModelBackend')
 
-        # TODO: cuando Pablo mueva el control diario a UserPack, calcular aquí
-        # los sobres que le quedan de verdad consultando esa tabla
         sobres_restantes = SOBRES_DIARIOS
-        if creado:
-            mensaje = f'¡Bienvenido por primera vez al Álbum, {usuario.username}!'
-        else:
-            mensaje = f'¡Bienvenido de nuevo, {usuario.username}!'
+        mensaje = f'¡Bienvenido por primera vez, {usuario.username}!' if creado else f'¡Bienvenido de nuevo, {usuario.username}!'
 
+        # ✔️ Devolvemos JSON porque React lo consume con fetch().json()
         return JsonResponse({
             'status': 'nuevo_usuario' if creado else 'usuario_existente',
             'username': usuario.username,
@@ -119,7 +116,6 @@ def login_42_callback(request):
             'mensaje': mensaje,
             'sobres_disponibles_hoy': sobres_restantes
         })
-
     except Exception as e:
         return JsonResponse({'error': f'Fallo crítico en el login: {str(e)}'}, status=500)
 
