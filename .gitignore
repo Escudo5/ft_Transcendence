@@ -6,10 +6,21 @@ backend/.venv/
 backend/.pytest_cache/
 backend/.mypy_cache/
 
+node_modules/
 frontend/node_modules/
 frontend/dist/
 npm-debug.log*
 yarn-error.log*
+
+# El lock lo genera cada maquina: el de un Mac con chip Apple (arm64) y el de
+# un ordenador Intel (x64) no son compatibles y rompen el arranque del front
+package-lock.json
+
+# Certificados que genera runserver_plus al arrancar en HTTPS.
+# NUNCA deben subirse al repo (cert.key es una clave privada)
+*.crt
+*.key
+*.pem
 
 .env
 backend/.env
