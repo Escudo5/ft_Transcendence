@@ -311,12 +311,11 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const redirectUri = `${window.location.origin}/`;
+  // 1. Corregido: sin la barra '/' al final para coincidir 1:1 con el .env de Django y la Intra
+  const redirectUri = window.location.origin;
   const URL_LOGIN_42 = `https://api.intra.42.fr/oauth/authorize?client_id=u-s4t2ud-85745739c040c37d065eeef72dafbd19dea1e46b50172daac4f20c1907d34b47&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=public`;
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://localhost:8000/api';
 
-  // Candado: el código de 42 es de UN solo uso, y React.StrictMode ejecuta los
-  // efectos dos veces en desarrollo. Esto evita canjear el mismo código dos veces.
   const codeYaProcesado = useRef(false);
 
   useEffect(() => {
@@ -324,44 +323,59 @@ function App() {
     const code = urlParams.get('code');
 
     if (code) {
-      // Si venimos de la Intra con el código, el alumno ya está validado
-      setIsAuthenticated(true);
-      setLoading(false);
-
-      // 📡 RECEPTOR DEL CÓDIGO DE 42: canjeamos el código en el backend para que
-      // registre (o refresque) al alumno en la tabla de usuarios y abra la sesión.
-      // Sin esta llamada el login es solo decorativo: no hay usuario ni cookie.
+      // 🟢 CASO 1: Viene de 42 con código de autorización
       if (!codeYaProcesado.current) {
         codeYaProcesado.current = true;
 
-        // credentials: 'include' hace que el navegador guarde la cookie de sesión
-        // que devuelve el backend (y la envíe en las siguientes peticiones)
         fetch(`${apiBaseUrl}/users/auth/callback/?code=${code}`, { credentials: 'include' })
-          .then((response) => response.json())
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`Error servidor HTTP ${response.status}`);
+            }
+            return response.json();
+          })
           .then((data) => {
             console.log('Respuesta del login:', data);
+            
             if (data.error) {
               alert(`Error en el login con 42: ${data.error}`);
+              setIsAuthenticated(false);
             } else {
+              // 🧹 Limpiamos el ?code= de la URL para evitar errores al recargar
+              window.history.replaceState({}, document.title, window.location.pathname);
+              setIsAuthenticated(true);
               alert(`${data.mensaje}\nSobres disponibles hoy: ${data.sobres_disponibles_hoy}`);
             }
           })
           .catch((error) => {
             console.error('Error al hablar con el backend:', error);
             alert('Error en la autenticación con la Intra de 42');
-          });
+            setIsAuthenticated(false);
+          })
+          .finally(() => setLoading(false));
       }
     } else {
-      // 🚨 SI NO TIENE CÓDIGO (Llega de nuevas por la mañana):
-      // Le mandamos DIRECTAMENTE a la Intra de 42. No ve la portada hasta que autorice.
-      window.location.href = URL_LOGIN_42;
+      // 🔵 CASO 2: Entrada directa sin código -> Verificamos si Django tiene sesión guardada
+      fetch(`${apiBaseUrl}/users/me/`, { credentials: 'include' })
+        .then((res) => {
+          if (res.ok) {
+            setIsAuthenticated(true);
+          } else {
+            // Si no hay sesión, mandamos a 42
+            window.location.href = URL_LOGIN_42;
+          }
+        })
+        .catch(() => {
+          window.location.href = URL_LOGIN_42;
+        })
+        .finally(() => setLoading(false));
     }
   }, []);
 
   if (loading) {
     return (
       <div style={{ backgroundColor: '#1e1e1e', color: 'white', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <h2>Redirigiendo a la Intra de 42...</h2>
+        <h2>Verificando sesión con la Intra de 42...</h2>
       </div>
     );
   }
