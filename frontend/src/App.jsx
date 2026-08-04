@@ -314,7 +314,7 @@ function App() {
   // 1. Corregido: sin la barra '/' al final para coincidir 1:1 con el .env de Django y la Intra
   const redirectUri = window.location.origin;
   const URL_LOGIN_42 = `https://api.intra.42.fr/oauth/authorize?client_id=u-s4t2ud-85745739c040c37d065eeef72dafbd19dea1e46b50172daac4f20c1907d34b47&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=public`;
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://localhost:8000/api';
+  const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
 
   const codeYaProcesado = useRef(false);
 
