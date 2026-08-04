@@ -16,7 +16,7 @@ function getUserImage(userData) {
 
 function Home() {
   const navigate = useNavigate();
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+  const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
   const cardsEndpoint = import.meta.env.VITE_CARDS_ENDPOINT || `${apiBaseUrl}/cards`;
 
   // 2. ESTADOS (Variables dinámicas de React)
