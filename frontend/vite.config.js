@@ -11,7 +11,13 @@ export default defineConfig({
   server: {
     https: true,     // 👈 3. Activamos HTTPS
     host: true,      // Permite que se pueda acceder desde fuera del contenedor
-    port: 3000,      // Forzamos a Vite a escuchar en el puerto 3000 (el de la Intra)
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'https://backend:8000/',
+        secure: false,
+      },
+    },      // Forzamos a Vite a escuchar en el puerto 3000 (el de la Intra)
     watch: {
       usePolling: true, // Asegura que los cambios de código se actualicen al momento en Docker
     },
