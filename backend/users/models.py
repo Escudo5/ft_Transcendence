@@ -4,6 +4,11 @@ from django.utils import timezone  # Requerido para capturar la fecha actual
 
 class CustomUser(AbstractUser):
     id_42 = models.IntegerField(unique=True, null=True, blank=True)
+
+    # 📧 El email es la llave para entrar con contraseña, asi que no puede
+    # repetirse. Admite vacio (null) por si 42 no devuelve correo de alguien:
+    # en PostgreSQL varios vacios NO chocan entre si, pero dos correos iguales si.
+    email = models.EmailField(unique=True, null=True, blank=True)
     profile_image = models.URLField(max_length=500, blank=True, null=True)
     elo = models.IntegerField(default=1000)  # Para emparejar jugadores en el juego de cartas
     is_alumni = models.BooleanField(default=False)

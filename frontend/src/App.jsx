@@ -274,6 +274,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import DotField from "./components/Fondo_animado";
+import Acceso from './components/Acceso';
 import Home from './components/Home';
 import Catalogo from './components/Catalogo';
 import CrearCarta from './components/CrearCarta';
@@ -358,16 +359,11 @@ function App() {
       // 🔵 CASO 2: Entrada directa sin código -> Verificamos si Django tiene sesión guardada
       fetch(`${apiBaseUrl}/users/me/`, { credentials: 'include' })
         .then((res) => {
-          if (res.ok) {
-            setIsAuthenticated(true);
-          } else {
-            // Si no hay sesión, mandamos a 42
-            window.location.href = URL_LOGIN_42;
-          }
+          // Si no hay sesión ya no expulsamos a la Intra sin preguntar: mostramos
+          // la pantalla de acceso para que elija entre entrar con 42 o con email
+          setIsAuthenticated(res.ok);
         })
-        .catch(() => {
-          window.location.href = URL_LOGIN_42;
-        })
+        .catch(() => setIsAuthenticated(false))
         .finally(() => setLoading(false));
     }
   }, []);
@@ -375,8 +371,27 @@ function App() {
   if (loading) {
     return (
       <div style={{ backgroundColor: '#1e1e1e', color: 'white', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <h2>Verificando sesión con la Intra de 42...</h2>
+        <h2>Verificando sesión...</h2>
       </div>
+    );
+  }
+
+  // 🚪 Sin sesión: pantalla de acceso (entrar con 42 o con email y contraseña).
+  // Al entrar correctamente, el backend ya ha dejado la sesión abierta, así que
+  // solo hay que dar paso a la aplicación.
+  if (!isAuthenticated) {
+    return (
+      <>
+        <DotField style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
+        <Acceso
+          apiBaseUrl={apiBaseUrl}
+          urlLogin42={URL_LOGIN_42}
+          onAutenticado={(datos) => {
+            alert(`${datos.mensaje}\nSobres disponibles hoy: ${datos.sobres_disponibles_hoy}`);
+            setIsAuthenticated(true);
+          }}
+        />
+      </>
     );
   }
 
