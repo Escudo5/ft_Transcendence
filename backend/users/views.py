@@ -1,10 +1,15 @@
+import json
+import re
 import requests
 import os
 from django.http import JsonResponse
 from django.utils import timezone
 from django.shortcuts import redirect
 from django.contrib.auth import login, logout
-from django.views.decorators.http import require_GET
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.middleware.csrf import get_token
 from .models import CustomUser
@@ -89,7 +94,9 @@ def login_42_callback(request):
         # para que la foto, el email o el nombre sigan el ritmo de la Intra
         usuario.first_name = datos_perfil.get("first_name") or ""
         usuario.last_name = datos_perfil.get("last_name") or ""
-        usuario.email = datos_perfil.get("email") or ""
+        # None y no "": si 42 no devolviera correo, dos cuentas con "" chocarian
+        # contra la restriccion de email unico. Varios None si conviven.
+        usuario.email = (datos_perfil.get("email") or "").strip().lower() or None
         usuario.is_alumni = datos_perfil.get("alumni?", False)
         usuario.profile_image = datos_perfil.get("image", {}).get("versions", {}).get("medium")
         usuario.estado = 'online'  # Se acaba de conectar
@@ -176,6 +183,141 @@ def list_users(request):
             }
             for user in users
         ]
+    })
+
+
+# =====================================================================
+# 🔐 LA OTRA PUERTA: registro e inicio de sesion con email y contraseña
+# Es independiente del login de 42: son dos caminos distintos para entrar.
+# =====================================================================
+
+def _leer_json(request):
+    """Lee el cuerpo de la peticion como JSON. Devuelve {} si viene vacio o mal."""
+    try:
+        return json.loads(request.body or '{}')
+    except (ValueError, TypeError):
+        return {}
+
+
+def _generar_username(nombre, email):
+    """
+    Django exige un nombre de usuario unico. Lo fabricamos a partir del nombre
+    que ha elegido la persona (o del correo), quitando lo que Django no admite,
+    y le añadimos un numero si ya estuviera cogido.
+    """
+    base = (nombre or email.split('@')[0]).strip()
+    base = re.sub(r'[^\w.@+-]', '_', base)[:140] or 'usuario'
+    username = base
+    contador = 1
+    while CustomUser.objects.filter(username=username).exists():
+        username = f'{base}_{contador}'
+        contador += 1
+    return username
+
+
+@require_POST
+def register(request):
+    """
+    Crea una cuenta nueva con email y contraseña.
+    La contraseña NUNCA se guarda tal cual: Django la trocea de forma
+    irreversible y con un grano de sal distinto para cada usuario.
+    """
+    datos = _leer_json(request)
+    email = (datos.get('email') or '').strip().lower()  # en minusculas para que
+    password = datos.get('password') or ''              # Nacho@x.com y nacho@x.com
+    nombre = (datos.get('nombre') or '').strip()        # no sean cuentas distintas
+
+    errores = {}
+
+    # 1. Que no falte nada
+    if not email:
+        errores['email'] = 'Escribe tu correo electrónico.'
+    if not password:
+        errores['password'] = 'Escribe una contraseña.'
+
+    # 2. Que el correo tenga pinta de correo
+    if email:
+        try:
+            validate_email(email)
+        except ValidationError:
+            errores['email'] = 'Ese correo no parece válido.'
+
+    # 3. Que el correo no lo tenga ya otra cuenta
+    if email and 'email' not in errores and CustomUser.objects.filter(email=email).exists():
+        errores['email'] = 'Ya existe una cuenta con ese correo.'
+
+    # 4. Que la contraseña sea decente (usa las reglas de settings.py:
+    #    minimo de caracteres, que no sea de las mas comunes, que no sea solo numeros)
+    if password:
+        try:
+            validate_password(password)
+        except ValidationError as e:
+            errores['password'] = ' '.join(e.messages)
+
+    if errores:
+        return JsonResponse({'error': 'Revisa los datos.', 'campos': errores}, status=400)
+
+    # 5. Creamos la cuenta
+    usuario = CustomUser(
+        username=_generar_username(nombre, email),
+        email=email,
+        first_name=nombre[:150],
+        elo=1000,
+        last_login_date=timezone.now().date(),
+        estado='online',
+    )
+    usuario.set_password(password)  # 👈 aqui es donde se cifra
+    usuario.save()
+
+    # 6. Le abrimos la sesion directamente, para que no tenga que loguearse
+    #    otra vez justo despues de registrarse
+    login(request, usuario, backend='django.contrib.auth.backends.ModelBackend')
+
+    return JsonResponse({
+        'status': 'nuevo_usuario',
+        'username': usuario.username,
+        'email': usuario.email,
+        'mensaje': f'¡Bienvenido al Álbum, {usuario.first_name or usuario.username}!',
+        'sobres_disponibles_hoy': SOBRES_DIARIOS,
+    }, status=201)
+
+
+@require_POST
+def login_email(request):
+    """Inicia sesion con email y contraseña."""
+    datos = _leer_json(request)
+    email = (datos.get('email') or '').strip().lower()
+    password = datos.get('password') or ''
+
+    if not email or not password:
+        return JsonResponse({'error': 'Escribe tu correo y tu contraseña.'}, status=400)
+
+    usuario = CustomUser.objects.filter(email=email).first()
+
+    # 🛡️ A proposito NO decimos si lo que falla es el correo o la contraseña:
+    # eso le diria a un atacante que correos existen en la base de datos.
+    # Nota: las cuentas de 42 no tienen contraseña utilizable, asi que
+    # check_password devuelve False para ellas y no se puede entrar por aqui.
+    if usuario is None or not usuario.check_password(password):
+        return JsonResponse({'error': 'Correo o contraseña incorrectos.'}, status=401)
+
+    if not usuario.is_active:
+        return JsonResponse({'error': 'Esta cuenta está desactivada.'}, status=403)
+
+    hoy = timezone.now().date()
+    usuario.estado = 'online'
+    if usuario.last_login_date < hoy:
+        usuario.last_login_date = hoy
+    usuario.save()
+
+    login(request, usuario, backend='django.contrib.auth.backends.ModelBackend')
+
+    return JsonResponse({
+        'status': 'usuario_existente',
+        'username': usuario.username,
+        'email': usuario.email,
+        'mensaje': f'¡Bienvenido de nuevo, {usuario.first_name or usuario.username}!',
+        'sobres_disponibles_hoy': SOBRES_DIARIOS,
     })
 
 
