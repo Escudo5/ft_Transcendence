@@ -14,6 +14,8 @@ import random
 from django.contrib.auth import get_user_model
 from .models import Card, UserCard, UserPack
 from django.http import JsonResponse
+import json
+from django.db import transaction
 
 class HealthCheckView(APIView):
     def get(self, request):
@@ -109,7 +111,89 @@ CONFIGURACION_SOBRES = {
         "cartas_por_sobre": 5
     }
 }
+TIER_ORDER = ["Blackhole", "Junior", "Senior", "Alumni", "Transcender"]
+@api_view(['POST'])
+@csrf_exempt  # Permite recibir peticiones POST sin error 403 CSRF durante pruebas
+def make_contract(request):
+    # 1. Validar autenticación
+    if not request.user.is_authenticated:  # <-- Corregido (is_authenticated)
+        return JsonResponse({'error': 'Usuario no logueado.'}, status=401)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido.'}, status=405)
 
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido.'}, status=400)
+
+    cartas = data.get('cartas', [])
+    cartas_len = sum(item.get('cantidad', 0) for item in cartas)
+    
+    # 2. Validar que la suma total de cartas a usar sea exactamente 4
+    if cartas_len != 4:
+        return JsonResponse({'error': 'Número de cartas inválido.'}, status=400)
+
+    # 3. Agrupar cantidades por card_id (evita fallos si mandan la misma carta dos veces)
+    cartas_agrupadas = {}
+    for item in cartas:
+        c_id = item.get('card')
+        c_cant = item.get('cantidad', 0)
+        cartas_agrupadas[c_id] = cartas_agrupadas.get(c_id, 0) + c_cant
+
+    tier_base = None
+
+    # 4. Validar inventario, regla del resguardo y coherencia de tiers
+    for card_id, card_cuantity in cartas_agrupadas.items():
+        user_card = UserCard.objects.filter(user=request.user, card_id=card_id).first()
+        
+        if not user_card:
+            return JsonResponse({'error': f'La carta con ID {card_id} no se encuentra en el álbum.'}, status=400)
+        
+        if (user_card.cantidad - card_cuantity) < 1:
+            return JsonResponse({'error': 'No te puedes quedar con menos de 1 carta en tu inventario.'}, status=400)
+        
+        card_tier = user_card.card.tier
+        if tier_base is None:
+            tier_base = card_tier
+        elif card_tier != tier_base:
+            return JsonResponse({'error': 'Los tier de las cartas deben ser todos iguales.'}, status=400)
+
+    # 5. Calcular el siguiente tier
+    actual_index = TIER_ORDER.index(tier_base)
+    if actual_index == len(TIER_ORDER) - 1:
+        return JsonResponse({'error': 'No se puede hacer un contrato con el tier más alto.'}, status=400)
+    
+    result_tier = TIER_ORDER[actual_index + 1]
+
+    # 6. Transacción atómica: restar cartas viejas y otorgar la nueva
+    with transaction.atomic():
+        for card_id, card_cuantity in cartas_agrupadas.items():
+            user_card = UserCard.objects.get(user=request.user, card_id=card_id)
+            user_card.cantidad -= card_cuantity
+            user_card.save()
+
+        tier_cards = list(Card.objects.filter(tier=result_tier))
+        if not tier_cards:
+            return JsonResponse({'error': f'No hay cartas disponibles en el tier {result_tier}.'}, status=400)  # <-- Corregido (f-string)
+
+        result_card = random.choice(tier_cards)
+
+        # <-- Corregido (UserCard.objects.get_or_create)
+        new_user_card, created = UserCard.objects.get_or_create(
+            user=request.user,
+            card=result_card,
+            defaults={'cantidad': 1}
+        )
+        if not created:
+            new_user_card.cantidad += 1
+            new_user_card.save()
+
+    return JsonResponse({
+        'mensaje': '¡Contrato realizado con éxito!',
+        'carta_obtenida': CardSerializer(result_card).data
+    }, status=200)
+        
 def open_pack(tipo_sobre):
     """
     Selecciona 5 cartas aleatorias de la base de datos basándose 
