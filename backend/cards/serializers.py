@@ -6,7 +6,8 @@ from .models import UserCard
 class CardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Card
-        fields = [ 
+        fields = [
+            "id" ,
             "login", 
             "coalition", 
             "title", 
