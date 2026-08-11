@@ -1,20 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from 'framer-motion'; // 👈 IMPORTAMOS FRAMER MOTION
 import FondoTiendaSobres from './FondoTiendaSobres';
 
+// 1. IMPORTA LAS 3 IMÁGENES DE TUS SOBRES
 import sobreIntacto from '../assets/sobre_verde_0.png';
 import sobreRoto1 from '../assets/sobre_verde_1.png';
 import sobreRoto2 from '../assets/sobre_verde_2.png';
 
-function TiendaSobres()
-{
+function TiendaSobres() {
   const navigate = useNavigate();
 
-  // Estados de control
-  const [fase, setFase] = useState('PRE_APERTURA'); // 'PRE_APERTURA' | 'ANIMACION' | 'REVELADO'
-  const [toquesSobre, setToquesSobre] = useState(0); // Para ir rompiendo el sobre (0, 1, 2)
+  const [fase, setFase] = useState('PRE_APERTURA');
+  const [toquesSobre, setToquesSobre] = useState(0);
+
   const [cartasCargadas, setCartasCargadas] = useState([]);
+  
+  // Array de control: registra qué carta está bocarriba (true) o bocabajo (false)
   const [cartasVolteadas, setCartasVolteadas] = useState([false, false, false, false, false]);
 
   const INTEGRANTES = [
@@ -30,27 +32,24 @@ function TiendaSobres()
   };
 
   // Manejador al tocar el sobre (Efecto de rotura progresiva)
-  const tocarSobre = () =>
-    {
-      if (toquesSobre < 2)
-      {
-        setToquesSobre(prev => prev + 1);
-      }
-      else
-      {
-      // Al tercer toque abre las cartas
-      setFase('ANIMACION');
-      setTimeout(() => {
-        setCartasCargadas(INTEGRANTES);
-        setCartasVolteadas([false, false, false, false, false]);
-        setFase('REVELADO');
-      }, 1500); // 1.5 segundos de animación de apertura
+  const tocarSobre = () => {
+    if (toquesSobre < 2) {
+      setToquesSobre(prev => prev + 1);
+    } else {
+      // SEGURAMENTE ESTA PARTE SEA LA QUE CAMBIE AL USAR [INTEGRANTES]
+      // COMO CARTAS A MOSTRAR Y HAY QUE METER LAS CARTAS ALEATORIAS
+      // Al tercer toque abre las cartas directamente
+      setCartasCargadas(INTEGRANTES);
+      setCartasVolteadas([false, false, false, false, false]); // Se inicializan los volteos a false para que esten dadas la vuelta
+      setFase('REVELADO');
     }
   };
 
+  // Aqui volteamos la carta si no esta volteada ya
   const voltearCarta = (index) => {
-    if (cartasVolteadas[index])
+    if (cartasVolteadas[index] === true)
       return;
+
     const nuevoEstado = [...cartasVolteadas];
     nuevoEstado[index] = true;
     setCartasVolteadas(nuevoEstado);
@@ -75,7 +74,6 @@ function TiendaSobres()
     }
   };
 
-  // Obtener la imagen según los toques dados al sobre
   const obtenerImagenSobre = () => {
     if (toquesSobre === 0) return sobreIntacto;
     if (toquesSobre === 1) return sobreRoto1;
@@ -83,7 +81,8 @@ function TiendaSobres()
   };
 
   const renderBotonVolver = () => {
-    if (fase !== 'PRE_APERTURA') return null;
+    if (fase !== 'PRE_APERTURA')
+      return null;
     return (
       <button
         onClick={clickVolver}
@@ -108,7 +107,6 @@ function TiendaSobres()
     );
   };
 
-  // COMPONENTE: SOBRE VISUAL EN PRE-APERTURA
   const Sobrepreeapertura = () => {
     return (
       <div
@@ -138,7 +136,10 @@ function TiendaSobres()
             height: '800px',
             objectFit: 'contain',
             cursor: 'pointer',
-            filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.6))'
+            filter: `
+              drop-shadow(0 0 25px rgba(0, 255, 170, 0.5)) 
+              drop-shadow(0 0 50px rgba(163, 53, 238, 0.6))
+            `
           }}
         />
 
@@ -151,22 +152,7 @@ function TiendaSobres()
     );
   };
 
-  // COMPONENTE: ANIMACIÓN INTERMEDIA
-  const PantallaAnimacion = () => {
-    return (
-      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 5, textAlign: 'center' }}>
-        <motion.h2 
-          animate={{ scale: [1, 1.2, 1] }} 
-          transition={{ repeat: Infinity, duration: 0.8 }}
-          style={{ color: '#fff', fontSize: '2.5rem', textShadow: '0 0 15px #FF9FFC' }}
-        >
-          ⌨️ ¡REPARTIENDO CARTAS! ⌨️
-        </motion.h2>
-      </div>
-    );
-  };
-
-  // COMPONENTE: LAS 5 CARTAS
+  // COMPONENTE: REPARTIENDO CARTAS DESDE EL CENTRO
   const PantallaCincoCartas = () => {
     return (
       <div
@@ -183,22 +169,33 @@ function TiendaSobres()
           width: '95vw'
         }}
       >
+        {/* Fila horizontal que posiciona las 5 cartas juntas una al lado de la otra */}
         <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', width: '100%', flexWrap: 'wrap' }}>
           {cartasCargadas.map((carta, index) => {
             const estiloRareza = obtenerEstiloRareza(carta.rareza);
             const estaVolteada = cartasVolteadas[index];
 
             return (
-              <div
+              <motion.div
                 key={index}
+                // Animación de salida desde el centro de la pantalla
+                initial={{ scale: 0, opacity: 0, y: 100 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.5,
+                  delay: index * 0.12, // Salida en abanico secuencial
+                  type: 'spring',
+                  stiffness: 120
+                }}
                 onClick={() => voltearCarta(index)}
                 style={{
                   width: '180px',
                   height: '270px',
-                  cursor: estaVolteada ? 'default' : 'pointer',
-                  perspective: '1000px'
+                  cursor: estaVolteada ? 'default' : 'pointer', // Quita la mano si ya está revelada
+                  perspective: '1000px' // Da profundidad para el efecto 3D
                 }}
               >
+                {/* Contenedor animable en 3D de Framer Motion */}
                 <motion.div
                   style={{
                     width: '100%',
@@ -206,19 +203,10 @@ function TiendaSobres()
                     position: 'relative',
                     transformStyle: 'preserve-3d'
                   }}
-                  initial={{ y: -50, opacity: 0 }}
-                  animate={{ 
-                    y: 0, 
-                    opacity: 1,
-                    rotateY: estaVolteada ? 180 : 0 
-                  }}
-                  transition={{ 
-                    duration: 0.6, 
-                    delay: index * 0.1, // Animación en cascada de reparto de cartas
-                    ease: 'easeInOut' 
-                  }}
+                  animate={{ rotateY: estaVolteada ? 180 : 0 }}
+                  transition={{ duration: 0.6, ease: 'easeInOut' }}
                 >
-                  {/* REVERSO DE LA CARTA (BOCABAJO) */}
+                  {/* CARA A (BOCABAJO): Reverso común del juego */}
                   <div
                     style={{
                       position: 'absolute',
@@ -229,25 +217,24 @@ function TiendaSobres()
                       border: '3px solid #ff9ffc',
                       borderRadius: '12px',
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
                       boxShadow: '0 4px 15px rgba(0,0,0,0.6)'
                     }}
                   >
-                    <span style={{ color: '#ff9ffc', fontWeight: 'bold', fontSize: '2rem', textShadow: '0 0 10px #ff9ffc' }}>
+                    <div style={{ color: '#ff9ffc', fontWeight: 'bold', fontSize: '2rem', textShadow: '0 0 10px #ff9ffc' }}>
                       42
-                    </span>
+                    </div>
                   </div>
 
-                  {/* ANVERSO DE LA CARTA (REVELADA) */}
+                  {/* CARA B (BOCARRIBA): Datos reales de la carta */}
                   <div
                     style={{
                       position: 'absolute',
                       width: '100%',
                       height: '100%',
                       backfaceVisibility: 'hidden',
-                      transform: 'rotateY(180deg)',
+                      transform: 'rotateY(180deg)', // Arranca invertida para el efecto de giro
                       backgroundColor: 'rgba(10, 10, 15, 0.95)',
                       borderRadius: '12px',
                       border: estiloRareza.border,
@@ -275,11 +262,12 @@ function TiendaSobres()
                     </div>
                   </div>
                 </motion.div>
-              </div>
+              </motion.div>
             );
           })}
         </div>
 
+        {/* Solo aparece si el usuario ha revelado las 5 cartas */}
         {comprobarTodasVolteadas() && (
           <motion.button
             initial={{ opacity: 0, y: 20 }}
@@ -304,32 +292,35 @@ function TiendaSobres()
     );
   };
 
-  return (
-    <div className="app-container" style={{ position: 'relative', minHeight: '95vh', padding: '2rem', overflowX: 'hidden' }}>
-      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}>
-        <FondoTiendaSobres
-          topColor="#5227FF"
-          bottomColor="#FF9FFC"
-          intensity={0.7}
-          rotationSpeed={0.5}
-          glowAmount={0.002}
-          pillarWidth={18}
-          pillarHeight={3}
-          noiseIntensity={0.5}
-          pillarRotation={25}
-          interactive={false}
-          mixBlendMode="screen"
-          quality="high"
-        />
+  const PaginaTiendaSobres = () => {
+    return (
+      <div className="app-container" style={{ position: 'relative', minHeight: '95vh', padding: '2rem', overflowX: 'hidden' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}>
+          <FondoTiendaSobres
+            topColor="#5227FF"
+            bottomColor="#FF9FFC"
+            intensity={0.7}
+            rotationSpeed={0.5}
+            glowAmount={0.002}
+            pillarWidth={18}
+            pillarHeight={3}
+            noiseIntensity={0.5}
+            pillarRotation={25}
+            interactive={false}
+            mixBlendMode="screen"
+            quality="high"
+          />
+        </div>
+
+        {renderBotonVolver()}
+
+        {fase === 'PRE_APERTURA' && Sobrepreeapertura()}
+        {fase === 'REVELADO' && PantallaCincoCartas()}
       </div>
+    );
+  };
 
-      {renderBotonVolver()}
-
-      {fase === 'PRE_APERTURA' && Sobrepreeapertura()}
-      {fase === 'ANIMACION' && PantallaAnimacion()}
-      {fase === 'REVELADO' && PantallaCincoCartas()}
-    </div>
-  );
+  return PaginaTiendaSobres();
 }
 
 export default TiendaSobres;
