@@ -28,7 +28,8 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "cards",
-    "users"
+    "users",
+    "social"
 ]
 
 MIDDLEWARE = [
