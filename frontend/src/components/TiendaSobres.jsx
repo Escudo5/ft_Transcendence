@@ -154,6 +154,12 @@ function TiendaSobres() {
 
   // COMPONENTE: REPARTIENDO CARTAS DESDE EL CENTRO
   const PantallaCincoCartas = () => {
+    // Función para calcular desde qué punto X del centro sale cada carta
+    const obtenerXInicial = (index) => {
+      // Como son 5 cartas, la 0 y 1 vienen de la derecha del centro, la 3 y 4 de la izquierda
+      const offset = (index - 2) * -180; // Compensación exacta según el ancho de la carta + gap
+      return offset;
+    };
     return (
       <div
         style={{
@@ -178,15 +184,26 @@ function TiendaSobres() {
             return (
               <motion.div
                 key={index}
-                // Animación de salida desde el centro de la pantalla
-                initial={{ scale: 0, opacity: 0, y: 100 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.5,
-                  delay: index * 0.12, // Salida en abanico secuencial
-                  type: 'spring',
-                  stiffness: 120
+                // 🎴 TODAS NACEN EN EL CENTRO EXACTO (x e y calculados desde el origen común)
+                initial={{ 
+                  scale: 0.1, 
+                  opacity: 0, 
+                  x: obtenerXInicial(index), // Vienen desplazadas horizontalmente hasta el centro
+                  y: 50 // Un pelín abajo donde estaba el sobre
                 }}
+                animate={{ 
+                  scale: 1, 
+                  opacity: 1, 
+                  x: 0, // Van a su posición normal en el Flexbox
+                  y: 0 
+                }}
+                transition={{
+                  duration: 0.6,
+                  delay: index * 0.2, // Salida en abanico secuencial
+                  type: 'spring',
+                  stiffness: 100,
+                  damping: 14
+,                }}
                 onClick={() => voltearCarta(index)}
                 style={{
                   width: '180px',
