@@ -24,6 +24,11 @@ class CustomUser(AbstractUser):
     # El contador de sobres diarios ya NO vive aquí: se lleva en cards.UserPack
     last_login_date = models.DateField(default=timezone.now)
 
+    # 🎁 Día en que recogió por última vez el regalo diario de sobres.
+    # Vacío = todavía no lo ha recogido nunca. Se compara con la fecha de hoy
+    # (hora de Madrid) para saber si le toca otra vez.
+    ultimo_regalo_diario = models.DateField(null=True, blank=True)
+
     # 🛠️ Parche de seguridad obligatorio para que Django no choque consigo mismo
     groups = models.ManyToManyField(
         'auth.Group',
