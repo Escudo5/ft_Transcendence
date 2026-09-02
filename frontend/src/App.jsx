@@ -275,6 +275,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import DotField from "./components/Fondo_animado";
 import Acceso from './components/Acceso';
+import RegaloDiario from './components/RegaloDiario';
 import Home from './components/Home';
 import Catalogo from './components/Catalogo';
 import CrearCarta from './components/CrearCarta';
@@ -403,6 +404,9 @@ function App() {
   return (
     <>
       <DotField style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
+      {/* 🎁 Flota por encima de todas las pantallas: el regalo debe poder
+          recogerse estés donde estés, no solo en la portada */}
+      <RegaloDiario />
       <RouterProvider router={router} />
     </>
   );

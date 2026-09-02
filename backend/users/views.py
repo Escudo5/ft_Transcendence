@@ -154,8 +154,11 @@ def me(request):
         'elo': u.elo,
         'estado': u.estado,
         'is_alumni': u.is_alumni,
-        # TODO: calcular desde UserPack cuando el control diario viva allí
         'sobres_disponibles_hoy': SOBRES_DIARIOS,
+        # 🎁 ¿Le toca regalo hoy? Solo INFORMA, no entrega nada: para recogerlo
+        # hay que llamar a /api/cards/sobres/reclamar/. Así, recargar la página
+        # nunca regala sobres por accidente.
+        'regalo_disponible': u.ultimo_regalo_diario is None or u.ultimo_regalo_diario < timezone.localdate(),
     })
 
 
