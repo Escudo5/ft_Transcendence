@@ -16,6 +16,7 @@ from .models import Card, UserCard, UserPack
 from django.http import JsonResponse
 import json
 from django.db import transaction
+from django.utils import timezone
 
 class HealthCheckView(APIView):
     def get(self, request):
@@ -224,6 +225,69 @@ def open_pack(tipo_sobre):
         cartas_seleccionadas.append(carta_aleatoria)
         
     return cartas_seleccionadas
+
+
+# =====================================================================
+# 🎁 REGALO DIARIO
+# Cada persona recibe 2 sobres comunes al día. NO se acumulan: si pasas
+# tres días sin entrar, al volver recibes 2, no seis. Así entrar cada día
+# tiene sentido.
+# El día cambia a medianoche, hora de Madrid (la zona horaria del proyecto).
+# =====================================================================
+SOBRES_REGALO_DIARIO = 2
+TIPO_SOBRE_REGALO = 'comun'
+
+
+def _puede_recoger_regalo(usuario):
+    """¿Le toca regalo hoy? Le toca si nunca lo recogió o si fue otro día."""
+    hoy = timezone.localdate()
+    return usuario.ultimo_regalo_diario is None or usuario.ultimo_regalo_diario < hoy
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def reclamar_regalo_diario(request):
+    """
+    Entrega los sobres del día al usuario conectado.
+    Va aparte de la consulta a propósito: consultar no debe cambiar nada, y
+    entregar sí. Así recargar la página nunca regala sobres por accidente.
+    """
+    usuario = request.user
+
+    if not _puede_recoger_regalo(usuario):
+        return Response(
+            {'error': 'Ya has recogido tu regalo de hoy. Vuelve mañana.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Todo junto o nada: o se apunta la fecha y se dan los sobres, o no pasa
+    # nada. Si fallara a la mitad, alguien podría llevarse sobres cada vez.
+    with transaction.atomic():
+        # Bloqueamos la fila del usuario mientras tanto: si llegan dos
+        # peticiones a la vez (doble clic), la segunda espera y ya verá la
+        # fecha apuntada, así que no cobra dos veces.
+        usuario_bloqueado = CustomUser.objects.select_for_update().get(pk=usuario.pk)
+        if not _puede_recoger_regalo(usuario_bloqueado):
+            return Response(
+                {'error': 'Ya has recogido tu regalo de hoy. Vuelve mañana.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        pack, _ = UserPack.objects.select_for_update().get_or_create(
+            user=usuario_bloqueado, tipo_sobre=TIPO_SOBRE_REGALO
+        )
+        pack.cantidad += SOBRES_REGALO_DIARIO
+        pack.last_daily = timezone.now()
+        pack.save()
+
+        usuario_bloqueado.ultimo_regalo_diario = timezone.localdate()
+        usuario_bloqueado.save(update_fields=['ultimo_regalo_diario'])
+
+    return Response({
+        'mensaje': f'¡Has recibido {SOBRES_REGALO_DIARIO} sobres comunes!',
+        'sobres_recibidos': SOBRES_REGALO_DIARIO,
+        'sobres_totales': pack.cantidad,
+    }, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
