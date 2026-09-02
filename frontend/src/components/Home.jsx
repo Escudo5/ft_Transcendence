@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PieLegal from './PieLegal';
 
 // 👥 Tarjetas base de presentación del equipo de desarrollo
 const INTEGRANTES_BASE = [
@@ -247,6 +248,8 @@ function Home() {
         </div>
       )}
 
+      {/* Enlaces legales, obligatorios en el subject */}
+      <PieLegal estilo={{ marginTop: '3rem' }} />
     </div>
   );
 }

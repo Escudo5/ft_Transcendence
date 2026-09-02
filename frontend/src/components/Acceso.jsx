@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PieLegal from './PieLegal';
 
 /**
  * PANTALLA DE ACCESO
@@ -359,6 +360,9 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
             </p>
           </form>
         )}
+
+        {/* Enlaces legales: tienen que poder leerse ANTES de registrarse */}
+        <PieLegal estilo={{ marginTop: '1.5rem', paddingBottom: 0, fontSize: '0.8rem' }} />
       </div>
     </div>
   );

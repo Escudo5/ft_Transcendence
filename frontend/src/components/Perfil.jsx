@@ -210,6 +210,41 @@ export default function Perfil() {
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState(null); // { texto, ok }
 
+  // Borrado de cuenta (RGPD)
+  const [borrandoCuenta, setBorrandoCuenta] = useState(false); // ¿se ve la confirmación?
+  const [textoConfirmacion, setTextoConfirmacion] = useState('');
+  const [borrando, setBorrando] = useState(false);
+
+  const borrarCuenta = async () => {
+    setBorrando(true);
+    try {
+      const resToken = await fetch(`${apiBaseUrl}/users/csrf/`, { credentials: 'include' });
+      const { csrfToken } = await resToken.json();
+
+      const res = await fetch(`${apiBaseUrl}/users/me/borrar/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ confirmacion: 'BORRAR MI CUENTA' }),
+      });
+      const datos = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setAviso({ texto: datos.error || 'No se ha podido borrar la cuenta.', ok: false });
+        return;
+      }
+
+      // La cuenta ya no existe: recargamos para volver a la pantalla de acceso
+      alert(datos.mensaje || 'Tu cuenta se ha borrado.');
+      window.location.href = '/';
+    } catch (e) {
+      console.error('Error al borrar la cuenta:', e);
+      setAviso({ texto: 'No se ha podido conectar con el servidor.', ok: false });
+    } finally {
+      setBorrando(false);
+    }
+  };
+
   useEffect(() => {
     async function cargar() {
       setCargando(true);
@@ -470,6 +505,86 @@ export default function Perfil() {
               </div>
             )}
           </section>
+
+          {/* ---------- Tus datos (RGPD) — solo en tu propio perfil ---------- */}
+          {perfil.es_mi_perfil && (
+            <section style={estilos.tarjeta}>
+              <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent-color)' }}>
+                Tus datos
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                Puedes llevarte todo lo que guardamos de ti o borrar tu cuenta cuando quieras.
+                Lo explicamos en la{' '}
+                <Link to="/privacidad" style={{ color: 'var(--accent-color)' }}>Política de Privacidad</Link>.
+              </p>
+
+              <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.2rem', flexWrap: 'wrap' }}>
+                <a
+                  href={`${apiBaseUrl}/users/me/datos/`}
+                  style={{ ...estilos.botonSecundario, textDecoration: 'none', display: 'inline-block' }}
+                >
+                  ⬇️ Descargar mis datos
+                </a>
+                <button
+                  style={{ ...estilos.botonSecundario, borderColor: '#f87171', color: '#fca5a5' }}
+                  onClick={() => { setBorrandoCuenta(true); setAviso(null); }}
+                >
+                  🗑️ Borrar mi cuenta
+                </button>
+              </div>
+
+              {/* Confirmación: borrar una cuenta no puede ser un solo clic */}
+              {borrandoCuenta && (
+                <div
+                  style={{
+                    marginTop: '1.2rem',
+                    padding: '1.2rem',
+                    borderRadius: '10px',
+                    background: 'rgba(248, 113, 113, 0.08)',
+                    border: '1px solid rgba(248, 113, 113, 0.4)',
+                  }}
+                >
+                  <p style={{ color: '#fca5a5', fontWeight: 700, marginTop: 0 }}>
+                    Esto no se puede deshacer
+                  </p>
+                  <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                    Se borrarán tu cuenta, tu álbum entero y tus sobres. Si quieres guardar una
+                    copia, descarga tus datos antes.
+                  </p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    Escribe <strong style={{ color: '#fca5a5' }}>BORRAR MI CUENTA</strong> para confirmar:
+                  </p>
+                  <input
+                    style={estilos.campo}
+                    value={textoConfirmacion}
+                    onChange={(e) => setTextoConfirmacion(e.target.value)}
+                    placeholder="BORRAR MI CUENTA"
+                  />
+                  <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                    <button
+                      style={{
+                        ...estilos.boton,
+                        background: '#dc2626',
+                        color: 'white',
+                        opacity: textoConfirmacion === 'BORRAR MI CUENTA' ? 1 : 0.5,
+                        cursor: textoConfirmacion === 'BORRAR MI CUENTA' ? 'pointer' : 'not-allowed',
+                      }}
+                      disabled={textoConfirmacion !== 'BORRAR MI CUENTA' || borrando}
+                      onClick={borrarCuenta}
+                    >
+                      {borrando ? 'Borrando…' : 'Borrar mi cuenta definitivamente'}
+                    </button>
+                    <button
+                      style={estilos.botonSecundario}
+                      onClick={() => { setBorrandoCuenta(false); setTextoConfirmacion(''); }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
         </>
       )}
     </main>
