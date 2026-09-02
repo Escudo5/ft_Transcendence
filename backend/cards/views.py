@@ -226,6 +226,23 @@ def open_pack(tipo_sobre):
     return cartas_seleccionadas
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mis_sobres(request):
+    """
+    Cuántos sobres tiene el usuario conectado, por tipo.
+    El front lo consulta ANTES de dejar tocar el sobre: así, si no te queda
+    ninguno, se avisa de entrada en vez de dejarte romper el sobre para nada.
+    Devuelve todos los tipos, aunque sea con 0, para que el front no tenga que
+    adivinar cuáles existen.
+    """
+    inventario = {tipo: 0 for tipo in CONFIGURACION_SOBRES}
+    for pack in UserPack.objects.filter(user=request.user):
+        if pack.tipo_sobre in inventario:
+            inventario[pack.tipo_sobre] = pack.cantidad
+    return Response({'sobres': inventario, 'total': sum(inventario.values())})
+
+
 # Usamos los decoradores de Django REST Framework para asegurar autenticación
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

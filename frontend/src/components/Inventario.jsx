@@ -128,6 +128,12 @@ function Inventario() {
     );
   };
 
+  // ⚠️ Estas dos funciones ya NO se usan desde aqui: el Inventario ahora solo
+  // lleva a la tienda de sobres. Se dejan a proposito porque son el ejemplo que
+  // funciona de como llamar al backend para abrir un sobre (pedir el token CSRF
+  // y enviarlo en la cabecera). TiendaSobres.jsx todavia no habla con el
+  // backend: cuando se conecte, este es el codigo a reutilizar. No borrar hasta
+  // entonces.
   const obtenerTokenCsrf = async () => {
     const response = await fetch(`${apiBaseUrl}/users/csrf/`, {
       credentials: 'include',
@@ -248,29 +254,6 @@ function Inventario() {
               COMPRAR
             </span>
           </div>
-        </div>
-
-        {/* BOTON (Sergio): abre un sobre directamente contra el backend */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={abrirSobreComun}
-            disabled={cargandoSobre}
-            style={{
-              padding: '0.9rem 1.2rem',
-              borderRadius: '10px',
-              border: 'none',
-              backgroundColor: cargandoSobre ? '#4b5563' : '#00c7b7',
-              color: 'white',
-              cursor: cargandoSobre ? 'not-allowed' : 'pointer',
-              fontWeight: '700'
-            }}
-          >
-            {cargandoSobre ? 'Abriendo...' : 'Abrir sobre común'}
-          </button>
-
-          <span style={{ color: 'rgba(255,255,255,0.8)' }}>
-            El botón llama al endpoint del backend para abrir un sobre y registrar las cartas.
-          </span>
         </div>
 
         {mensajeSobre && (
