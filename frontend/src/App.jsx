@@ -281,6 +281,7 @@ import Catalogo from './components/Catalogo';
 import CrearCarta from './components/CrearCarta';
 import Game from './components/Game';
 import Inventario from './components/Inventario';
+import Perfil from './components/Perfil';
 import TiendaSobres from './components/TiendaSobres';
 
 const router = createBrowserRouter([
@@ -311,6 +312,16 @@ const router = createBrowserRouter([
   {
     path: "/tienda-sobre",
     element: <TiendaSobres />,
+  },
+  {
+    // Tu propio perfil
+    path: "/perfil",
+    element: <Perfil />,
+  },
+  {
+    // El perfil de otra persona (desde el chat, los amigos o el buscador)
+    path: "/perfil/:login",
+    element: <Perfil />,
   },
 ]);
 
