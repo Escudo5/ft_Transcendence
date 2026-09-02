@@ -269,6 +269,101 @@ def editar_mi_perfil(request):
     return JsonResponse({'mensaje': 'Perfil actualizado.', **_perfil_publico(usuario)})
 
 
+# =====================================================================
+# 🔒 DERECHOS SOBRE TUS DATOS (RGPD)
+# Cualquiera puede llevarse sus datos o borrar su cuenta cuando quiera.
+# Va de la mano de la Política de Privacidad: ahí prometemos esto, aquí se
+# cumple.
+#
+# ⚠️ OJO CON EL MÓDULO DEL SUBJECT: el de "GDPR compliance" pide CUATRO cosas
+# y aquí solo hay tres:
+#   ✔ que el usuario pueda pedir sus datos      -> descargar_mis_datos
+#   ✔ borrado con confirmación                  -> borrar_mi_cuenta
+#   ✔ exportarlos en formato legible            -> el JSON descargable
+#   ✘ CORREOS DE CONFIRMACIÓN de las operaciones -> NO IMPLEMENTADO
+# Mientras falte lo último, el módulo NO se puede reclamar (el subject solo
+# permite "al menos 3 de" en Gamification; en este los lista todos).
+# Para cerrarlo haría falta configurar el envío de correo (servidor SMTP y sus
+# credenciales en el .env) y avisar al descargar datos y al borrar la cuenta.
+# =====================================================================
+
+@require_GET
+def descargar_mis_datos(request):
+    """
+    Devuelve TODO lo que guardamos de esta persona, en un fichero JSON que se
+    descarga. Formato legible y completo, como exige el RGPD.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
+
+    from cards.models import UserCard, UserPack
+
+    u = request.user
+    datos = {
+        'exportado_el': timezone.now().isoformat(),
+        'cuenta': {
+            'username': u.username,
+            'email': u.email,
+            'nombre': u.first_name,
+            'apellidos': u.last_name,
+            'nombre_mostrado': u.nombre_mostrado,
+            'biografia': u.bio,
+            'foto': u.profile_image,
+            'id_42': u.id_42,
+            'es_alumni': u.is_alumni,
+            'puntuacion_elo': u.elo,
+            'estado': u.estado,
+            'alta': u.date_joined.isoformat(),
+            'ultimo_acceso': u.last_login.isoformat() if u.last_login else None,
+            'ultimo_regalo_diario': u.ultimo_regalo_diario.isoformat() if u.ultimo_regalo_diario else None,
+            # La contraseña NO se incluye: está cifrada de forma irreversible y
+            # ni nosotros podemos leerla.
+        },
+        'album': [
+            {
+                'carta': uc.card.login,
+                'rareza': uc.card.tier,
+                'copias': uc.cantidad,
+                'obtenida_el': uc.fecha_obtencion.isoformat(),
+            }
+            for uc in UserCard.objects.filter(user=u).select_related('card')
+        ],
+        'sobres': [
+            {'tipo': p.tipo_sobre, 'cantidad': p.cantidad}
+            for p in UserPack.objects.filter(user=u)
+        ],
+    }
+
+    respuesta = JsonResponse(datos, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+    respuesta['Content-Disposition'] = f'attachment; filename="mis-datos-{u.username}.json"'
+    return respuesta
+
+
+@require_POST
+def borrar_mi_cuenta(request):
+    """
+    Borra la cuenta y todo lo asociado (álbum y sobres se van en cascada).
+    Pide confirmación explícita en el cuerpo para que un clic accidental o una
+    petición suelta no borre la cuenta de nadie.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
+
+    datos = _leer_json(request)
+    if datos.get('confirmacion') != 'BORRAR MI CUENTA':
+        return JsonResponse({
+            'error': 'Falta la confirmación.',
+            'detalle': 'Para borrar la cuenta hay que enviar la confirmación exacta.',
+        }, status=400)
+
+    usuario = request.user
+    nombre = usuario.username
+    logout(request)   # cerramos la sesión antes de borrar
+    usuario.delete()  # el álbum y los sobres se borran en cascada
+
+    return JsonResponse({'mensaje': f'La cuenta de {nombre} y todos sus datos se han borrado.'})
+
+
 @require_GET
 def list_users(request):
     """Devuelve usuarios de la base de datos para pintarlos en el front."""
