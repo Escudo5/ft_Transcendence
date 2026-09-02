@@ -506,6 +506,58 @@ export default function Perfil() {
             )}
           </section>
 
+          {/* ---------- Logros ---------- */}
+          {perfil.logros && (
+            <section style={estilos.tarjeta}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent-color)' }}>
+                  Logros
+                </h2>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  {perfil.logros.filter((l) => l.conseguido).length} de {perfil.logros.length}
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '0.8rem', marginTop: '1rem' }}>
+                {perfil.logros.map((l) => (
+                  <div
+                    key={l.id}
+                    title={l.descripcion}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.8rem',
+                      background: 'var(--bg-control)',
+                      // Los que faltan se ven apagados, para que se note lo que queda
+                      border: `1px solid ${l.conseguido ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                      borderRadius: '10px',
+                      padding: '0.8rem',
+                      opacity: l.conseguido ? 1 : 0.55,
+                    }}
+                  >
+                    <span style={{ fontSize: '1.7rem', filter: l.conseguido ? 'none' : 'grayscale(1)' }}>
+                      {l.icono}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
+                        {l.nombre}
+                      </div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
+                        {l.conseguido ? l.descripcion : `${l.actual} de ${l.objetivo}`}
+                      </div>
+                      {!l.conseguido && (
+                        <div style={{ background: 'var(--bg-card-base)', borderRadius: '999px', height: '4px', marginTop: '0.35rem', overflow: 'hidden' }}>
+                          <div style={{ width: `${(l.actual / l.objetivo) * 100}%`, height: '100%', background: 'var(--accent-color)' }} />
+                        </div>
+                      )}
+                    </div>
+                    {l.conseguido && <span style={{ color: 'var(--accent-color)', fontWeight: 800 }}>✓</span>}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* ---------- Tus datos (RGPD) — solo en tu propio perfil ---------- */}
           {perfil.es_mi_perfil && (
             <section style={estilos.tarjeta}>

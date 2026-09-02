@@ -199,8 +199,62 @@ def _estadisticas_coleccion(usuario):
     }
 
 
+def _logros(usuario, stats):
+    """
+    Los logros NO se guardan en ninguna tabla: se calculan al vuelo a partir de
+    lo que la persona tiene. Así no hace falta migración ni mantener nada en
+    sincronía, y si mañana se añade un logro nuevo, todo el mundo lo ve
+    reflejado al instante según su colección.
+
+    Cada logro lleva su progreso, para que en pantalla se vea lo que falta y no
+    solo un sí o un no.
+    """
+    from cards.models import UserCard
+
+    mis_cartas = list(UserCard.objects.filter(user=usuario).select_related('card'))
+
+    distintas = stats['cartas_distintas']
+    total_catalogo = stats['cartas_en_catalogo'] or 1
+    tiers = {uc.card.tier for uc in mis_cartas}
+    coaliciones = {uc.card.coalition for uc in mis_cartas if uc.card.coalition}
+    max_copias = max((uc.cantidad for uc in mis_cartas), default=0)
+
+    def logro(id, nombre, descripcion, icono, actual, objetivo):
+        return {
+            'id': id,
+            'nombre': nombre,
+            'descripcion': descripcion,
+            'icono': icono,
+            'actual': min(actual, objetivo),
+            'objetivo': objetivo,
+            'conseguido': actual >= objetivo,
+        }
+
+    return [
+        logro('primera', 'Primera carta', 'Consigue tu primera carta', '🎴', distintas, 1),
+        logro('coleccionista', 'Coleccionista', 'Reúne 10 cartas distintas', '📚', distintas, 10),
+        logro('veterano', 'Veterano', 'Reúne 25 cartas distintas', '🏅', distintas, 25),
+        logro('medio_album', 'Medio álbum', 'Completa la mitad del álbum', '📖',
+              int(stats['porcentaje']), 50),
+        logro('completista', 'Completista', 'Completa el álbum entero', '👑',
+              distintas, total_catalogo),
+        logro('leyenda', 'Cazador de leyendas', 'Consigue una carta Transcender', '✨',
+              1 if 'Transcender' in tiers else 0, 1),
+        logro('alumni', 'Buscador de Alumni', 'Consigue una carta Alumni', '🎓',
+              1 if 'Alumni' in tiers else 0, 1),
+        logro('coaliciones', 'Diplomático', 'Ten cartas de las cuatro coaliciones', '🏳️',
+              len(coaliciones), 4),
+        logro('acumulador', 'Acumulador', 'Ten 5 copias de una misma carta', '🗃️',
+              max_copias, 5),
+        logro('madrugador', 'Madrugador', 'Recoge tu regalo diario', '🎁',
+              1 if usuario.ultimo_regalo_diario else 0, 1),
+    ]
+
+
 def _perfil_publico(usuario):
     """Los datos de un usuario que puede ver cualquiera. Sin email ni id_42."""
+    # Se calculan una sola vez: los logros salen de estas mismas cifras
+    stats = _estadisticas_coleccion(usuario)
     return {
         'username': usuario.username,
         # El nombre que él haya elegido; si no puso ninguno, el de la Intra
@@ -211,7 +265,8 @@ def _perfil_publico(usuario):
         'estado': usuario.estado,
         'is_alumni': usuario.is_alumni,
         'miembro_desde': usuario.date_joined.date().isoformat(),
-        'coleccion': _estadisticas_coleccion(usuario),
+        'coleccion': stats,
+        'logros': _logros(usuario, stats),
     }
 
 

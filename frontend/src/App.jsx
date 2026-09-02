@@ -282,6 +282,7 @@ import CrearCarta from './components/CrearCarta';
 import Game from './components/Game';
 import Inventario from './components/Inventario';
 import Perfil from './components/Perfil';
+import Ranking from './components/Ranking';
 import Legal from './components/Legal';
 import PieLegal from './components/PieLegal';
 import TiendaSobres from './components/TiendaSobres';
@@ -324,6 +325,11 @@ const router = createBrowserRouter([
     // El perfil de otra persona (desde el chat, los amigos o el buscador)
     path: "/perfil/:login",
     element: <Perfil />,
+  },
+  {
+    // 🏆 Clasificación de coleccionistas
+    path: "/ranking",
+    element: <Ranking />,
   },
   {
     // ⚖️ Páginas legales: obligatorias en el subject y accesibles SIN sesión
