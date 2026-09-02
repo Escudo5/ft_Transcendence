@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion'; // 👈 IMPORTAMOS FRAMER MOTION
 import FondoTiendaSobres from './FondoTiendaSobres';
@@ -15,6 +15,81 @@ function TiendaSobres() {
   const [toquesSobre, setToquesSobre] = useState(0);
 
   const [cartasCargadas, setCartasCargadas] = useState([]);
+  const [error, setError] = useState('');
+  const [abriendo, setAbriendo] = useState(false);
+  const [sobresDisponibles, setSobresDisponibles] = useState(null); // null = aun no lo sabemos
+
+  const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
+
+  // Las rarezas del backend (tier) no se llaman igual que los estilos de esta
+  // pantalla, asi que las traducimos.
+  const TIER_A_RAREZA = {
+    Transcender: 'legendary',
+    Alumni: 'epic',
+    Senior: 'rare',
+    Junior: 'common',
+    Blackhole: 'common',
+  };
+
+  // Convierte una carta del backend al formato que pinta esta pantalla
+  const adaptarCarta = (c) => ({
+    login: c.login,
+    nombre: c.title || c.login,
+    foto: c.photo,
+    rareza: TIER_A_RAREZA[c.tier] || 'common',
+  });
+
+  // Al entrar preguntamos cuantos sobres tiene, para no dejarle romper el sobre
+  // si no le queda ninguno.
+  const consultarSobres = async () => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/cards/sobres/`, { credentials: 'include' });
+      if (!res.ok) return;
+      const datos = await res.json();
+      const quedan = datos.sobres?.comun ?? 0;
+      setSobresDisponibles(quedan);
+      if (quedan < 1) setError('No te quedan sobres comunes. Vuelve mañana a por los tuyos.');
+    } catch (e) {
+      console.error('No se pudo consultar el inventario de sobres:', e);
+    }
+  };
+
+  useEffect(() => { consultarSobres(); }, []);
+
+  // Pide al backend que abra un sobre de verdad: descuenta uno del inventario,
+  // sortea 5 cartas segun las probabilidades y las guarda en el album.
+  const abrirSobreEnBackend = async () => {
+    setAbriendo(true);
+    setError('');
+    try {
+      // Django exige un token para las peticiones que envian datos
+      const resToken = await fetch(`${apiBaseUrl}/users/csrf/`, { credentials: 'include' });
+      const { csrfToken } = await resToken.json();
+
+      const res = await fetch(`${apiBaseUrl}/cards/sobres/abrir/comun/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+      });
+      const datos = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(datos.error || datos.detail || 'No se ha podido abrir el sobre.');
+        return false;
+      }
+
+      setCartasCargadas((datos.cartas || []).map(adaptarCarta));
+      // El backend nos dice cuantos le quedan tras abrir este
+      if (typeof datos.sobres_restantes === 'number') setSobresDisponibles(datos.sobres_restantes);
+      return true;
+    } catch (e) {
+      console.error('Error al abrir el sobre:', e);
+      setError('No se ha podido conectar con el servidor.');
+      return false;
+    } finally {
+      setAbriendo(false);
+    }
+  };
   
   // Array de control: registra qué carta está bocarriba (true) o bocabajo (false)
   const [cartasVolteadas, setCartasVolteadas] = useState([false, false, false, false, false]);
@@ -32,15 +107,31 @@ function TiendaSobres() {
   };
 
   // Manejador al tocar el sobre (Efecto de rotura progresiva)
-  const tocarSobre = () => {
+  const tocarSobre = async () => {
+    if (abriendo) return; // evita abrir dos veces si se hace doble clic
+
+    // 🔒 Si no le quedan sobres, ni siquiera empieza a romperse: seria abrir un
+    // regalo para encontrarlo vacio.
+    if (sobresDisponibles !== null && sobresDisponibles < 1) {
+      setError('No te quedan sobres comunes. Vuelve mañana a por los tuyos.');
+      setToquesSobre(0);
+      return;
+    }
+
     if (toquesSobre < 2) {
       setToquesSobre(prev => prev + 1);
     } else {
-      // SEGURAMENTE ESTA PARTE SEA LA QUE CAMBIE AL USAR [INTEGRANTES]
-      // COMO CARTAS A MOSTRAR Y HAY QUE METER LAS CARTAS ALEATORIAS
-      // Al tercer toque abre las cartas directamente
-      setCartasCargadas(INTEGRANTES);
-      setCartasVolteadas([false, false, false, false, false]); // Se inicializan los volteos a false para que esten dadas la vuelta
+      // Al tercer toque pedimos al backend que abra el sobre de verdad.
+      const haIdoBien = await abrirSobreEnBackend();
+      if (!haIdoBien) {
+        // Si no ha podido abrirse (por ejemplo, no te quedan sobres), dejamos
+        // el sobre otra vez entero. Si se quedara roto pareceria que la pantalla
+        // se ha colgado.
+        setToquesSobre(0);
+        return;
+      }
+
+      setCartasVolteadas([false, false, false, false, false]); // todas bocabajo
       setFase('REVELADO');
     }
   };
@@ -122,6 +213,28 @@ function TiendaSobres() {
           zIndex: 5
         }}
       >
+        {/* ⚠️ El aviso va ARRIBA del sobre: el sobre mide 800px y cualquier cosa
+            que se ponga debajo se queda fuera de la pantalla y no se ve. */}
+        {error && (
+          <div style={{
+            position: 'fixed',
+            top: '1.5rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 50,
+            color: '#fff',
+            background: 'rgba(190, 40, 40, 0.95)',
+            border: '2px solid #fca5a5',
+            borderRadius: '10px',
+            padding: '0.9rem 1.4rem',
+            fontWeight: 'bold',
+            fontSize: '1.05rem',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          }}>
+            {error}
+          </div>
+        )}
+
         <motion.img
           key={toquesSobre}
           src={obtenerImagenSobre()}
@@ -144,10 +257,12 @@ function TiendaSobres() {
         />
 
         <p style={{ color: '#fff', fontSize: '1.3rem', fontWeight: 'bold', textShadow: '0 0 10px #000' }}>
-          {toquesSobre === 0 && "¡Haz clic en el sobre para abrirlo!"}
-          {toquesSobre === 1 && "¡Toca 2 veces más!"}
-          {toquesSobre === 2 && "¡Un último toque!"}
+          {abriendo && "Abriendo el sobre…"}
+          {!abriendo && toquesSobre === 0 && "¡Haz clic en el sobre para abrirlo!"}
+          {!abriendo && toquesSobre === 1 && "¡Toca 2 veces más!"}
+          {!abriendo && toquesSobre === 2 && "¡Un último toque!"}
         </p>
+
       </div>
     );
   };
@@ -270,8 +385,17 @@ function TiendaSobres() {
                       </span>
                     </div>
 
-                    <div style={{ width: '100%', height: '110px', backgroundColor: '#20202b', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem' }}>
-                      {carta.avatar}
+                    <div style={{ width: '100%', height: '110px', backgroundColor: '#20202b', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', overflow: 'hidden' }}>
+                      {carta.foto ? (
+                        <img
+                          src={carta.foto}
+                          alt={carta.login}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        // Por si ese alumno no tiene foto en la Intra
+                        '👤'
+                      )}
                     </div>
 
                     <div style={{ textAlign: 'center', fontSize: '1rem', fontWeight: 'bold', borderTop: '1px solid #333', paddingTop: '0.5rem' }}>
