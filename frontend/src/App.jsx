@@ -271,8 +271,10 @@
 //       )}
 //     </main>
 // =======
+import { useEffect, useRef, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import DotField from "./components/Fondo_animado";
+import Acceso from './components/Acceso';
 import Home from './components/Home';
 import Catalogo from './components/Catalogo';
 import CrearCarta from './components/CrearCarta';
@@ -312,6 +314,92 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // 1. Corregido: sin la barra '/' al final para coincidir 1:1 con el .env de Django y la Intra
+  const redirectUri = window.location.origin;
+  const URL_LOGIN_42 = `https://api.intra.42.fr/oauth/authorize?client_id=u-s4t2ud-85745739c040c37d065eeef72dafbd19dea1e46b50172daac4f20c1907d34b47&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=public`;
+  const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
+
+  const codeYaProcesado = useRef(false);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    if (code) {
+      // 🟢 CASO 1: Viene de 42 con código de autorización
+      if (!codeYaProcesado.current) {
+        codeYaProcesado.current = true;
+
+        fetch(`${apiBaseUrl}/users/auth/callback/?code=${code}`, { credentials: 'include' })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`Error servidor HTTP ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            console.log('Respuesta del login:', data);
+            
+            if (data.error) {
+              alert(`Error en el login con 42: ${data.error}`);
+              setIsAuthenticated(false);
+            } else {
+              // 🧹 Limpiamos el ?code= de la URL para evitar errores al recargar
+              window.history.replaceState({}, document.title, window.location.pathname);
+              setIsAuthenticated(true);
+              alert(`${data.mensaje}\nSobres disponibles hoy: ${data.sobres_disponibles_hoy}`);
+            }
+          })
+          .catch((error) => {
+            console.error('Error al hablar con el backend:', error);
+            alert('Error en la autenticación con la Intra de 42');
+            setIsAuthenticated(false);
+          })
+          .finally(() => setLoading(false));
+      }
+    } else {
+      // 🔵 CASO 2: Entrada directa sin código -> Verificamos si Django tiene sesión guardada
+      fetch(`${apiBaseUrl}/users/me/`, { credentials: 'include' })
+        .then((res) => {
+          // Si no hay sesión ya no expulsamos a la Intra sin preguntar: mostramos
+          // la pantalla de acceso para que elija entre entrar con 42 o con email
+          setIsAuthenticated(res.ok);
+        })
+        .catch(() => setIsAuthenticated(false))
+        .finally(() => setLoading(false));
+    }
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ backgroundColor: '#1e1e1e', color: 'white', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <h2>Verificando sesión...</h2>
+      </div>
+    );
+  }
+
+  // 🚪 Sin sesión: pantalla de acceso (entrar con 42 o con email y contraseña).
+  // Al entrar correctamente, el backend ya ha dejado la sesión abierta, así que
+  // solo hay que dar paso a la aplicación.
+  if (!isAuthenticated) {
+    return (
+      <>
+        <DotField style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
+        <Acceso
+          apiBaseUrl={apiBaseUrl}
+          urlLogin42={URL_LOGIN_42}
+          onAutenticado={(datos) => {
+            alert(`${datos.mensaje}\nSobres disponibles hoy: ${datos.sobres_disponibles_hoy}`);
+            setIsAuthenticated(true);
+          }}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <DotField style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />

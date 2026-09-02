@@ -20,7 +20,7 @@ services:
     build:
       context: ./backend
     container_name: backend
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate && python manage.py runserver_plus --cert-file cert.crt 0.0.0.0:8000"
     ports:
       - "8000:8000"
     volumes:
@@ -35,6 +35,8 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
@@ -43,9 +45,10 @@ services:
     build:
       context: ./frontend
     container_name: frontend
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    # 🔥 CAMBIAMOS EL FINAL: Ponemos --port 3000 en vez de 5173 🔥
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
     ports:
-      - "5173:5173"
+      - "3000:3000"
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
