@@ -16,6 +16,8 @@ from .models import Card, UserCard, UserPack
 from django.http import JsonResponse
 import json
 from django.db import transaction
+from django.db.models import Count, Sum
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 class HealthCheckView(APIView):
@@ -288,6 +290,52 @@ def reclamar_regalo_diario(request):
         'sobres_recibidos': SOBRES_REGALO_DIARIO,
         'sobres_totales': pack.cantidad,
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ranking(request):
+    """
+    Clasificación de coleccionistas: quién tiene más cartas distintas.
+
+    Se ordena por colección y no por el elo porque el elo todavía es 1000 para
+    todo el mundo (no hay juego que lo mueva), así que un ranking por elo sería
+    una lista plana sin sentido. Cuando haya partidas se puede añadir otra
+    pestaña ordenada por elo.
+
+    Una sola consulta con anotaciones, para no acabar preguntando a la base de
+    datos una vez por usuario.
+    """
+    total_catalogo = Card.objects.count() or 1
+
+    usuarios = (
+        CustomUser.objects
+        .annotate(
+            distintas=Count('album', distinct=True),
+            copias=Coalesce(Sum('album__cantidad'), 0),
+        )
+        .order_by('-distintas', '-copias', 'username')[:50]
+    )
+
+    clasificacion = []
+    for posicion, u in enumerate(usuarios, start=1):
+        clasificacion.append({
+            'posicion': posicion,
+            'username': u.username,
+            'nombre': u.nombre_mostrado or u.get_full_name() or u.username,
+            'profile_image': u.profile_image,
+            'estado': u.estado,
+            'cartas_distintas': u.distintas,
+            'cartas_con_repetidas': u.copias,
+            'porcentaje': round(u.distintas / total_catalogo * 100, 1),
+            'elo': u.elo,
+            'soy_yo': u.pk == request.user.pk,
+        })
+
+    return Response({
+        'cartas_en_catalogo': total_catalogo,
+        'clasificacion': clasificacion,
+    })
 
 
 @api_view(['GET'])
