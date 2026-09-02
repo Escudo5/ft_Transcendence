@@ -119,10 +119,15 @@ function Home() {
         ))}
       </section>
 
-      {/* 🧭 BOTONES DE ACCIÓN: Las dos opciones del juego */}
-      <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '4rem', padding: '0 2rem' }}>
+      {/* 🧭 BOTONES DE ACCIÓN: las opciones del juego.
+          La rejilla se ajusta sola al número de botones (antes eran dos fijos),
+          así añadir o quitar alguno no descuadra la fila. */}
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2rem', marginTop: '4rem', padding: '0 2rem' }}>
         <Link to="/catalogo" className="back-btn-link" style={{ textAlign: 'center', padding: '1.5rem', fontSize: '1.25rem', display: 'block', background: '#00BABC', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
           📂 Ver Álbum
+        </Link>
+        <Link to="/perfil" className="back-btn-link" style={{ textAlign: 'center', padding: '1.5rem', fontSize: '1.25rem', display: 'block', background: '#333', color: 'white', textDecoration: 'none', border: '1px solid #555', borderRadius: '8px', fontWeight: 'bold' }}>
+          👤 Mi Perfil
         </Link>
         <button className="back-btn-link" style={{ padding: '1.5rem', fontSize: '1.25rem', cursor: 'pointer', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', fontWeight: 'bold' }} onClick={() => navigate('/game')}>
           🎮 Iniciar Game
