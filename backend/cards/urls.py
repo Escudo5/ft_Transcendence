@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("health/", HealthCheckView.as_view(), name="health"),
     path("", CardListCreateView.as_view(), name="cards-list-create"), # Corresponde a /api/cards/
+    path('ranking/', views.ranking, name='ranking'),
     path('sobres/', views.mis_sobres, name='mis_sobres'),
     path('sobres/reclamar/', views.reclamar_regalo_diario, name='reclamar_regalo_diario'),
     path('sobres/abrir/<str:tipo_sobre>/', views.abrir_sobre_endpoint, name='abrir_sobre'),

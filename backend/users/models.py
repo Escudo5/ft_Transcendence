@@ -24,6 +24,14 @@ class CustomUser(AbstractUser):
     # El contador de sobres diarios ya NO vive aquí: se lleva en cards.UserPack
     last_login_date = models.DateField(default=timezone.now)
 
+    # 👤 CAMPOS DEL PERFIL QUE ESCRIBE EL PROPIO USUARIO.
+    # Van aparte a propósito: el login con 42 refresca en cada entrada el
+    # nombre, los apellidos, el email y la foto con lo que diga la Intra. Si
+    # dejáramos editar esos, se borraría lo escrito en el siguiente login.
+    # Estos dos son nuestros y la Intra no los toca nunca.
+    bio = models.TextField(max_length=500, blank=True, default='')
+    nombre_mostrado = models.CharField(max_length=50, blank=True, default='')
+
     # 🎁 Día en que recogió por última vez el regalo diario de sobres.
     # Vacío = todavía no lo ha recogido nunca. Se compara con la fecha de hoy
     # (hora de Madrid) para saber si le toca otra vez.
