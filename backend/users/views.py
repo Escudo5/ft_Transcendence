@@ -9,7 +9,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.middleware.csrf import get_token
 from .models import CustomUser
@@ -160,6 +160,263 @@ def me(request):
         # nunca regala sobres por accidente.
         'regalo_disponible': u.ultimo_regalo_diario is None or u.ultimo_regalo_diario < timezone.localdate(),
     })
+
+
+# =====================================================================
+# 👤 PERFILES
+# =====================================================================
+
+def _estadisticas_coleccion(usuario):
+    """
+    Cuántas cartas tiene ese usuario, de cuántas hay, y cuál es la más rara.
+    Se importa aquí dentro y no arriba para no crear una dependencia circular
+    entre las apps de usuarios y de cartas.
+    """
+    from cards.models import Card, UserCard
+
+    ORDEN_TIERS = ['Blackhole', 'Junior', 'Senior', 'Alumni', 'Transcender']
+
+    mis_cartas = UserCard.objects.filter(user=usuario).select_related('card')
+    distintas = mis_cartas.count()
+    total_catalogo = Card.objects.count()
+    con_repetidas = sum(c.cantidad for c in mis_cartas)
+
+    mejor = None
+    for uc in mis_cartas:
+        tier = uc.card.tier
+        if tier not in ORDEN_TIERS:
+            continue
+        if mejor is None or ORDEN_TIERS.index(tier) > ORDEN_TIERS.index(mejor['tier']):
+            mejor = {'login': uc.card.login, 'tier': tier, 'photo': uc.card.photo}
+
+    return {
+        'cartas_distintas': distintas,
+        'cartas_en_catalogo': total_catalogo,
+        'cartas_con_repetidas': con_repetidas,
+        # Porcentaje del álbum completado, redondeado a un decimal
+        'porcentaje': round(distintas / total_catalogo * 100, 1) if total_catalogo else 0,
+        'carta_mas_rara': mejor,
+    }
+
+
+def _logros(usuario, stats):
+    """
+    Los logros NO se guardan en ninguna tabla: se calculan al vuelo a partir de
+    lo que la persona tiene. Así no hace falta migración ni mantener nada en
+    sincronía, y si mañana se añade un logro nuevo, todo el mundo lo ve
+    reflejado al instante según su colección.
+
+    Cada logro lleva su progreso, para que en pantalla se vea lo que falta y no
+    solo un sí o un no.
+    """
+    from cards.models import UserCard
+
+    mis_cartas = list(UserCard.objects.filter(user=usuario).select_related('card'))
+
+    distintas = stats['cartas_distintas']
+    total_catalogo = stats['cartas_en_catalogo'] or 1
+    tiers = {uc.card.tier for uc in mis_cartas}
+    coaliciones = {uc.card.coalition for uc in mis_cartas if uc.card.coalition}
+    max_copias = max((uc.cantidad for uc in mis_cartas), default=0)
+
+    def logro(id, nombre, descripcion, icono, actual, objetivo):
+        return {
+            'id': id,
+            'nombre': nombre,
+            'descripcion': descripcion,
+            'icono': icono,
+            'actual': min(actual, objetivo),
+            'objetivo': objetivo,
+            'conseguido': actual >= objetivo,
+        }
+
+    return [
+        logro('primera', 'Primera carta', 'Consigue tu primera carta', '🎴', distintas, 1),
+        logro('coleccionista', 'Coleccionista', 'Reúne 10 cartas distintas', '📚', distintas, 10),
+        logro('veterano', 'Veterano', 'Reúne 25 cartas distintas', '🏅', distintas, 25),
+        logro('medio_album', 'Medio álbum', 'Completa la mitad del álbum', '📖',
+              int(stats['porcentaje']), 50),
+        logro('completista', 'Completista', 'Completa el álbum entero', '👑',
+              distintas, total_catalogo),
+        logro('leyenda', 'Cazador de leyendas', 'Consigue una carta Transcender', '✨',
+              1 if 'Transcender' in tiers else 0, 1),
+        logro('alumni', 'Buscador de Alumni', 'Consigue una carta Alumni', '🎓',
+              1 if 'Alumni' in tiers else 0, 1),
+        logro('coaliciones', 'Diplomático', 'Ten cartas de las cuatro coaliciones', '🏳️',
+              len(coaliciones), 4),
+        logro('acumulador', 'Acumulador', 'Ten 5 copias de una misma carta', '🗃️',
+              max_copias, 5),
+        logro('madrugador', 'Madrugador', 'Recoge tu regalo diario', '🎁',
+              1 if usuario.ultimo_regalo_diario else 0, 1),
+    ]
+
+
+def _perfil_publico(usuario):
+    """Los datos de un usuario que puede ver cualquiera. Sin email ni id_42."""
+    # Se calculan una sola vez: los logros salen de estas mismas cifras
+    stats = _estadisticas_coleccion(usuario)
+    return {
+        'username': usuario.username,
+        # El nombre que él haya elegido; si no puso ninguno, el de la Intra
+        'nombre': usuario.nombre_mostrado or usuario.get_full_name() or usuario.username,
+        'bio': usuario.bio,
+        'profile_image': usuario.profile_image,
+        'elo': usuario.elo,
+        'estado': usuario.estado,
+        'is_alumni': usuario.is_alumni,
+        'miembro_desde': usuario.date_joined.date().isoformat(),
+        'coleccion': stats,
+        'logros': _logros(usuario, stats),
+    }
+
+
+@require_GET
+def perfil_usuario(request, username):
+    """
+    Perfil público de cualquier usuario, para poder verlo desde el chat, la
+    lista de amigos o el buscador. Solo datos públicos: ni el email ni el id
+    de la Intra salen de aquí.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
+
+    usuario = CustomUser.objects.filter(username=username).first()
+    if usuario is None:
+        return JsonResponse({'error': f'No existe ningún usuario llamado {username}.'}, status=404)
+
+    datos = _perfil_publico(usuario)
+    datos['es_mi_perfil'] = usuario.pk == request.user.pk
+    return JsonResponse(datos)
+
+
+@require_http_methods(['PATCH'])
+def editar_mi_perfil(request):
+    """
+    Edita los datos propios del perfil. Solo se pueden tocar la biografía y el
+    nombre a mostrar: el resto (nombre real, email, foto) lo refresca la Intra
+    en cada login y se sobrescribiría.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
+
+    datos = _leer_json(request)
+    usuario = request.user
+    errores = {}
+
+    if 'bio' in datos:
+        bio = (datos.get('bio') or '').strip()
+        if len(bio) > 500:
+            errores['bio'] = 'La biografía no puede pasar de 500 caracteres.'
+        else:
+            usuario.bio = bio
+
+    if 'nombre_mostrado' in datos:
+        nombre = (datos.get('nombre_mostrado') or '').strip()
+        if len(nombre) > 50:
+            errores['nombre_mostrado'] = 'El nombre no puede pasar de 50 caracteres.'
+        else:
+            usuario.nombre_mostrado = nombre
+
+    if errores:
+        return JsonResponse({'error': 'Revisa los datos.', 'campos': errores}, status=400)
+
+    usuario.save(update_fields=['bio', 'nombre_mostrado'])
+    return JsonResponse({'mensaje': 'Perfil actualizado.', **_perfil_publico(usuario)})
+
+
+# =====================================================================
+# 🔒 DERECHOS SOBRE TUS DATOS (RGPD)
+# Cualquiera puede llevarse sus datos o borrar su cuenta cuando quiera.
+# Va de la mano de la Política de Privacidad: ahí prometemos esto, aquí se
+# cumple.
+#
+# ⚠️ OJO CON EL MÓDULO DEL SUBJECT: el de "GDPR compliance" pide CUATRO cosas
+# y aquí solo hay tres:
+#   ✔ que el usuario pueda pedir sus datos      -> descargar_mis_datos
+#   ✔ borrado con confirmación                  -> borrar_mi_cuenta
+#   ✔ exportarlos en formato legible            -> el JSON descargable
+#   ✘ CORREOS DE CONFIRMACIÓN de las operaciones -> NO IMPLEMENTADO
+# Mientras falte lo último, el módulo NO se puede reclamar (el subject solo
+# permite "al menos 3 de" en Gamification; en este los lista todos).
+# Para cerrarlo haría falta configurar el envío de correo (servidor SMTP y sus
+# credenciales en el .env) y avisar al descargar datos y al borrar la cuenta.
+# =====================================================================
+
+@require_GET
+def descargar_mis_datos(request):
+    """
+    Devuelve TODO lo que guardamos de esta persona, en un fichero JSON que se
+    descarga. Formato legible y completo, como exige el RGPD.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
+
+    from cards.models import UserCard, UserPack
+
+    u = request.user
+    datos = {
+        'exportado_el': timezone.now().isoformat(),
+        'cuenta': {
+            'username': u.username,
+            'email': u.email,
+            'nombre': u.first_name,
+            'apellidos': u.last_name,
+            'nombre_mostrado': u.nombre_mostrado,
+            'biografia': u.bio,
+            'foto': u.profile_image,
+            'id_42': u.id_42,
+            'es_alumni': u.is_alumni,
+            'puntuacion_elo': u.elo,
+            'estado': u.estado,
+            'alta': u.date_joined.isoformat(),
+            'ultimo_acceso': u.last_login.isoformat() if u.last_login else None,
+            'ultimo_regalo_diario': u.ultimo_regalo_diario.isoformat() if u.ultimo_regalo_diario else None,
+            # La contraseña NO se incluye: está cifrada de forma irreversible y
+            # ni nosotros podemos leerla.
+        },
+        'album': [
+            {
+                'carta': uc.card.login,
+                'rareza': uc.card.tier,
+                'copias': uc.cantidad,
+                'obtenida_el': uc.fecha_obtencion.isoformat(),
+            }
+            for uc in UserCard.objects.filter(user=u).select_related('card')
+        ],
+        'sobres': [
+            {'tipo': p.tipo_sobre, 'cantidad': p.cantidad}
+            for p in UserPack.objects.filter(user=u)
+        ],
+    }
+
+    respuesta = JsonResponse(datos, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+    respuesta['Content-Disposition'] = f'attachment; filename="mis-datos-{u.username}.json"'
+    return respuesta
+
+
+@require_POST
+def borrar_mi_cuenta(request):
+    """
+    Borra la cuenta y todo lo asociado (álbum y sobres se van en cascada).
+    Pide confirmación explícita en el cuerpo para que un clic accidental o una
+    petición suelta no borre la cuenta de nadie.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
+
+    datos = _leer_json(request)
+    if datos.get('confirmacion') != 'BORRAR MI CUENTA':
+        return JsonResponse({
+            'error': 'Falta la confirmación.',
+            'detalle': 'Para borrar la cuenta hay que enviar la confirmación exacta.',
+        }, status=400)
+
+    usuario = request.user
+    nombre = usuario.username
+    logout(request)   # cerramos la sesión antes de borrar
+    usuario.delete()  # el álbum y los sobres se borran en cascada
+
+    return JsonResponse({'mensaje': f'La cuenta de {nombre} y todos sus datos se han borrado.'})
 
 
 @require_GET

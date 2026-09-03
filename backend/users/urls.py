@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     login_42_callback, list_users, me, logout_view, csrf_token_view,
-    register, login_email,
+    register, login_email, perfil_usuario, editar_mi_perfil,
+    descargar_mis_datos, borrar_mi_cuenta,
 )
 
 urlpatterns = [
@@ -18,4 +19,13 @@ urlpatterns = [
     path('list/', list_users, name='list_users'),
     # Cerrar sesión y pasar a 'offline'
     path('logout/', logout_view, name='logout'),
+    # 👤 Editar mi propio perfil (solo biografía y nombre a mostrar)
+    path('me/editar/', editar_mi_perfil, name='editar_mi_perfil'),
+    # 🔒 Derechos sobre tus datos (RGPD)
+    path('me/datos/', descargar_mis_datos, name='descargar_mis_datos'),
+    path('me/borrar/', borrar_mi_cuenta, name='borrar_mi_cuenta'),
+
+    # ⚠️ ESTA VA LA ÚLTIMA: atrapa cualquier texto, así que si se pone antes
+    # se tragaría 'me/', 'login/', 'logout/' y todas las demás.
+    path('<str:username>/', perfil_usuario, name='perfil_usuario'),
 ]
