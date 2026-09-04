@@ -32,6 +32,13 @@ class CustomUser(AbstractUser):
     bio = models.TextField(max_length=500, blank=True, default='')
     nombre_mostrado = models.CharField(max_length=50, blank=True, default='')
 
+    # 🖼️ Avatar propio. Ojo a la diferencia con profile_image de arriba:
+    #   profile_image -> una URL que apunta a la Intra, la refresca cada login
+    #   avatar        -> un FICHERO que sube el usuario y vive en backend/media
+    # Por eso son dos campos y no uno: si los mezclásemos, el siguiente login
+    # con 42 borraría la foto que acaba de subir.
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+
     # 🎁 Día en que recogió por última vez el regalo diario de sobres.
     # Vacío = todavía no lo ha recogido nunca. Se compara con la fecha de hoy
     # (hora de Madrid) para saber si le toca otra vez.
@@ -48,6 +55,22 @@ class CustomUser(AbstractUser):
         related_name='custom_user_permissions_set',
         blank=True
     )
+
+    @property
+    def foto(self):
+        """
+        La foto que hay que enseñar de esta persona, ya decidida.
+
+        Manda el avatar que haya subido; si no ha subido ninguno, se usa el de
+        la Intra; y si tampoco tiene, None y el front pinta el muñequito.
+
+        Todas las respuestas del backend usan ESTO en vez de profile_image, así
+        que al subir un avatar cambia la foto en el perfil, en el ranking y en
+        la portada a la vez, sin tocar nada más.
+        """
+        if self.avatar:
+            return self.avatar.url
+        return self.profile_image
 
     def __str__(self):
         return self.username
