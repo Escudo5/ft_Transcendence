@@ -25,6 +25,14 @@ package-lock.json
 .env
 backend/.env
 frontend/.env
+# Cualquier copia del .env: .env.backup, .env.viejo, .env.local...
+# Llevan las credenciales de 42 dentro y NO pueden acabar en GitHub.
+.env.*
+!.env.example
+
+# Fotos de perfil que sube la gente. Son datos de usuarios, no codigo: cada
+# uno tiene las suyas en su ordenador y no tienen por que viajar en el repo.
+backend/media/
 
 .vscode/
 .idea/

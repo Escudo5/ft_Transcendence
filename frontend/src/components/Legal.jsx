@@ -103,8 +103,17 @@ function Privacidad() {
         <li>Los sobres de tu inventario y cuándo recogiste el regalo diario</li>
         <li>Tu estado de conexión (en línea, desconectado o jugando)</li>
         <li>La biografía y el nombre a mostrar que tú escribas en tu perfil</li>
+        <li>La foto de perfil que subas, si decides subir una</li>
         <li>Una cookie de sesión, necesaria para mantenerte identificado</li>
       </ul>
+
+      <p style={estilos.parrafo}>
+        Sobre la foto que subes: antes de guardarla la reducimos y la volvemos a generar, y en
+        ese paso <strong>se eliminan los datos ocultos que las cámaras de móvil incrustan en
+        cada imagen</strong>, entre ellos las coordenadas del sitio donde se hizo la foto. No
+        llegamos a guardar esa información en ningún momento. Puedes quitar tu foto cuando
+        quieras desde tu perfil, y al hacerlo se borra del servidor.
+      </p>
 
       <h2 style={estilos.apartado}>De dónde salen las cartas</h2>
       <p style={estilos.parrafo}>
