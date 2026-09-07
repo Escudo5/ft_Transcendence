@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone  # Requerido para capturar la fecha actual
@@ -57,12 +59,45 @@ class CustomUser(AbstractUser):
     )
 
     @property
+    def avatar_por_defecto(self):
+        """
+        Avatar de reserva para quien no tiene ninguna foto: un círculo de color
+        con su inicial, como hacen Gmail o Slack.
+
+        El subject lo pide expresamente ("with a default avatar if none
+        provided"), y hace falta sobre todo para las cuentas de correo y
+        contraseña, que no traen foto de la Intra.
+
+        Es un dibujo (SVG) metido en la propia dirección, así que no hay que
+        guardar ninguna imagen en el servidor ni añadir rutas nuevas: el
+        navegador lo pinta directamente.
+
+        El color sale del nombre de usuario, así que cada persona tiene siempre
+        el mismo y dos personas distintas rara vez coinciden.
+        """
+        nombre = self.nombre_mostrado or self.username or '?'
+        inicial = nombre.strip()[:1].upper() or '?'
+        tono = sum(ord(c) for c in (self.username or '?')) % 360
+
+        svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+            f'<rect width="100" height="100" fill="hsl({tono},45%,42%)"/>'
+            '<text x="50" y="50" fill="#ffffff" font-size="46" '
+            'font-family="Helvetica,Arial,sans-serif" font-weight="bold" '
+            f'text-anchor="middle" dominant-baseline="central">{inicial}</text>'
+            '</svg>'
+        )
+        # quote() escapa los caracteres que romperian la direccion (<, >, #, comillas)
+        return 'data:image/svg+xml;charset=utf-8,' + quote(svg)
+
+    @property
     def foto(self):
         """
-        La foto que hay que enseñar de esta persona, ya decidida.
+        La foto que hay que enseñar de esta persona, ya decidida. Tres escalones:
 
-        Manda el avatar que haya subido; si no ha subido ninguno, se usa el de
-        la Intra; y si tampoco tiene, None y el front pinta el muñequito.
+            1. el avatar que haya subido       (manda siempre)
+            2. la foto de la Intra             (si entró con 42)
+            3. el avatar por defecto           (nunca se queda sin foto)
 
         Todas las respuestas del backend usan ESTO en vez de profile_image, así
         que al subir un avatar cambia la foto en el perfil, en el ranking y en
@@ -70,7 +105,9 @@ class CustomUser(AbstractUser):
         """
         if self.avatar:
             return self.avatar.url
-        return self.profile_image
+        if self.profile_image:
+            return self.profile_image
+        return self.avatar_por_defecto
 
     def __str__(self):
         return self.username

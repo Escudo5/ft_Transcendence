@@ -220,6 +220,19 @@ const estilos = {
     fontWeight: 600,
     cursor: 'pointer',
   },
+  barraProgresoFuera: {
+    width: '120px',
+    height: '5px',
+    background: 'var(--bg-control)',
+    borderRadius: '999px',
+    overflow: 'hidden',
+  },
+  barraProgresoDentro: (pct) => ({
+    width: `${pct}%`,
+    height: '100%',
+    background: 'var(--accent-color)',
+    transition: 'width 0.15s linear',
+  }),
 };
 
 export default function Perfil() {
@@ -238,6 +251,10 @@ export default function Perfil() {
 
   // 🖼️ Foto de perfil
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  // Vista previa: la foto elegida se enseña AL MOMENTO, sin esperar al
+  // servidor, para que se vea qué se está subiendo mientras sube
+  const [vistaPrevia, setVistaPrevia] = useState(null);
+  const [progreso, setProgreso] = useState(0); // 0-100
   // El <input type="file"> de verdad es feísimo y no se puede maquillar, así
   // que se esconde y lo abrimos desde nuestro propio botón con esta referencia
   const inputFoto = useRef(null);
@@ -274,7 +291,13 @@ export default function Perfil() {
       return;
     }
 
+    // Vista previa inmediata: el navegador puede enseñar un fichero del disco
+    // sin subirlo a ningún sitio. Así se ve la foto elegida al instante.
+    const urlPrevia = URL.createObjectURL(fichero);
+    setVistaPrevia(urlPrevia);
+    setProgreso(0);
     setSubiendoFoto(true);
+
     try {
       const resToken = await fetch(`${apiBaseUrl}/users/csrf/`, { credentials: 'include' });
       const { csrfToken } = await resToken.json();
@@ -286,26 +309,46 @@ export default function Perfil() {
       const formulario = new FormData();
       formulario.append('avatar', fichero);
 
-      const res = await fetch(`${apiBaseUrl}/users/me/avatar/`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'X-CSRFToken': csrfToken },
-        body: formulario,
-      });
-      const datos = await res.json().catch(() => ({}));
+      // 📊 Aquí NO se usa fetch a propósito: fetch no sabe decir cuánto lleva
+      // subido de un fichero. XMLHttpRequest es más antiguo pero sí avisa del
+      // progreso, que es justo lo que necesitamos para la barra.
+      const datos = await new Promise((resolver, rechazar) => {
+        const peticion = new XMLHttpRequest();
+        peticion.open('POST', `${apiBaseUrl}/users/me/avatar/`);
+        peticion.withCredentials = true; // equivale al credentials:'include' de fetch
+        peticion.setRequestHeader('X-CSRFToken', csrfToken);
 
-      if (!res.ok) {
-        setAviso({ texto: datos.error || 'No se ha podido subir la foto.', ok: false });
-        return;
-      }
+        peticion.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) {
+            setProgreso(Math.round((ev.loaded / ev.total) * 100));
+          }
+        };
+
+        peticion.onload = () => {
+          let cuerpo = {};
+          try { cuerpo = JSON.parse(peticion.responseText); } catch { /* respuesta no JSON */ }
+          if (peticion.status >= 200 && peticion.status < 300) {
+            resolver(cuerpo);
+          } else {
+            rechazar(new Error(cuerpo.error || 'No se ha podido subir la foto.'));
+          }
+        };
+        peticion.onerror = () => rechazar(new Error('No se ha podido conectar con el servidor.'));
+        peticion.send(formulario);
+      });
 
       setPerfil({ ...perfil, profile_image: datos.foto, tiene_avatar: true });
       setAviso({ texto: datos.mensaje, ok: true });
     } catch (e) {
       console.error('Error al subir la foto:', e);
-      setAviso({ texto: 'No se ha podido conectar con el servidor.', ok: false });
+      setAviso({ texto: e.message || 'No se ha podido conectar con el servidor.', ok: false });
     } finally {
       setSubiendoFoto(false);
+      setProgreso(0);
+      // Liberamos la vista previa: si no, esa foto se queda ocupando memoria
+      // del navegador hasta que se recargue la página
+      URL.revokeObjectURL(urlPrevia);
+      setVistaPrevia(null);
     }
   };
 
@@ -483,10 +526,24 @@ export default function Perfil() {
 
             <div style={estilos.cabecera}>
               <div style={estilos.columnaFoto}>
-                {perfil.profile_image ? (
-                  <img src={perfil.profile_image} alt={perfil.username} style={estilos.foto} />
+                {/* Mientras sube, se enseña la foto elegida (vistaPrevia).
+                    El backend siempre manda una foto, así que el muñequito de
+                    abajo ya casi nunca sale: se deja por si acaso. */}
+                {vistaPrevia || perfil.profile_image ? (
+                  <img
+                    src={vistaPrevia || perfil.profile_image}
+                    alt={perfil.username}
+                    style={{ ...estilos.foto, opacity: subiendoFoto ? 0.55 : 1 }}
+                  />
                 ) : (
                   <div style={estilos.fotoVacia}>👤</div>
+                )}
+
+                {/* Barra de progreso: solo mientras se está subiendo */}
+                {subiendoFoto && (
+                  <div style={estilos.barraProgresoFuera}>
+                    <div style={estilos.barraProgresoDentro(progreso)} />
+                  </div>
                 )}
 
                 {/* Cambiar la foto: solo en tu propio perfil */}
