@@ -273,6 +273,9 @@ def _perfil_publico(usuario):
     # Se calculan una sola vez: los logros salen de estas mismas cifras
     stats = _estadisticas_coleccion(usuario)
     return {
+        # El id interno hace falta para pedirle amistad. No es el id_42 ni
+        # revela nada: es el número de fila en nuestra base de datos.
+        'id': usuario.id,
         'username': usuario.username,
         # El nombre que él haya elegido; si no puso ninguno, el de la Intra
         'nombre': usuario.nombre_mostrado or usuario.get_full_name() or usuario.username,
@@ -304,7 +307,42 @@ def perfil_usuario(request, username):
 
     datos = _perfil_publico(usuario)
     datos['es_mi_perfil'] = usuario.pk == request.user.pk
+    # 🤝 En qué punto está la amistad con esta persona, para que el front sepa
+    # qué botón enseñar: pedir amistad, "pendiente", responder o eliminar.
+    datos.update(_estado_amistad(request.user, usuario))
     return JsonResponse(datos)
+
+
+def _estado_amistad(yo, otro):
+    """
+    Cómo estamos esta persona y yo. Devuelve uno de:
+        'yo'        -> es mi propio perfil
+        'ninguna'   -> no hay nada, se le puede pedir amistad
+        'enviada'   -> yo se la mandé y está esperando
+        'recibida'  -> me la mandó él, puedo aceptar o rechazar
+        'amigos'    -> ya lo somos
+    Con 'recibida' va también el id de la solicitud, para poder responderla.
+    """
+    from social.models import FriendRequest
+
+    if yo.pk == otro.pk:
+        return {'amistad': 'yo', 'solicitud_id': None}
+
+    solicitud = FriendRequest.objects.filter(
+        sender__in=[yo, otro],
+        receiver__in=[yo, otro],
+    ).first()
+
+    if solicitud is None or solicitud.status == FriendRequest.StatusChoice.DECLINED:
+        # Una rechazada no cuenta: se puede volver a intentar
+        return {'amistad': 'ninguna', 'solicitud_id': None}
+
+    if solicitud.status == FriendRequest.StatusChoice.ACCEPTED:
+        return {'amistad': 'amigos', 'solicitud_id': solicitud.id}
+
+    if solicitud.sender_id == yo.pk:
+        return {'amistad': 'enviada', 'solicitud_id': solicitud.id}
+    return {'amistad': 'recibida', 'solicitud_id': solicitud.id}
 
 
 @require_http_methods(['PATCH'])
