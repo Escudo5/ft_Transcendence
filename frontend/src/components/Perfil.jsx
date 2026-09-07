@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 /**
@@ -17,6 +17,13 @@ import { Link, useParams } from 'react-router-dom';
  * vuestras clases (app-container, app-header, control-panel...). El diseño es
  * vuestro, cambiadlo sin miedo: lo visual está en el objeto 'estilos'.
  */
+
+// 🖼️ Límites de la foto de perfil. Son LOS MISMOS que comprueba el backend en
+// users/views.py. Aquí se miran para avisar al momento sin subir 5 MB en balde;
+// los que mandan de verdad son los del servidor, porque estos se los puede
+// saltar cualquiera desde el navegador.
+const AVATAR_MAX_MB = 2;
+const AVATAR_TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
 
 const COLOR_ESTADO = {
   online: '#4ade80',
@@ -194,6 +201,38 @@ const estilos = {
     marginBottom: '1rem',
     fontWeight: 600,
   },
+  // 🖼️ Zona de la foto: la imagen con sus botoncitos debajo
+  columnaFoto: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.5rem',
+    flexShrink: 0,
+  },
+  botonFoto: {
+    background: 'var(--bg-control)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '999px',
+    padding: '0.35rem 0.85rem',
+    fontFamily: 'var(--font-body)',
+    fontSize: '0.78rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  barraProgresoFuera: {
+    width: '120px',
+    height: '5px',
+    background: 'var(--bg-control)',
+    borderRadius: '999px',
+    overflow: 'hidden',
+  },
+  barraProgresoDentro: (pct) => ({
+    width: `${pct}%`,
+    height: '100%',
+    background: 'var(--accent-color)',
+    transition: 'width 0.15s linear',
+  }),
 };
 
 export default function Perfil() {
@@ -210,10 +249,138 @@ export default function Perfil() {
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState(null); // { texto, ok }
 
+  // 🖼️ Foto de perfil
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+  // Vista previa: la foto elegida se enseña AL MOMENTO, sin esperar al
+  // servidor, para que se vea qué se está subiendo mientras sube
+  const [vistaPrevia, setVistaPrevia] = useState(null);
+  const [progreso, setProgreso] = useState(0); // 0-100
+  // El <input type="file"> de verdad es feísimo y no se puede maquillar, así
+  // que se esconde y lo abrimos desde nuestro propio botón con esta referencia
+  const inputFoto = useRef(null);
+
   // Borrado de cuenta (RGPD)
   const [borrandoCuenta, setBorrandoCuenta] = useState(false); // ¿se ve la confirmación?
   const [textoConfirmacion, setTextoConfirmacion] = useState('');
   const [borrando, setBorrando] = useState(false);
+
+  /**
+   * Sube la foto que acaba de elegir el usuario.
+   *
+   * Se comprueba aquí el tipo y el peso para poder avisar al instante, pero es
+   * solo comodidad: el servidor lo vuelve a comprobar todo y además abre la
+   * imagen para asegurarse de que lo es. Estas comprobaciones del navegador se
+   * las salta cualquiera, así que nunca son la seguridad de verdad.
+   */
+  const subirFoto = async (evento) => {
+    const fichero = evento.target.files?.[0];
+    // Permite volver a elegir la MISMA foto después de un error: si no se
+    // limpia, el navegador no avisa del cambio porque el valor es el mismo
+    evento.target.value = '';
+    if (!fichero) return;
+
+    setAviso(null);
+
+    if (!AVATAR_TIPOS.includes(fichero.type)) {
+      setAviso({ texto: 'Solo se admiten imágenes JPG, PNG o WEBP.', ok: false });
+      return;
+    }
+    if (fichero.size > AVATAR_MAX_MB * 1024 * 1024) {
+      const pesa = (fichero.size / 1024 / 1024).toFixed(1);
+      setAviso({ texto: `La imagen pesa ${pesa} MB y el máximo son ${AVATAR_MAX_MB} MB.`, ok: false });
+      return;
+    }
+
+    // Vista previa inmediata: el navegador puede enseñar un fichero del disco
+    // sin subirlo a ningún sitio. Así se ve la foto elegida al instante.
+    const urlPrevia = URL.createObjectURL(fichero);
+    setVistaPrevia(urlPrevia);
+    setProgreso(0);
+    setSubiendoFoto(true);
+
+    try {
+      const resToken = await fetch(`${apiBaseUrl}/users/csrf/`, { credentials: 'include' });
+      const { csrfToken } = await resToken.json();
+
+      // Un fichero no viaja en JSON: se manda en un formulario.
+      // Y NO ponemos 'Content-Type' a mano a propósito: el navegador lo pone
+      // solo, con una marca interna que necesita para separar el fichero del
+      // resto. Si lo escribimos nosotros, se rompe la subida.
+      const formulario = new FormData();
+      formulario.append('avatar', fichero);
+
+      // 📊 Aquí NO se usa fetch a propósito: fetch no sabe decir cuánto lleva
+      // subido de un fichero. XMLHttpRequest es más antiguo pero sí avisa del
+      // progreso, que es justo lo que necesitamos para la barra.
+      const datos = await new Promise((resolver, rechazar) => {
+        const peticion = new XMLHttpRequest();
+        peticion.open('POST', `${apiBaseUrl}/users/me/avatar/`);
+        peticion.withCredentials = true; // equivale al credentials:'include' de fetch
+        peticion.setRequestHeader('X-CSRFToken', csrfToken);
+
+        peticion.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) {
+            setProgreso(Math.round((ev.loaded / ev.total) * 100));
+          }
+        };
+
+        peticion.onload = () => {
+          let cuerpo = {};
+          try { cuerpo = JSON.parse(peticion.responseText); } catch { /* respuesta no JSON */ }
+          if (peticion.status >= 200 && peticion.status < 300) {
+            resolver(cuerpo);
+          } else {
+            rechazar(new Error(cuerpo.error || 'No se ha podido subir la foto.'));
+          }
+        };
+        peticion.onerror = () => rechazar(new Error('No se ha podido conectar con el servidor.'));
+        peticion.send(formulario);
+      });
+
+      setPerfil({ ...perfil, profile_image: datos.foto, tiene_avatar: true });
+      setAviso({ texto: datos.mensaje, ok: true });
+    } catch (e) {
+      console.error('Error al subir la foto:', e);
+      setAviso({ texto: e.message || 'No se ha podido conectar con el servidor.', ok: false });
+    } finally {
+      setSubiendoFoto(false);
+      setProgreso(0);
+      // Liberamos la vista previa: si no, esa foto se queda ocupando memoria
+      // del navegador hasta que se recargue la página
+      URL.revokeObjectURL(urlPrevia);
+      setVistaPrevia(null);
+    }
+  };
+
+  /** Quita la foto subida y vuelve a la de la Intra. */
+  const quitarFoto = async () => {
+    setSubiendoFoto(true);
+    setAviso(null);
+    try {
+      const resToken = await fetch(`${apiBaseUrl}/users/csrf/`, { credentials: 'include' });
+      const { csrfToken } = await resToken.json();
+
+      const res = await fetch(`${apiBaseUrl}/users/me/avatar/`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'X-CSRFToken': csrfToken },
+      });
+      const datos = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setAviso({ texto: datos.error || 'No se ha podido quitar la foto.', ok: false });
+        return;
+      }
+
+      setPerfil({ ...perfil, profile_image: datos.foto, tiene_avatar: false });
+      setAviso({ texto: datos.mensaje, ok: true });
+    } catch (e) {
+      console.error('Error al quitar la foto:', e);
+      setAviso({ texto: 'No se ha podido conectar con el servidor.', ok: false });
+    } finally {
+      setSubiendoFoto(false);
+    }
+  };
 
   const borrarCuenta = async () => {
     setBorrando(true);
@@ -358,11 +525,56 @@ export default function Perfil() {
             )}
 
             <div style={estilos.cabecera}>
-              {perfil.profile_image ? (
-                <img src={perfil.profile_image} alt={perfil.username} style={estilos.foto} />
-              ) : (
-                <div style={estilos.fotoVacia}>👤</div>
-              )}
+              <div style={estilos.columnaFoto}>
+                {/* Mientras sube, se enseña la foto elegida (vistaPrevia).
+                    El backend siempre manda una foto, así que el muñequito de
+                    abajo ya casi nunca sale: se deja por si acaso. */}
+                {vistaPrevia || perfil.profile_image ? (
+                  <img
+                    src={vistaPrevia || perfil.profile_image}
+                    alt={perfil.username}
+                    style={{ ...estilos.foto, opacity: subiendoFoto ? 0.55 : 1 }}
+                  />
+                ) : (
+                  <div style={estilos.fotoVacia}>👤</div>
+                )}
+
+                {/* Barra de progreso: solo mientras se está subiendo */}
+                {subiendoFoto && (
+                  <div style={estilos.barraProgresoFuera}>
+                    <div style={estilos.barraProgresoDentro(progreso)} />
+                  </div>
+                )}
+
+                {/* Cambiar la foto: solo en tu propio perfil */}
+                {perfil.es_mi_perfil && (
+                  <>
+                    <input
+                      ref={inputFoto}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={subirFoto}
+                      style={{ display: 'none' }}
+                    />
+                    <button
+                      style={estilos.botonFoto}
+                      onClick={() => inputFoto.current?.click()}
+                      disabled={subiendoFoto}
+                    >
+                      {subiendoFoto ? 'Subiendo…' : '📷 Cambiar foto'}
+                    </button>
+                    {perfil.tiene_avatar && (
+                      <button
+                        style={{ ...estilos.botonFoto, border: 'none', background: 'transparent' }}
+                        onClick={quitarFoto}
+                        disabled={subiendoFoto}
+                      >
+                        Quitar
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
 
               <div style={{ flex: 1, minWidth: '240px' }}>
                 {editando ? (
