@@ -275,11 +275,17 @@ import { useEffect, useRef, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import DotField from "./components/Fondo_animado";
 import Acceso from './components/Acceso';
+import RegaloDiario from './components/RegaloDiario';
 import Home from './components/Home';
 import Catalogo from './components/Catalogo';
 import CrearCarta from './components/CrearCarta';
 import Game from './components/Game';
 import Inventario from './components/Inventario';
+import Perfil from './components/Perfil';
+import Ranking from './components/Ranking';
+import Legal from './components/Legal';
+import PieLegal from './components/PieLegal';
+import TiendaSobres from './components/TiendaSobres';
 
 const router = createBrowserRouter([
   {
@@ -306,7 +312,40 @@ const router = createBrowserRouter([
     path: "/inventario",
     element: <Inventario />,
   },
+  {
+    path: "/tienda-sobre",
+    element: <TiendaSobres />,
+  },
+  {
+    // Tu propio perfil
+    path: "/perfil",
+    element: <Perfil />,
+  },
+  {
+    // El perfil de otra persona (desde el chat, los amigos o el buscador)
+    path: "/perfil/:login",
+    element: <Perfil />,
+  },
+  {
+    // 🏆 Clasificación de coleccionistas
+    path: "/ranking",
+    element: <Ranking />,
+  },
+  {
+    // ⚖️ Páginas legales: obligatorias en el subject y accesibles SIN sesión
+    path: "/privacidad",
+    element: <Legal tipo="privacidad" />,
+  },
+  {
+    path: "/terminos",
+    element: <Legal tipo="terminos" />,
+  },
 ]);
+
+// Direcciones que se pueden ver sin haber iniciado sesión. Las legales tienen
+// que estar aquí: una política de privacidad que solo puedes leer después de
+// registrarte no sirve de nada (y el subject pide que sean accesibles).
+const RUTAS_PUBLICAS = ["/privacidad", "/terminos"];
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -379,7 +418,11 @@ function App() {
   // 🚪 Sin sesión: pantalla de acceso (entrar con 42 o con email y contraseña).
   // Al entrar correctamente, el backend ya ha dejado la sesión abierta, así que
   // solo hay que dar paso a la aplicación.
-  if (!isAuthenticated) {
+  // Las páginas legales se ven aunque no haya sesión: son obligatorias y
+  // cualquiera tiene que poder leerlas antes de decidir si se registra.
+  const enRutaPublica = RUTAS_PUBLICAS.includes(window.location.pathname);
+
+  if (!isAuthenticated && !enRutaPublica) {
     return (
       <>
         <DotField style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
@@ -398,6 +441,9 @@ function App() {
   return (
     <>
       <DotField style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
+      {/* 🎁 Flota por encima de todas las pantallas: el regalo debe poder
+          recogerse estés donde estés, no solo en la portada */}
+      <RegaloDiario />
       <RouterProvider router={router} />
     </>
   );

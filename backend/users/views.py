@@ -1,7 +1,11 @@
+import io
 import json
 import re
 import requests
 import os
+import uuid
+from django.conf import settings
+from django.core.files.base import ContentFile
 from django.http import JsonResponse
 from django.utils import timezone
 from django.shortcuts import redirect
@@ -9,7 +13,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.middleware.csrf import get_token
 from .models import CustomUser
@@ -119,7 +123,9 @@ def login_42_callback(request):
         return JsonResponse({
             'status': 'nuevo_usuario' if creado else 'usuario_existente',
             'username': usuario.username,
-            'profile_image': usuario.profile_image,
+            # .foto y no .profile_image: si tiene avatar propio, ese manda.
+            # Aunque acabe de entrar por 42, su foto subida no se toca.
+            'profile_image': usuario.foto,
             'mensaje': mensaje,
             'sobres_disponibles_hoy': sobres_restantes
         })
@@ -150,13 +156,430 @@ def me(request):
         'first_name': u.first_name,
         'last_name': u.last_name,
         'email': u.email,
-        'profile_image': u.profile_image,
+        # La foto ya decidida (avatar propio si lo hay, si no la de la Intra).
+        # Se mantiene el nombre 'profile_image' porque es el que espera el
+        # front en la portada y en el ranking.
+        'profile_image': u.foto,
+        'tiene_avatar': bool(u.avatar),
         'elo': u.elo,
         'estado': u.estado,
         'is_alumni': u.is_alumni,
-        # TODO: calcular desde UserPack cuando el control diario viva allí
         'sobres_disponibles_hoy': SOBRES_DIARIOS,
+        # 🎁 ¿Le toca regalo hoy? Solo INFORMA, no entrega nada: para recogerlo
+        # hay que llamar a /api/cards/sobres/reclamar/. Así, recargar la página
+        # nunca regala sobres por accidente.
+        'regalo_disponible': u.ultimo_regalo_diario is None or u.ultimo_regalo_diario < timezone.localdate(),
     })
+
+
+# =====================================================================
+# 👤 PERFILES
+# =====================================================================
+
+def _estadisticas_coleccion(usuario):
+    """
+    Cuántas cartas tiene ese usuario, de cuántas hay, y cuál es la más rara.
+    Se importa aquí dentro y no arriba para no crear una dependencia circular
+    entre las apps de usuarios y de cartas.
+    """
+    from cards.models import Card, UserCard
+
+    ORDEN_TIERS = ['Blackhole', 'Junior', 'Senior', 'Alumni', 'Transcender']
+
+    mis_cartas = UserCard.objects.filter(user=usuario).select_related('card')
+    distintas = mis_cartas.count()
+    total_catalogo = Card.objects.count()
+    con_repetidas = sum(c.cantidad for c in mis_cartas)
+
+    mejor = None
+    for uc in mis_cartas:
+        tier = uc.card.tier
+        if tier not in ORDEN_TIERS:
+            continue
+        if mejor is None or ORDEN_TIERS.index(tier) > ORDEN_TIERS.index(mejor['tier']):
+            mejor = {'login': uc.card.login, 'tier': tier, 'photo': uc.card.photo}
+
+    return {
+        'cartas_distintas': distintas,
+        'cartas_en_catalogo': total_catalogo,
+        'cartas_con_repetidas': con_repetidas,
+        # Porcentaje del álbum completado, redondeado a un decimal
+        'porcentaje': round(distintas / total_catalogo * 100, 1) if total_catalogo else 0,
+        'carta_mas_rara': mejor,
+    }
+
+
+def _logros(usuario, stats):
+    """
+    Los logros NO se guardan en ninguna tabla: se calculan al vuelo a partir de
+    lo que la persona tiene. Así no hace falta migración ni mantener nada en
+    sincronía, y si mañana se añade un logro nuevo, todo el mundo lo ve
+    reflejado al instante según su colección.
+
+    Cada logro lleva su progreso, para que en pantalla se vea lo que falta y no
+    solo un sí o un no.
+    """
+    from cards.models import UserCard
+
+    mis_cartas = list(UserCard.objects.filter(user=usuario).select_related('card'))
+
+    distintas = stats['cartas_distintas']
+    total_catalogo = stats['cartas_en_catalogo'] or 1
+    tiers = {uc.card.tier for uc in mis_cartas}
+    coaliciones = {uc.card.coalition for uc in mis_cartas if uc.card.coalition}
+    max_copias = max((uc.cantidad for uc in mis_cartas), default=0)
+
+    def logro(id, nombre, descripcion, icono, actual, objetivo):
+        return {
+            'id': id,
+            'nombre': nombre,
+            'descripcion': descripcion,
+            'icono': icono,
+            'actual': min(actual, objetivo),
+            'objetivo': objetivo,
+            'conseguido': actual >= objetivo,
+        }
+
+    return [
+        logro('primera', 'Primera carta', 'Consigue tu primera carta', '🎴', distintas, 1),
+        logro('coleccionista', 'Coleccionista', 'Reúne 10 cartas distintas', '📚', distintas, 10),
+        logro('veterano', 'Veterano', 'Reúne 25 cartas distintas', '🏅', distintas, 25),
+        logro('medio_album', 'Medio álbum', 'Completa la mitad del álbum', '📖',
+              int(stats['porcentaje']), 50),
+        logro('completista', 'Completista', 'Completa el álbum entero', '👑',
+              distintas, total_catalogo),
+        logro('leyenda', 'Cazador de leyendas', 'Consigue una carta Transcender', '✨',
+              1 if 'Transcender' in tiers else 0, 1),
+        logro('alumni', 'Buscador de Alumni', 'Consigue una carta Alumni', '🎓',
+              1 if 'Alumni' in tiers else 0, 1),
+        logro('coaliciones', 'Diplomático', 'Ten cartas de las cuatro coaliciones', '🏳️',
+              len(coaliciones), 4),
+        logro('acumulador', 'Acumulador', 'Ten 5 copias de una misma carta', '🗃️',
+              max_copias, 5),
+        logro('madrugador', 'Madrugador', 'Recoge tu regalo diario', '🎁',
+              1 if usuario.ultimo_regalo_diario else 0, 1),
+    ]
+
+
+def _perfil_publico(usuario):
+    """Los datos de un usuario que puede ver cualquiera. Sin email ni id_42."""
+    # Se calculan una sola vez: los logros salen de estas mismas cifras
+    stats = _estadisticas_coleccion(usuario)
+    return {
+        'username': usuario.username,
+        # El nombre que él haya elegido; si no puso ninguno, el de la Intra
+        'nombre': usuario.nombre_mostrado or usuario.get_full_name() or usuario.username,
+        'bio': usuario.bio,
+        'profile_image': usuario.foto,
+        'tiene_avatar': bool(usuario.avatar),
+        'elo': usuario.elo,
+        'estado': usuario.estado,
+        'is_alumni': usuario.is_alumni,
+        'miembro_desde': usuario.date_joined.date().isoformat(),
+        'coleccion': stats,
+        'logros': _logros(usuario, stats),
+    }
+
+
+@require_GET
+def perfil_usuario(request, username):
+    """
+    Perfil público de cualquier usuario, para poder verlo desde el chat, la
+    lista de amigos o el buscador. Solo datos públicos: ni el email ni el id
+    de la Intra salen de aquí.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
+
+    usuario = CustomUser.objects.filter(username=username).first()
+    if usuario is None:
+        return JsonResponse({'error': f'No existe ningún usuario llamado {username}.'}, status=404)
+
+    datos = _perfil_publico(usuario)
+    datos['es_mi_perfil'] = usuario.pk == request.user.pk
+    return JsonResponse(datos)
+
+
+@require_http_methods(['PATCH'])
+def editar_mi_perfil(request):
+    """
+    Edita los datos propios del perfil. Solo se pueden tocar la biografía y el
+    nombre a mostrar: el resto (nombre real, email, foto) lo refresca la Intra
+    en cada login y se sobrescribiría.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
+
+    datos = _leer_json(request)
+    usuario = request.user
+    errores = {}
+
+    if 'bio' in datos:
+        bio = (datos.get('bio') or '').strip()
+        if len(bio) > 500:
+            errores['bio'] = 'La biografía no puede pasar de 500 caracteres.'
+        else:
+            usuario.bio = bio
+
+    if 'nombre_mostrado' in datos:
+        nombre = (datos.get('nombre_mostrado') or '').strip()
+        if len(nombre) > 50:
+            errores['nombre_mostrado'] = 'El nombre no puede pasar de 50 caracteres.'
+        else:
+            usuario.nombre_mostrado = nombre
+
+    if errores:
+        return JsonResponse({'error': 'Revisa los datos.', 'campos': errores}, status=400)
+
+    usuario.save(update_fields=['bio', 'nombre_mostrado'])
+    return JsonResponse({'mensaje': 'Perfil actualizado.', **_perfil_publico(usuario)})
+
+
+# =====================================================================
+# 🖼️ AVATAR: la foto que sube el propio usuario
+#
+# Esta es la única parte del proyecto donde alguien de fuera mete un FICHERO
+# en nuestro servidor, así que es la que más hay que cuidar. Nunca nos fiamos
+# de lo que llega: ni del nombre del fichero, ni de su extensión, ni de lo que
+# el navegador diga que es. La única prueba que vale es abrirlo y ver que es
+# una imagen de verdad.
+#
+# Lo que hacemos con la foto antes de guardarla:
+#   1. Comprobamos que pesa menos de 2 MB
+#   2. La abrimos con Pillow: si no es una imagen, se rechaza
+#   3. La giramos si venía tumbada (las fotos de móvil suelen venir así)
+#   4. La reducimos a 512x512 como mucho
+#   5. La volvemos a guardar como JPEG con un nombre que elegimos NOSOTROS
+#
+# El paso 5 es el más importante para la seguridad: al reguardarla, del
+# fichero original no queda ni un byte. Si alguien esconde algo dentro de una
+# imagen, se pierde por el camino. Y de paso desaparecen los datos de GPS que
+# las cámaras de móvil meten dentro de cada foto, que si no estaríamos
+# publicando sin querer dónde vive la gente.
+# =====================================================================
+
+# Lo que aceptamos. Es una comprobación de cortesía para dar un mensaje claro:
+# la de verdad es la de Pillow, porque la extensión de un fichero la pone quien
+# quiere y no demuestra nada.
+FORMATOS_AVATAR = {'JPEG', 'PNG', 'WEBP'}
+
+
+def _procesar_avatar(fichero):
+    """
+    Convierte lo que ha subido el usuario en un JPEG pequeño y limpio.
+
+    Devuelve (contenido, None) si todo va bien, o (None, 'mensaje de error')
+    si el fichero no sirve. Nunca lanza excepciones hacia arriba: cualquier
+    cosa rara acaba siendo un error con un mensaje entendible.
+    """
+    from PIL import Image, ImageOps
+
+    if fichero.size > settings.AVATAR_MAX_BYTES:
+        megas = settings.AVATAR_MAX_BYTES / (1024 * 1024)
+        return None, f'La imagen no puede pesar más de {megas:.0f} MB.'
+
+    # PRIMERA PASADA: solo mirar si es una imagen y de qué tipo.
+    # verify() revisa la estructura del fichero sin descomprimir la foto
+    # entera, así que una imagen corrupta o un fichero disfrazado caen aquí.
+    try:
+        prueba = Image.open(fichero)
+        formato = prueba.format
+        prueba.verify()
+    except Exception:
+        return None, 'Eso no es una imagen. Sube un archivo JPG, PNG o WEBP.'
+
+    if formato not in FORMATOS_AVATAR:
+        return None, 'Formato no admitido. Sube un archivo JPG, PNG o WEBP.'
+
+    # SEGUNDA PASADA: la de verdad. verify() deja el objeto inservible, así que
+    # hay que volver al principio del fichero y abrirlo otra vez.
+    fichero.seek(0)
+    try:
+        imagen = Image.open(fichero)
+        # Las fotos de móvil guardan "esto va girado" en una etiqueta interna
+        # en vez de girar los píxeles. Si no lo aplicamos, salen tumbadas.
+        imagen = ImageOps.exif_transpose(imagen)
+
+        # El JPEG no admite transparencia. Si la foto la tiene (un PNG
+        # recortado, por ejemplo) la pegamos sobre blanco; si no, esas zonas
+        # saldrían negras.
+        if imagen.mode in ('RGBA', 'LA', 'P'):
+            imagen = imagen.convert('RGBA')
+            fondo = Image.new('RGB', imagen.size, (255, 255, 255))
+            fondo.paste(imagen, mask=imagen.split()[-1])
+            imagen = fondo
+        else:
+            imagen = imagen.convert('RGB')
+
+        # thumbnail() respeta la proporción: no deforma a nadie. Si la imagen
+        # ya era pequeña, la deja como está.
+        lado = settings.AVATAR_LADO_MAX
+        imagen.thumbnail((lado, lado), Image.LANCZOS)
+
+        memoria = io.BytesIO()
+        imagen.save(memoria, format='JPEG', quality=85, optimize=True)
+        return memoria.getvalue(), None
+    except Exception:
+        return None, 'No hemos podido procesar la imagen. Prueba con otra.'
+
+
+@require_http_methods(['POST', 'DELETE'])
+def mi_avatar(request):
+    """
+    POST   -> sube (o reemplaza) tu foto de perfil. Va en un formulario
+              multipart, con el fichero en el campo 'avatar'.
+    DELETE -> quita tu foto y vuelve a la de la Intra.
+
+    Solo puedes tocar la tuya: no hay forma de indicar de quién es la foto,
+    siempre se aplica a quien tiene la sesión abierta.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
+
+    usuario = request.user
+
+    # ---- Quitar la foto ----
+    if request.method == 'DELETE':
+        if not usuario.avatar:
+            return JsonResponse({'error': 'No tienes ninguna foto subida.'}, status=400)
+        # delete() borra el fichero del disco, no solo la referencia
+        usuario.avatar.delete(save=True)
+        return JsonResponse({
+            'mensaje': 'Foto quitada. Vuelves a tener la de la Intra.',
+            'foto': usuario.foto,
+            'tiene_avatar': False,
+        })
+
+    # ---- Subir una foto ----
+    fichero = request.FILES.get('avatar')
+    if fichero is None:
+        return JsonResponse({'error': 'No has enviado ninguna imagen.'}, status=400)
+
+    contenido, error = _procesar_avatar(fichero)
+    if error:
+        return JsonResponse({'error': error}, status=400)
+
+    # El nombre lo ponemos nosotros y lleva un trozo aleatorio por dos razones:
+    # no usar nunca el nombre que venga de fuera (podría traer '../' y otras
+    # cosas feas), y que al cambiar de foto cambie la dirección, porque si no
+    # el navegador seguiría enseñando la antigua de su memoria caché.
+    nombre = f'{usuario.pk}-{uuid.uuid4().hex[:12]}.jpg'
+
+    # Si ya tenía una, fuera: si no, cada cambio dejaría un fichero muerto
+    if usuario.avatar:
+        usuario.avatar.delete(save=False)
+
+    usuario.avatar.save(nombre, ContentFile(contenido), save=True)
+
+    return JsonResponse({
+        'mensaje': 'Foto de perfil actualizada.',
+        'foto': usuario.foto,
+        'tiene_avatar': True,
+    })
+
+
+# =====================================================================
+# 🔒 DERECHOS SOBRE TUS DATOS (RGPD)
+# Cualquiera puede llevarse sus datos o borrar su cuenta cuando quiera.
+# Va de la mano de la Política de Privacidad: ahí prometemos esto, aquí se
+# cumple.
+#
+# ⚠️ OJO CON EL MÓDULO DEL SUBJECT: el de "GDPR compliance" pide CUATRO cosas
+# y aquí solo hay tres:
+#   ✔ que el usuario pueda pedir sus datos      -> descargar_mis_datos
+#   ✔ borrado con confirmación                  -> borrar_mi_cuenta
+#   ✔ exportarlos en formato legible            -> el JSON descargable
+#   ✘ CORREOS DE CONFIRMACIÓN de las operaciones -> NO IMPLEMENTADO
+# Mientras falte lo último, el módulo NO se puede reclamar (el subject solo
+# permite "al menos 3 de" en Gamification; en este los lista todos).
+# Para cerrarlo haría falta configurar el envío de correo (servidor SMTP y sus
+# credenciales en el .env) y avisar al descargar datos y al borrar la cuenta.
+# =====================================================================
+
+@require_GET
+def descargar_mis_datos(request):
+    """
+    Devuelve TODO lo que guardamos de esta persona, en un fichero JSON que se
+    descarga. Formato legible y completo, como exige el RGPD.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
+
+    from cards.models import UserCard, UserPack
+
+    u = request.user
+    datos = {
+        'exportado_el': timezone.now().isoformat(),
+        'cuenta': {
+            'username': u.username,
+            'email': u.email,
+            'nombre': u.first_name,
+            'apellidos': u.last_name,
+            'nombre_mostrado': u.nombre_mostrado,
+            'biografia': u.bio,
+            'foto_de_la_intra': u.profile_image,
+            'foto_subida_por_ti': u.avatar.url if u.avatar else None,
+            'id_42': u.id_42,
+            'es_alumni': u.is_alumni,
+            'puntuacion_elo': u.elo,
+            'estado': u.estado,
+            'alta': u.date_joined.isoformat(),
+            'ultimo_acceso': u.last_login.isoformat() if u.last_login else None,
+            'ultimo_regalo_diario': u.ultimo_regalo_diario.isoformat() if u.ultimo_regalo_diario else None,
+            # La contraseña NO se incluye: está cifrada de forma irreversible y
+            # ni nosotros podemos leerla.
+        },
+        'album': [
+            {
+                'carta': uc.card.login,
+                'rareza': uc.card.tier,
+                'copias': uc.cantidad,
+                'obtenida_el': uc.fecha_obtencion.isoformat(),
+            }
+            for uc in UserCard.objects.filter(user=u).select_related('card')
+        ],
+        'sobres': [
+            {'tipo': p.tipo_sobre, 'cantidad': p.cantidad}
+            for p in UserPack.objects.filter(user=u)
+        ],
+    }
+
+    respuesta = JsonResponse(datos, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+    respuesta['Content-Disposition'] = f'attachment; filename="mis-datos-{u.username}.json"'
+    return respuesta
+
+
+@require_POST
+def borrar_mi_cuenta(request):
+    """
+    Borra la cuenta y todo lo asociado (álbum y sobres se van en cascada).
+    Pide confirmación explícita en el cuerpo para que un clic accidental o una
+    petición suelta no borre la cuenta de nadie.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
+
+    datos = _leer_json(request)
+    if datos.get('confirmacion') != 'BORRAR MI CUENTA':
+        return JsonResponse({
+            'error': 'Falta la confirmación.',
+            'detalle': 'Para borrar la cuenta hay que enviar la confirmación exacta.',
+        }, status=400)
+
+    usuario = request.user
+    nombre = usuario.username
+
+    # ⚠️ El avatar hay que borrarlo A MANO. Al borrar el usuario, Django quita
+    # la fila de la base de datos pero NO toca el fichero del disco: la foto se
+    # quedaría ahí para siempre. Y en la Política de Privacidad prometemos que
+    # al borrar la cuenta no queda nada, así que hay que cumplirlo.
+    if usuario.avatar:
+        usuario.avatar.delete(save=False)
+
+    logout(request)   # cerramos la sesión antes de borrar
+    usuario.delete()  # el álbum y los sobres se borran en cascada
+
+    return JsonResponse({'mensaje': f'La cuenta de {nombre} y todos sus datos se han borrado.'})
 
 
 @require_GET
@@ -176,7 +599,7 @@ def list_users(request):
                 'username': user.username,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
-                'profile_image': user.profile_image,
+                'profile_image': user.foto,
                 'elo': user.elo,
                 'estado': user.estado,
                 'is_alumni': user.is_alumni,
