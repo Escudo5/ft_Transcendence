@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from cards.views import crear_carta, lista_cartas, home, login_alumno
@@ -16,3 +18,11 @@ urlpatterns = [
     path('crear/', crear_carta, name='crear_carta'),
     path('catalogo/', lista_cartas, name='lista_cartas'),
 ]
+
+# 🖼️ Para que se vean los avatares que sube la gente.
+#
+# Esto solo funciona en modo desarrollo (DEBUG), que es como trabajáis y como
+# se hace la evaluación. En un servidor de verdad estas fotos las serviría
+# nginx directamente, porque Django sirviendo ficheros es lento.
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
