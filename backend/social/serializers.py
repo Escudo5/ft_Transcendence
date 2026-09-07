@@ -17,6 +17,9 @@ class UserMinSerializer(serializers.ModelSerializer):
     # No se manda el campo profile_image tal cual, sino la foto ya decidida
     # (avatar propio > foto de la Intra > avatar por defecto). Si no, los
     # amigos saldrían con la foto de 42 aunque se hubieran puesto otra.
+    # El nombre para enseñar: el que se haya puesto en su perfil, si no su
+    # nombre real de la Intra, y si tampoco, el login.
+    nombre = serializers.SerializerMethodField()
     profile_image = serializers.CharField(source='foto', read_only=True)
     # Lo mismo con el estado: 'estado_real' tiene en cuenta cuándo se le vio
     # por última vez, así que no se queda nadie "en línea" para siempre por
@@ -25,7 +28,10 @@ class UserMinSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'profile_image', 'estado']
+        fields = ['id', 'username', 'nombre', 'profile_image', 'estado']
+
+    def get_nombre(self, obj):
+        return obj.nombre_mostrado or obj.get_full_name() or obj.username
 
 
 class FriendRequestSerializer(serializers.ModelSerializer):
