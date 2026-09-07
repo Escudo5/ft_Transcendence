@@ -1,38 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ListaChats from './ListaChats'; // 👈 Importamos el componente
+import ListaChats from './ListaChats';
+import BuscarAmigos from './BuscarAmigos';
+import SolicitudesEnviadas from './SolicitudesEnviadas';
 import './Chat.css';
-
-/**
- * 🔌 KONRAD: aquí es donde tu chat se engancha al servidor.
- *
- * Tus pantallas no han cambiado: ListaChats.jsx sigue igual, porque lo hiciste
- * bien y no sabe de dónde salen los datos. Lo único que cambia es que la lista
- * de amigos ya no está escrita a mano, sino que viene de /api/social/amigos/.
- *
- * El servidor los manda con otros nombres de campo, así que aquí se traducen
- * a los tuyos (ver 'adaptarAmigo' abajo). Si necesitas algún dato más, dímelo
- * y lo añado al servidor en vez de inventarlo aquí.
- */
 
 const API = import.meta.env.VITE_API_URL || '/api';
 
-// El servidor dice 'online' / 'offline' / 'ingame'; tú enseñas texto
 const TEXTO_ESTADO = {
   online: 'En línea',
   ingame: 'Jugando',
   offline: 'Desconectado',
 };
 
-/** Traduce un amigo del servidor al formato que espera ListaChats. */
 function adaptarAmigo(u) {
   return {
     id: u.id,
     login: u.username,
     nombre: u.nombre,
-    // Tu componente pinta {amigo.avatar} dentro de un div, así que aquí va
-    // directamente la foto ya montada. El servidor decide cuál: la que subió,
-    // la de la Intra o un círculo con su inicial. Así no tocamos ListaChats.
     avatar: (
       <img
         src={u.profile_image}
@@ -41,7 +26,6 @@ function adaptarAmigo(u) {
       />
     ),
     estado: TEXTO_ESTADO[u.estado] || u.estado,
-    // Todavía no hay bloqueo en el servidor: de momento vive solo aquí
     bloqueado: false,
   };
 }
@@ -54,7 +38,16 @@ function ChatSocial() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  // 📡 Traer la lista de amigos de verdad al abrir la página
+  // Estados para abrir o cerrar las ventanas flotantes
+  const [modalBuscarAbierto, setModalBuscarAbierto] = useState(false);
+  const [modalSolicitudesAbierto, setModalSolicitudesAbierto] = useState(false);
+
+  // Lista de solicitudes recibidas pendientes de aceptar
+  const [solicitudes, setSolicitudes] = useState([
+    { id: 1, login: "jdoe", nombre: "John Doe", avatar: "👨‍💻" }
+  ]);
+
+  // Traer lista de amigos real del servidor
   useEffect(() => {
     async function cargarAmigos() {
       try {
@@ -82,7 +75,6 @@ function ChatSocial() {
     navigate('/Home');
   };
 
-  // Ya no es un aviso: la página de perfil existe de verdad
   const visitarPerfil = (login) => {
     navigate(`/perfil/${login}`);
   };
@@ -104,13 +96,37 @@ function ChatSocial() {
     }
   };
 
-  const abrirModalAmigos = () => {
-    alert("Próximamente: Se abrirá el modal para buscar nuevos estudiantes (Punto 2).");
+  // Añadir amigo desde BuscarAmigos.jsx
+  const agregarNuevoAmigo = (nuevoUsuario) => {
+    const yaExiste = amigos.some(a => a.login === nuevoUsuario.login);
+    if (yaExiste) {
+      alert("Este usuario ya está en tu lista de amigos.");
+      return;
+    }
+    const nuevoContacto = {
+      ...nuevoUsuario,
+      estado: "En línea",
+      bloqueado: false
+    };
+    setAmigos([...amigos, nuevoContacto]);
+    alert(`¡Has añadido a ${nuevoUsuario.nombre}!`);
+  };
+
+  // Decisión del usuario en SolicitudesEnviadas.jsx
+  const responderSolicitud = (idSolicitud, accion) => {
+    if (accion === 'aceptar') {
+      const solicitudAceptada = solicitudes.find(s => s.id === idSolicitud);
+      if (solicitudAceptada) {
+        agregarNuevoAmigo(solicitudAceptada);
+      }
+    }
+    // Eliminamos la solicitud de la lista tras decidir
+    setSolicitudes(solicitudes.filter(s => s.id !== idSolicitud));
   };
 
   return (
     <div className="chat-main-container">
-      {/* 1. COLUMNA IZQUIERDA: Módulo ListaChats */}
+      {/* 1. COLUMNA IZQUIERDA */}
       <ListaChats
         amigos={amigos}
         chatSeleccionado={chatSeleccionado}
@@ -118,10 +134,26 @@ function ChatSocial() {
         clickVolverHome={clickVolverHome}
         visitarPerfil={visitarPerfil}
         alternarBloqueoUsuario={alternarBloqueoUsuario}
-        abrirModalAmigos={abrirModalAmigos}
+        abrirModalAmigos={() => setModalBuscarAbierto(true)}
+        abrirModalSolicitudes={() => setModalSolicitudesAbierto(true)}
+        numSolicitudesPendientes={solicitudes.length}
       />
 
-      {/* 2. COLUMNA DERECHA: Zona de Conversación provisional */}
+      {/* 2. VENTANAS EMERGENTES */}
+      <BuscarAmigos
+        isOpen={modalBuscarAbierto}
+        onClose={() => setModalBuscarAbierto(false)}
+        agregarAmigo={agregarNuevoAmigo}
+      />
+
+      <SolicitudesEnviadas
+        isOpen={modalSolicitudesAbierto}
+        onClose={() => setModalSolicitudesAbierto(false)}
+        solicitudes={solicitudes}
+        responderSolicitud={responderSolicitud}
+      />
+
+      {/* 3. COLUMNA DERECHA (Próximo paso: AreaChat) */}
       <div className="chat-area">
         {chatSeleccionado ? (
           <>
@@ -163,14 +195,11 @@ function ChatSocial() {
                 <p style={{ color: '#ff9b9b' }}>{error}</p>
               </>
             ) : amigos.length === 0 ? (
-              // Sin esto, una lista vacía parece que la página está rota
               <>
                 <span style={{ fontSize: '4rem' }}>👋</span>
                 <h3>Todavía no tienes amigos</h3>
                 <p>
                   Entra en el perfil de alguien y pulsa <strong>Añadir amigo</strong>.
-                  Puedes encontrar gente en la{' '}
-                  <a href="/ranking" style={{ color: '#00ffcc' }}>clasificación</a>.
                 </p>
               </>
             ) : (

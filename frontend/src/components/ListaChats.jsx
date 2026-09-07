@@ -7,17 +7,15 @@ function ListaChats({
   clickVolverHome,
   visitarPerfil,
   alternarBloqueoUsuario,
-  abrirModalAmigos
+  abrirModalAmigos,
+  abrirModalSolicitudes, // 👈 Nueva prop para abrir la ventana de solicitudes
+  numSolicitudesPendientes = 0 // 👈 Opcional: Contador para mostrar una bolita si hay peticiones
 }) {
-  // 1. Estado para almacenar el texto que se escribe en el buscador
   const [busqueda, setBusqueda] = useState('');
-
-  // 2. Estado para saber qué menú de 3 puntos está abierto (guarda el login del usuario)
   const [menuAbiertoLogin, setMenuAbiertoLogin] = useState(null);
 
-  // 3. Función para alternar el menú desplegable de un amigo específico
   const toggleMenuAmigo = (e, login) => {
-    e.stopPropagation(); // Evita seleccionar el chat al hacer clic en los 3 puntos
+    e.stopPropagation();
     if (menuAbiertoLogin === login) {
       setMenuAbiertoLogin(null);
     } else {
@@ -25,7 +23,6 @@ function ListaChats({
     }
   };
 
-  // 4. Filtrado en tiempo real de amigos
   const amigosFiltrados = amigos.filter((amigo) => {
     const texto = busqueda.toLowerCase();
     return (
@@ -36,14 +33,50 @@ function ListaChats({
 
   return (
     <div className="chat-sidebar">
-      {/* CABECERA SUPERIOR */}
+      {/* CABECERA SUPERIOR CON BOTONES DE ACCIÓN */}
       <div className="sidebar-header">
-        <button onClick={clickVolverHome} className="btn-volver">
+        <button onClick={clickVolverHome} className="btn-volver" title="Volver al menú principal">
           ← Home
         </button>
-        <button onClick={abrirModalAmigos} className="btn-volver" style={{ borderColor: '#00bfff', color: '#00bfff' }}>
-          + Amigos
-        </button>
+
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          <button 
+            onClick={abrirModalAmigos} 
+            className="btn-volver" 
+            style={{ borderColor: '#00bfff', color: '#00bfff', padding: '0.4rem 0.7rem', fontSize: '0.8rem' }}
+          >
+            + Amigos
+          </button>
+
+          <button 
+            onClick={abrirModalSolicitudes} 
+            className="btn-volver" 
+            style={{ 
+              borderColor: '#ff007f', 
+              color: '#ff007f', 
+              padding: '0.4rem 0.7rem', 
+              fontSize: '0.8rem',
+              position: 'relative'
+            }}
+          >
+            Solicitudes
+            {numSolicitudesPendientes > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-5px',
+                right: '-5px',
+                backgroundColor: '#ff007f',
+                color: '#fff',
+                borderRadius: '50%',
+                padding: '2px 6px',
+                fontSize: '0.65rem',
+                fontWeight: 'bold'
+              }}>
+                {numSolicitudesPendientes}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* BUSCADOR DE CONTACTOS */}
@@ -85,12 +118,11 @@ function ListaChats({
                   borderColor: estaSeleccionado ? '#00ffcc' : '#2a2e3d'
                 }}
               >
-                {/* ZONA CLICABLE DE LA TARJETA */}
                 <div
                   className="info-amigo-click"
                   onClick={() => {
                     setChatSeleccionado(amigo);
-                    setMenuAbiertoLogin(null); // Cierra cualquier menú flotante abierto
+                    setMenuAbiertoLogin(null);
                   }}
                 >
                   <div className="avatar-header">{amigo.avatar}</div>
@@ -102,7 +134,6 @@ function ListaChats({
                   </div>
                 </div>
 
-                {/* BOTÓN DE 3 PUNTOS VERTICALES */}
                 <button
                   className="btn-opciones-sidebar"
                   onClick={(e) => toggleMenuAmigo(e, amigo.login)}
@@ -111,7 +142,6 @@ function ListaChats({
                   ⋮
                 </button>
 
-                {/* MENÚ FLOTANTE DESPLEGABLE */}
                 {menuAbiertoLogin === amigo.login && (
                   <div className="menu-desplegable-sidebar">
                     <button
