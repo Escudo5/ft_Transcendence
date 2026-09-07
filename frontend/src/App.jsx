@@ -286,6 +286,7 @@ import Ranking from './components/Ranking';
 import Legal from './components/Legal';
 import PieLegal from './components/PieLegal';
 import TiendaSobres from './components/TiendaSobres';
+import ChatSocial from './components/ChatSocial';
 
 const router = createBrowserRouter([
   {
@@ -311,6 +312,10 @@ const router = createBrowserRouter([
   {
     path: "/inventario",
     element: <Inventario />,
+  },
+  {
+    path: "/chatsocial",
+    element: <ChatSocial />,
   },
   {
     path: "/tienda-sobre",
