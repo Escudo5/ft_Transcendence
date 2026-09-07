@@ -14,6 +14,11 @@ import random
 from django.contrib.auth import get_user_model
 from .models import Card, UserCard, UserPack
 from django.http import JsonResponse
+import json
+from django.db import transaction
+from django.db.models import Count, Sum
+from django.db.models.functions import Coalesce
+from django.utils import timezone
 
 class HealthCheckView(APIView):
     def get(self, request):
@@ -40,25 +45,22 @@ def lista_cartas(request):
     return render(request,'cards/lista_cartas.html',{'cartas':cartas})
 
 @api_view(['GET'])
-def album_usuario(request, id_user):
-    try:
-        # 1. Verificamos que el usuario exista en PostgreSQL
-        usuario = CustomUser.objects.get(id=id_user)
-        
-        # 2. Obtenemos todas sus cartas optimizando la consulta SQL
-        album_cartas = UserCard.objects.filter(user=usuario).select_related('card')
-        
-        # 3. Serializamos la lista completa
-        serializer = UserCardSerializer(album_cartas, many=True)
-        
-        # 4. Devolvemos la respuesta
-        return Response(serializer.data, status=status.HTTP_200_OK)
-        
-    except CustomUser.DoesNotExist:
-        return Response(
-            {"error": f"El usuario con id {id_user} no existe."},
-            status=status.HTTP_404_NOT_FOUND
-        )
+@permission_classes([IsAuthenticated])  # Exige que el usuario esté autenticado
+def album_usuario(request):
+    """
+    Devuelve las cartas del usuario que tiene la sesión activa (request.user).
+    """
+    # 1. Django obtiene el usuario directamente de la sesión/token
+    usuario = request.user
+
+    # 2. Obtenemos todas sus cartas optimizando la consulta SQL
+    album_cartas = UserCard.objects.filter(user=usuario).select_related('card')
+
+    # 3. Serializamos la lista completa
+    serializer = UserCardSerializer(album_cartas, many=True)
+
+    # 4. Devolvemos la respuesta
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])  # Decorador necesario para Django REST Framework
 def login_alumno(request, login):
@@ -112,7 +114,89 @@ CONFIGURACION_SOBRES = {
         "cartas_por_sobre": 5
     }
 }
+TIER_ORDER = ["Blackhole", "Junior", "Senior", "Alumni", "Transcender"]
+@api_view(['POST'])
+@csrf_exempt  # Permite recibir peticiones POST sin error 403 CSRF durante pruebas
+def make_contract(request):
+    # 1. Validar autenticación
+    if not request.user.is_authenticated:  # <-- Corregido (is_authenticated)
+        return JsonResponse({'error': 'Usuario no logueado.'}, status=401)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido.'}, status=405)
 
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido.'}, status=400)
+
+    cartas = data.get('cartas', [])
+    cartas_len = sum(item.get('cantidad', 0) for item in cartas)
+    
+    # 2. Validar que la suma total de cartas a usar sea exactamente 4
+    if cartas_len != 4:
+        return JsonResponse({'error': 'Número de cartas inválido.'}, status=400)
+
+    # 3. Agrupar cantidades por card_id (evita fallos si mandan la misma carta dos veces)
+    cartas_agrupadas = {}
+    for item in cartas:
+        c_id = item.get('card')
+        c_cant = item.get('cantidad', 0)
+        cartas_agrupadas[c_id] = cartas_agrupadas.get(c_id, 0) + c_cant
+
+    tier_base = None
+
+    # 4. Validar inventario, regla del resguardo y coherencia de tiers
+    for card_id, card_cuantity in cartas_agrupadas.items():
+        user_card = UserCard.objects.filter(user=request.user, card_id=card_id).first()
+        
+        if not user_card:
+            return JsonResponse({'error': f'La carta con ID {card_id} no se encuentra en el álbum.'}, status=400)
+        
+        if (user_card.cantidad - card_cuantity) < 1:
+            return JsonResponse({'error': 'No te puedes quedar con menos de 1 carta en tu inventario.'}, status=400)
+        
+        card_tier = user_card.card.tier
+        if tier_base is None:
+            tier_base = card_tier
+        elif card_tier != tier_base:
+            return JsonResponse({'error': 'Los tier de las cartas deben ser todos iguales.'}, status=400)
+
+    # 5. Calcular el siguiente tier
+    actual_index = TIER_ORDER.index(tier_base)
+    if actual_index == len(TIER_ORDER) - 1:
+        return JsonResponse({'error': 'No se puede hacer un contrato con el tier más alto.'}, status=400)
+    
+    result_tier = TIER_ORDER[actual_index + 1]
+
+    # 6. Transacción atómica: restar cartas viejas y otorgar la nueva
+    with transaction.atomic():
+        for card_id, card_cuantity in cartas_agrupadas.items():
+            user_card = UserCard.objects.get(user=request.user, card_id=card_id)
+            user_card.cantidad -= card_cuantity
+            user_card.save()
+
+        tier_cards = list(Card.objects.filter(tier=result_tier))
+        if not tier_cards:
+            return JsonResponse({'error': f'No hay cartas disponibles en el tier {result_tier}.'}, status=400)  # <-- Corregido (f-string)
+
+        result_card = random.choice(tier_cards)
+
+        # <-- Corregido (UserCard.objects.get_or_create)
+        new_user_card, created = UserCard.objects.get_or_create(
+            user=request.user,
+            card=result_card,
+            defaults={'cantidad': 1}
+        )
+        if not created:
+            new_user_card.cantidad += 1
+            new_user_card.save()
+
+    return JsonResponse({
+        'mensaje': '¡Contrato realizado con éxito!',
+        'carta_obtenida': CardSerializer(result_card).data
+    }, status=200)
+        
 def open_pack(tipo_sobre):
     """
     Selecciona 5 cartas aleatorias de la base de datos basándose 
@@ -143,6 +227,133 @@ def open_pack(tipo_sobre):
         cartas_seleccionadas.append(carta_aleatoria)
         
     return cartas_seleccionadas
+
+
+# =====================================================================
+# 🎁 REGALO DIARIO
+# Cada persona recibe 2 sobres comunes al día. NO se acumulan: si pasas
+# tres días sin entrar, al volver recibes 2, no seis. Así entrar cada día
+# tiene sentido.
+# El día cambia a medianoche, hora de Madrid (la zona horaria del proyecto).
+# =====================================================================
+SOBRES_REGALO_DIARIO = 2
+TIPO_SOBRE_REGALO = 'comun'
+
+
+def _puede_recoger_regalo(usuario):
+    """¿Le toca regalo hoy? Le toca si nunca lo recogió o si fue otro día."""
+    hoy = timezone.localdate()
+    return usuario.ultimo_regalo_diario is None or usuario.ultimo_regalo_diario < hoy
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def reclamar_regalo_diario(request):
+    """
+    Entrega los sobres del día al usuario conectado.
+    Va aparte de la consulta a propósito: consultar no debe cambiar nada, y
+    entregar sí. Así recargar la página nunca regala sobres por accidente.
+    """
+    usuario = request.user
+
+    if not _puede_recoger_regalo(usuario):
+        return Response(
+            {'error': 'Ya has recogido tu regalo de hoy. Vuelve mañana.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Todo junto o nada: o se apunta la fecha y se dan los sobres, o no pasa
+    # nada. Si fallara a la mitad, alguien podría llevarse sobres cada vez.
+    with transaction.atomic():
+        # Bloqueamos la fila del usuario mientras tanto: si llegan dos
+        # peticiones a la vez (doble clic), la segunda espera y ya verá la
+        # fecha apuntada, así que no cobra dos veces.
+        usuario_bloqueado = CustomUser.objects.select_for_update().get(pk=usuario.pk)
+        if not _puede_recoger_regalo(usuario_bloqueado):
+            return Response(
+                {'error': 'Ya has recogido tu regalo de hoy. Vuelve mañana.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        pack, _ = UserPack.objects.select_for_update().get_or_create(
+            user=usuario_bloqueado, tipo_sobre=TIPO_SOBRE_REGALO
+        )
+        pack.cantidad += SOBRES_REGALO_DIARIO
+        pack.last_daily = timezone.now()
+        pack.save()
+
+        usuario_bloqueado.ultimo_regalo_diario = timezone.localdate()
+        usuario_bloqueado.save(update_fields=['ultimo_regalo_diario'])
+
+    return Response({
+        'mensaje': f'¡Has recibido {SOBRES_REGALO_DIARIO} sobres comunes!',
+        'sobres_recibidos': SOBRES_REGALO_DIARIO,
+        'sobres_totales': pack.cantidad,
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ranking(request):
+    """
+    Clasificación de coleccionistas: quién tiene más cartas distintas.
+
+    Se ordena por colección y no por el elo porque el elo todavía es 1000 para
+    todo el mundo (no hay juego que lo mueva), así que un ranking por elo sería
+    una lista plana sin sentido. Cuando haya partidas se puede añadir otra
+    pestaña ordenada por elo.
+
+    Una sola consulta con anotaciones, para no acabar preguntando a la base de
+    datos una vez por usuario.
+    """
+    total_catalogo = Card.objects.count() or 1
+
+    usuarios = (
+        CustomUser.objects
+        .annotate(
+            distintas=Count('album', distinct=True),
+            copias=Coalesce(Sum('album__cantidad'), 0),
+        )
+        .order_by('-distintas', '-copias', 'username')[:50]
+    )
+
+    clasificacion = []
+    for posicion, u in enumerate(usuarios, start=1):
+        clasificacion.append({
+            'posicion': posicion,
+            'username': u.username,
+            'nombre': u.nombre_mostrado or u.get_full_name() or u.username,
+            # .foto: enseña el avatar que haya subido y, si no tiene, el de la Intra
+            'profile_image': u.foto,
+            'estado': u.estado,
+            'cartas_distintas': u.distintas,
+            'cartas_con_repetidas': u.copias,
+            'porcentaje': round(u.distintas / total_catalogo * 100, 1),
+            'elo': u.elo,
+            'soy_yo': u.pk == request.user.pk,
+        })
+
+    return Response({
+        'cartas_en_catalogo': total_catalogo,
+        'clasificacion': clasificacion,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mis_sobres(request):
+    """
+    Cuántos sobres tiene el usuario conectado, por tipo.
+    El front lo consulta ANTES de dejar tocar el sobre: así, si no te queda
+    ninguno, se avisa de entrada en vez de dejarte romper el sobre para nada.
+    Devuelve todos los tipos, aunque sea con 0, para que el front no tenga que
+    adivinar cuáles existen.
+    """
+    inventario = {tipo: 0 for tipo in CONFIGURACION_SOBRES}
+    for pack in UserPack.objects.filter(user=request.user):
+        if pack.tipo_sobre in inventario:
+            inventario[pack.tipo_sobre] = pack.cantidad
+    return Response({'sobres': inventario, 'total': sum(inventario.values())})
 
 
 # Usamos los decoradores de Django REST Framework para asegurar autenticación

@@ -15,6 +15,9 @@ function Inventario() {
     navigate('/sobre');
   };
 
+  const irTiendaSobres = () => {
+    navigate('/tienda-sobre');
+  }
   const renderBotonVolver = () => {
     return (
       <button
@@ -125,6 +128,12 @@ function Inventario() {
     );
   };
 
+  // ⚠️ Estas dos funciones ya NO se usan desde aqui: el Inventario ahora solo
+  // lleva a la tienda de sobres. Se dejan a proposito porque son el ejemplo que
+  // funciona de como llamar al backend para abrir un sobre (pedir el token CSRF
+  // y enviarlo en la cabecera). TiendaSobres.jsx todavia no habla con el
+  // backend: cuando se conecte, este es el codigo a reutilizar. No borrar hasta
+  // entonces.
   const obtenerTokenCsrf = async () => {
     const response = await fetch(`${apiBaseUrl}/users/csrf/`, {
       credentials: 'include',
@@ -191,26 +200,60 @@ function Inventario() {
           TIENDA DE SOBRES
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={abrirSobreComun}
-            disabled={cargandoSobre}
+        {/* SOBRE VISUAL (Konrad): al pulsarlo lleva a la tienda de sobres */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <div 
+            onClick={irTiendaSobres}
             style={{
-              padding: '0.9rem 1.2rem',
-              borderRadius: '10px',
-              border: 'none',
-              backgroundColor: cargandoSobre ? '#4b5563' : '#00c7b7',
-              color: 'white',
-              cursor: cargandoSobre ? 'not-allowed' : 'pointer',
-              fontWeight: '700'
+              width: '140px',
+              height: '90px',
+              backgroundColor: '#1a1a24',
+              border: '3px solid #00ffcc',
+              borderRadius: '8px',
+              position: 'relative',
+              cursor: 'pointer',
+              boxShadow: '0 0 15px rgba(0, 255, 204, 0.3)',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.08)';
+              e.currentTarget.style.boxShadow = '0 0 25px rgba(0, 255, 204, 0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 255, 204, 0.3)';
             }}
           >
-            {cargandoSobre ? 'Abriendo...' : 'Abrir sobre común'}
-          </button>
+            {/* Triángulo superior del sobre (Efecto carta clásica) */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: 0,
+              height: 0,
+              borderStyle: 'solid',
+              borderWidth: '40px 67px 0 67px',
+              borderColor: 'rgba(0, 255, 204, 0.15) transparent transparent transparent'
+            }} />
+            
+            {/* Sello central místico estilo Bakugan / Orbe de Energía */}
+            <div style={{
+              width: '24px',
+              height: '24px',
+              backgroundColor: '#ff9ffc',
+              borderRadius: '50%',
+              zIndex: 2,
+              boxShadow: '0 0 10px #ff9ffc',
+              border: '2px solid #fff'
+            }} />
 
-          <span style={{ color: 'rgba(255,255,255,0.8)' }}>
-            El botón llama al endpoint del backend para abrir un sobre y registrar las cartas.
-          </span>
+            <span style={{ position: 'absolute', bottom: '5px', fontSize: '0.65rem', color: '#00ffcc', fontWeight: 'bold', letterSpacing: '1px', zIndex: 2 }}>
+              COMPRAR
+            </span>
+          </div>
         </div>
 
         {mensajeSobre && (
@@ -224,7 +267,7 @@ function Inventario() {
 
   const PaginaInventario = () => {
     return (
-      <div className="app-container" style={{ position: 'relative', minHeight: '100vh', padding: '2rem' }}>
+      <div className="app-container" style={{ position: 'relative', minHeight: '95vh', padding: '2rem' }}>
         
         {renderBotonVolver()}
 
