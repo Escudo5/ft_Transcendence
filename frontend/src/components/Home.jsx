@@ -65,8 +65,8 @@ function Home() {
   }, [cardsEndpoint]);
 
   // Función que se activa al pulsar el botón de Game
-  const Game = () => {
-    navigate('/game'); // Te manda directo a la pantalla de game
+  const ChatSocial = () => {
+    navigate('/chatsocial'); // Te manda directo a la pantalla de game
   };
 
   // Funciones para navegar dentro de la galería ampliada
@@ -133,8 +133,8 @@ function Home() {
         <Link to="/ranking" className="back-btn-link" style={{ textAlign: 'center', padding: '1.5rem', fontSize: '1.25rem', display: 'block', background: '#333', color: 'white', textDecoration: 'none', border: '1px solid #555', borderRadius: '8px', fontWeight: 'bold' }}>
           🏆 Clasificación
         </Link>
-        <button className="back-btn-link" style={{ padding: '1.5rem', fontSize: '1.25rem', cursor: 'pointer', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', fontWeight: 'bold' }} onClick={() => navigate('/game')}>
-          🎮 Iniciar Game
+        <button className="back-btn-link" style={{ padding: '1.5rem', fontSize: '1.25rem', cursor: 'pointer', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', fontWeight: 'bold' }} onClick={() => navigate('/chatsocial')}>
+          ChatSocial
         </button>
       </section>
 
