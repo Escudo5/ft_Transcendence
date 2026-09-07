@@ -1,0 +1,371 @@
+import { useState } from 'react';
+import PieLegal from './PieLegal';
+
+/**
+ * PANTALLA DE ACCESO
+ * ------------------
+ * Es lo primero que ve alguien que llega sin sesión abierta. Ofrece las dos
+ * puertas de entrada de la aplicación:
+ *
+ *   1) Entrar con la cuenta de 42 (OAuth) -> te lleva a la Intra
+ *   2) Entrar con email y contraseña     -> formularios de login y registro
+ *
+ * Las dos son independientes: quien entra por una nunca pasa por la otra.
+ *
+ * 🎨 NOTA PARA KONRAD Y SERGIO: los estilos usan las variables de styles.css
+ * (--bg-card-base, --accent-color, etc.), así que si cambiáis la paleta esta
+ * pantalla cambia con el resto. Está hecha para que funcione; el diseño fino
+ * es vuestro, cambiadlo sin miedo. La lógica vive en las funciones de arriba
+ * y lo visual está todo en el objeto 'estilos'.
+ */
+
+// ==========================================================================
+// ESTILOS (siguiendo las variables del proyecto)
+// ==========================================================================
+const estilos = {
+  pantalla: {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '2rem 1rem',
+    fontFamily: 'var(--font-body)',
+  },
+  tarjeta: {
+    width: '100%',
+    maxWidth: '420px',
+    background: 'var(--bg-card-base)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '16px',
+    padding: '2rem',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+  },
+  titulo: {
+    fontFamily: 'var(--font-heading)',
+    fontSize: '2rem',
+    fontWeight: 800,
+    textAlign: 'center',
+    margin: 0,
+    background: 'linear-gradient(to right, #38bdf8, #818cf8, #c084fc)',
+    WebkitBackgroundClip: 'text',
+    backgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    letterSpacing: '-0.025em',
+  },
+  subtitulo: {
+    color: 'var(--text-secondary)',
+    fontSize: '0.95rem',
+    textAlign: 'center',
+    margin: '0.5rem 0 1.75rem',
+  },
+  etiqueta: {
+    fontFamily: 'var(--font-heading)',
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    color: 'var(--text-secondary)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    marginBottom: '0.4rem',
+    display: 'block',
+  },
+  campo: {
+    width: '100%',
+    boxSizing: 'border-box',
+    background: 'var(--bg-control)',
+    border: '1px solid var(--border-color)',
+    color: 'var(--text-primary)',
+    padding: '0.75rem 1rem',
+    borderRadius: '8px',
+    fontFamily: 'var(--font-body)',
+    fontSize: '0.95rem',
+    outline: 'none',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  campoConError: {
+    borderColor: '#f87171',
+  },
+  grupo: {
+    marginBottom: '1.1rem',
+  },
+  errorCampo: {
+    color: '#f87171',
+    fontSize: '0.82rem',
+    marginTop: '0.35rem',
+  },
+  avisoGeneral: {
+    background: 'rgba(248, 113, 113, 0.1)',
+    border: '1px solid rgba(248, 113, 113, 0.4)',
+    color: '#fca5a5',
+    borderRadius: '8px',
+    padding: '0.75rem 1rem',
+    fontSize: '0.88rem',
+    marginBottom: '1.1rem',
+  },
+  botonPrincipal: {
+    width: '100%',
+    background: 'var(--accent-color)',
+    color: '#0c0f16',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '0.9rem',
+    fontFamily: 'var(--font-heading)',
+    fontSize: '1rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    transition: 'opacity 0.2s',
+  },
+  botonSecundario: {
+    width: '100%',
+    background: 'var(--bg-control)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
+    padding: '0.9rem',
+    fontFamily: 'var(--font-heading)',
+    fontSize: '1rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    marginTop: '0.85rem',
+  },
+  enlace: {
+    background: 'none',
+    border: 'none',
+    color: 'var(--accent-color)',
+    cursor: 'pointer',
+    fontSize: '0.88rem',
+    fontFamily: 'var(--font-body)',
+    padding: 0,
+  },
+  pie: {
+    textAlign: 'center',
+    marginTop: '1.5rem',
+    color: 'var(--text-secondary)',
+    fontSize: '0.88rem',
+  },
+  separador: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    margin: '1.5rem 0',
+    color: 'var(--text-secondary)',
+    fontSize: '0.8rem',
+  },
+  lineaSeparador: {
+    flex: 1,
+    height: '1px',
+    background: 'var(--border-color)',
+  },
+};
+
+// ==========================================================================
+// VALIDACIONES DEL NAVEGADOR
+// El backend las repite todas por su cuenta (nunca hay que fiarse de lo que
+// llega del navegador), pero comprobarlas aquí evita viajes innecesarios y
+// le da respuesta inmediata a la persona. El subject las pide en ambos lados.
+// ==========================================================================
+function validarRegistro({ nombre, email, password, password2 }) {
+  const errores = {};
+  if (!nombre.trim()) errores.nombre = 'Escribe un nombre.';
+  if (!email.trim()) errores.email = 'Escribe tu correo.';
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errores.email = 'Ese correo no parece válido.';
+  if (!password) errores.password = 'Escribe una contraseña.';
+  else if (password.length < 8) errores.password = 'Mínimo 8 caracteres.';
+  if (password && password2 !== password) errores.password2 = 'Las contraseñas no coinciden.';
+  return errores;
+}
+
+// ==========================================================================
+// CAMPO DE FORMULARIO REUTILIZABLE
+// ⚠️ Va FUERA del componente a propósito: si se define dentro, React lo trata
+// como un componente nuevo en cada pulsación y el input pierde el foco a cada
+// letra que escribes.
+// ==========================================================================
+function Campo({ id, etiqueta, tipo = 'text', valor, onChange, error, autoComplete }) {
+  return (
+    <div style={estilos.grupo}>
+      <label htmlFor={id} style={estilos.etiqueta}>{etiqueta}</label>
+      <input
+        id={id}
+        type={tipo}
+        value={valor}
+        onChange={onChange}
+        autoComplete={autoComplete}
+        style={{ ...estilos.campo, ...(error ? estilos.campoConError : {}) }}
+        aria-invalid={error ? 'true' : 'false'}
+      />
+      {error && <div style={estilos.errorCampo}>{error}</div>}
+    </div>
+  );
+}
+
+// ==========================================================================
+// COMPONENTE
+// ==========================================================================
+function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
+  // Qué se está viendo: la elección inicial, el login o el registro
+  const [vista, setVista] = useState('elegir');
+  const [enviando, setEnviando] = useState(false);
+  const [avisoGeneral, setAvisoGeneral] = useState('');
+  const [errores, setErrores] = useState({});
+  const [datos, setDatos] = useState({ nombre: '', email: '', password: '', password2: '' });
+
+  const cambiar = (campo) => (e) => setDatos({ ...datos, [campo]: e.target.value });
+
+  const irA = (nuevaVista) => {
+    setVista(nuevaVista);
+    setErrores({});
+    setAvisoGeneral('');
+  };
+
+  // Django protege las peticiones que envían datos: hay que pedirle un
+  // "salvoconducto" (token CSRF) y mandárselo de vuelta en la cabecera.
+  const pedirToken = async () => {
+    const res = await fetch(`${apiBaseUrl}/users/csrf/`, { credentials: 'include' });
+    const { csrfToken } = await res.json();
+    return csrfToken;
+  };
+
+  const enviar = async (ruta, cuerpo) => {
+    setEnviando(true);
+    setErrores({});
+    setAvisoGeneral('');
+    try {
+      const token = await pedirToken();
+      const res = await fetch(`${apiBaseUrl}/users/${ruta}/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
+        body: JSON.stringify(cuerpo),
+      });
+      const respuesta = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        // El backend nos dice qué campo concreto falla; si no, mensaje general
+        if (respuesta.campos) setErrores(respuesta.campos);
+        setAvisoGeneral(respuesta.campos ? '' : respuesta.error || 'No se ha podido completar.');
+        return;
+      }
+
+      onAutenticado(respuesta);
+    } catch (error) {
+      console.error('Error al hablar con el backend:', error);
+      setAvisoGeneral('No se ha podido conectar con el servidor.');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  const enviarRegistro = (e) => {
+    e.preventDefault();
+    const fallos = validarRegistro(datos);
+    if (Object.keys(fallos).length) return setErrores(fallos);
+    enviar('register', { nombre: datos.nombre, email: datos.email, password: datos.password });
+  };
+
+  const enviarLogin = (e) => {
+    e.preventDefault();
+    if (!datos.email.trim() || !datos.password) {
+      return setErrores({
+        email: !datos.email.trim() ? 'Escribe tu correo.' : undefined,
+        password: !datos.password ? 'Escribe tu contraseña.' : undefined,
+      });
+    }
+    enviar('login', { email: datos.email, password: datos.password });
+  };
+
+  return (
+    <div style={estilos.pantalla}>
+      <div style={estilos.tarjeta}>
+        <h1 style={estilos.titulo}>ft_transcendence</h1>
+        <p style={estilos.subtitulo}>El álbum de cromos de 42</p>
+
+        {/* ---------- VISTA 1: elegir cómo entrar ---------- */}
+        {vista === 'elegir' && (
+          <>
+            <button
+              type="button"
+              style={estilos.botonPrincipal}
+              onClick={() => { window.location.href = urlLogin42; }}
+            >
+              Entrar con mi cuenta de 42
+            </button>
+
+            <div style={estilos.separador}>
+              <span style={estilos.lineaSeparador} />o<span style={estilos.lineaSeparador} />
+            </div>
+
+            <button type="button" style={estilos.botonSecundario} onClick={() => irA('login')}>
+              Entrar con email y contraseña
+            </button>
+
+            <p style={estilos.pie}>
+              ¿No tienes cuenta?{' '}
+              <button type="button" style={estilos.enlace} onClick={() => irA('registro')}>
+                Regístrate
+              </button>
+            </p>
+          </>
+        )}
+
+        {/* ---------- VISTA 2: iniciar sesión ---------- */}
+        {vista === 'login' && (
+          <form onSubmit={enviarLogin} noValidate>
+            {avisoGeneral && <div style={estilos.avisoGeneral}>{avisoGeneral}</div>}
+
+            <Campo id="email" etiqueta="Correo" tipo="email" autoComplete="email"
+                   valor={datos.email} onChange={cambiar('email')} error={errores.email} />
+            <Campo id="password" etiqueta="Contraseña" tipo="password" autoComplete="current-password"
+                   valor={datos.password} onChange={cambiar('password')} error={errores.password} />
+
+            <button type="submit" style={{ ...estilos.botonPrincipal, opacity: enviando ? 0.6 : 1 }} disabled={enviando}>
+              {enviando ? 'Entrando…' : 'Entrar'}
+            </button>
+
+            <p style={estilos.pie}>
+              ¿No tienes cuenta?{' '}
+              <button type="button" style={estilos.enlace} onClick={() => irA('registro')}>Regístrate</button>
+              <br />
+              <button type="button" style={{ ...estilos.enlace, marginTop: '0.6rem' }} onClick={() => irA('elegir')}>
+                ← Volver
+              </button>
+            </p>
+          </form>
+        )}
+
+        {/* ---------- VISTA 3: crear cuenta ---------- */}
+        {vista === 'registro' && (
+          <form onSubmit={enviarRegistro} noValidate>
+            {avisoGeneral && <div style={estilos.avisoGeneral}>{avisoGeneral}</div>}
+
+            <Campo id="nombre" etiqueta="Nombre" autoComplete="nickname"
+                   valor={datos.nombre} onChange={cambiar('nombre')} error={errores.nombre} />
+            <Campo id="email-reg" etiqueta="Correo" tipo="email" autoComplete="email"
+                   valor={datos.email} onChange={cambiar('email')} error={errores.email} />
+            <Campo id="password-reg" etiqueta="Contraseña" tipo="password" autoComplete="new-password"
+                   valor={datos.password} onChange={cambiar('password')} error={errores.password} />
+            <Campo id="password2" etiqueta="Repite la contraseña" tipo="password" autoComplete="new-password"
+                   valor={datos.password2} onChange={cambiar('password2')} error={errores.password2} />
+
+            <button type="submit" style={{ ...estilos.botonPrincipal, opacity: enviando ? 0.6 : 1 }} disabled={enviando}>
+              {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
+            </button>
+
+            <p style={estilos.pie}>
+              ¿Ya tienes cuenta?{' '}
+              <button type="button" style={estilos.enlace} onClick={() => irA('login')}>Inicia sesión</button>
+              <br />
+              <button type="button" style={{ ...estilos.enlace, marginTop: '0.6rem' }} onClick={() => irA('elegir')}>
+                ← Volver
+              </button>
+            </p>
+          </form>
+        )}
+
+        {/* Enlaces legales: tienen que poder leerse ANTES de registrarse */}
+        <PieLegal estilo={{ marginTop: '1.5rem', paddingBottom: 0, fontSize: '0.8rem' }} />
+      </div>
+    </div>
+  );
+}
+
+export default Acceso;

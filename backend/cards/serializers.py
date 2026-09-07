@@ -6,7 +6,8 @@ from .models import UserCard
 class CardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Card
-        fields = [ 
+        fields = [
+            "id" ,
             "login", 
             "coalition", 
             "title", 
@@ -23,4 +24,7 @@ class UserCardSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = UserCard
-        fields = ["id","card"]
+        # 'cantidad' es cuantas copias tiene el usuario de esa carta. Sin esto
+        # el album no puede mostrar las repetidas, que es media gracia de
+        # coleccionar (y hace falta para los contratos: se cambian 4 repetidas).
+        fields = ["id", "card", "cantidad", "fecha_obtencion"]

@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    'django_extensions',
     "corsheaders",
     "rest_framework",
     "cards",
@@ -88,6 +89,26 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+
+# 🖼️ FICHEROS QUE SUBEN LOS USUARIOS (de momento, solo los avatares)
+#
+# MEDIA_ROOT es la carpeta REAL del disco donde se guardan. Cae dentro de
+# backend/, que en docker-compose está montada contra vuestro ordenador, así
+# que las fotos NO se pierden al reiniciar los contenedores.
+#
+# MEDIA_URL es la dirección por la que el navegador las pide, y va con /api/ a
+# propósito: el proxy de Vite ya manda a Django todo lo que empieza por /api,
+# así que las fotos viajan por el camino que ya funciona y no hace falta tocar
+# ni vite.config.js ni el docker-compose.
+MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/api/media/"
+
+# 🛡️ Límites del avatar. Quien los hace cumplir es la vista (users/views.py),
+# que rechaza el fichero antes de guardar nada; aquí solo están los números
+# para tenerlos todos juntos y que se cambien en un sitio.
+AVATAR_MAX_BYTES = 2 * 1024 * 1024   # 2 MB
+AVATAR_LADO_MAX = 512                # se reduce a 512x512 como mucho
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173")
@@ -99,3 +120,8 @@ CORS_ALLOW_CREDENTIALS = True
 csrf_origins = os.environ.get("CSRF_TRUSTED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173")
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins.split(",") if origin.strip()]
 AUTH_USER_MODEL = "users.CustomUser"
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SAMESITE = 'None'
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
