@@ -16,6 +16,9 @@ from .models import Card, UserCard, UserPack
 from django.http import JsonResponse
 import json
 from django.db import transaction
+from django.db.models import Count, Sum
+from django.db.models.functions import Coalesce
+from django.utils import timezone
 
 class HealthCheckView(APIView):
     def get(self, request):
@@ -224,6 +227,133 @@ def open_pack(tipo_sobre):
         cartas_seleccionadas.append(carta_aleatoria)
         
     return cartas_seleccionadas
+
+
+# =====================================================================
+# 🎁 REGALO DIARIO
+# Cada persona recibe 2 sobres comunes al día. NO se acumulan: si pasas
+# tres días sin entrar, al volver recibes 2, no seis. Así entrar cada día
+# tiene sentido.
+# El día cambia a medianoche, hora de Madrid (la zona horaria del proyecto).
+# =====================================================================
+SOBRES_REGALO_DIARIO = 2
+TIPO_SOBRE_REGALO = 'comun'
+
+
+def _puede_recoger_regalo(usuario):
+    """¿Le toca regalo hoy? Le toca si nunca lo recogió o si fue otro día."""
+    hoy = timezone.localdate()
+    return usuario.ultimo_regalo_diario is None or usuario.ultimo_regalo_diario < hoy
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def reclamar_regalo_diario(request):
+    """
+    Entrega los sobres del día al usuario conectado.
+    Va aparte de la consulta a propósito: consultar no debe cambiar nada, y
+    entregar sí. Así recargar la página nunca regala sobres por accidente.
+    """
+    usuario = request.user
+
+    if not _puede_recoger_regalo(usuario):
+        return Response(
+            {'error': 'Ya has recogido tu regalo de hoy. Vuelve mañana.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Todo junto o nada: o se apunta la fecha y se dan los sobres, o no pasa
+    # nada. Si fallara a la mitad, alguien podría llevarse sobres cada vez.
+    with transaction.atomic():
+        # Bloqueamos la fila del usuario mientras tanto: si llegan dos
+        # peticiones a la vez (doble clic), la segunda espera y ya verá la
+        # fecha apuntada, así que no cobra dos veces.
+        usuario_bloqueado = CustomUser.objects.select_for_update().get(pk=usuario.pk)
+        if not _puede_recoger_regalo(usuario_bloqueado):
+            return Response(
+                {'error': 'Ya has recogido tu regalo de hoy. Vuelve mañana.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        pack, _ = UserPack.objects.select_for_update().get_or_create(
+            user=usuario_bloqueado, tipo_sobre=TIPO_SOBRE_REGALO
+        )
+        pack.cantidad += SOBRES_REGALO_DIARIO
+        pack.last_daily = timezone.now()
+        pack.save()
+
+        usuario_bloqueado.ultimo_regalo_diario = timezone.localdate()
+        usuario_bloqueado.save(update_fields=['ultimo_regalo_diario'])
+
+    return Response({
+        'mensaje': f'¡Has recibido {SOBRES_REGALO_DIARIO} sobres comunes!',
+        'sobres_recibidos': SOBRES_REGALO_DIARIO,
+        'sobres_totales': pack.cantidad,
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ranking(request):
+    """
+    Clasificación de coleccionistas: quién tiene más cartas distintas.
+
+    Se ordena por colección y no por el elo porque el elo todavía es 1000 para
+    todo el mundo (no hay juego que lo mueva), así que un ranking por elo sería
+    una lista plana sin sentido. Cuando haya partidas se puede añadir otra
+    pestaña ordenada por elo.
+
+    Una sola consulta con anotaciones, para no acabar preguntando a la base de
+    datos una vez por usuario.
+    """
+    total_catalogo = Card.objects.count() or 1
+
+    usuarios = (
+        CustomUser.objects
+        .annotate(
+            distintas=Count('album', distinct=True),
+            copias=Coalesce(Sum('album__cantidad'), 0),
+        )
+        .order_by('-distintas', '-copias', 'username')[:50]
+    )
+
+    clasificacion = []
+    for posicion, u in enumerate(usuarios, start=1):
+        clasificacion.append({
+            'posicion': posicion,
+            'username': u.username,
+            'nombre': u.nombre_mostrado or u.get_full_name() or u.username,
+            # .foto: enseña el avatar que haya subido y, si no tiene, el de la Intra
+            'profile_image': u.foto,
+            'estado': u.estado,
+            'cartas_distintas': u.distintas,
+            'cartas_con_repetidas': u.copias,
+            'porcentaje': round(u.distintas / total_catalogo * 100, 1),
+            'elo': u.elo,
+            'soy_yo': u.pk == request.user.pk,
+        })
+
+    return Response({
+        'cartas_en_catalogo': total_catalogo,
+        'clasificacion': clasificacion,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mis_sobres(request):
+    """
+    Cuántos sobres tiene el usuario conectado, por tipo.
+    El front lo consulta ANTES de dejar tocar el sobre: así, si no te queda
+    ninguno, se avisa de entrada en vez de dejarte romper el sobre para nada.
+    Devuelve todos los tipos, aunque sea con 0, para que el front no tenga que
+    adivinar cuáles existen.
+    """
+    inventario = {tipo: 0 for tipo in CONFIGURACION_SOBRES}
+    for pack in UserPack.objects.filter(user=request.user):
+        if pack.tipo_sobre in inventario:
+            inventario[pack.tipo_sobre] = pack.cantidad
+    return Response({'sobres': inventario, 'total': sum(inventario.values())})
 
 
 # Usamos los decoradores de Django REST Framework para asegurar autenticación

@@ -6,3 +6,7 @@ requests
 django-extensions
 Werkzeug
 pyOpenSSL
+# 🖼️ Necesaria para el avatar: Django no admite campos de imagen sin ella.
+# La usamos ademas para comprobar que lo que suben es una imagen de verdad
+# y para reducirla antes de guardarla.
+Pillow==11.0.0
