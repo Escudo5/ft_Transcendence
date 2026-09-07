@@ -13,6 +13,9 @@ urlpatterns = [
     # 👥 RUTAS DE LOS USUARIOS (Todo lo que empiece por api/users/)
     path('api/users/', include('users.urls')),
 
+    # 🤝 RUTAS DE AMISTADES (solicitudes y lista de amigos)
+    path('api/social/', include('social.urls')),
+
     # 🖥️ Vistas directas que teníais para pruebas en el navegador
     path('home/', home, name='home'),
     path('crear/', crear_carta, name='crear_carta'),
