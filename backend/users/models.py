@@ -1,3 +1,4 @@
+from datetime import timedelta
 from urllib.parse import quote
 
 from django.contrib.auth.models import AbstractUser
@@ -41,6 +42,14 @@ class CustomUser(AbstractUser):
     # con 42 borraría la foto que acaba de subir.
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
+    # 🟢 Última vez que esta persona hizo algo en la web. Se refresca en cada
+    # petición a /api/users/me/, que el front llama al abrir cualquier página.
+    #
+    # Hace falta porque el campo 'estado' de arriba solo cambia al entrar y al
+    # cerrar sesión: quien cierra la pestaña sin cerrar sesión se quedaría "en
+    # línea" para siempre, y el subject pide poder ver el estado de tus amigos.
+    ultima_actividad = models.DateTimeField(null=True, blank=True)
+
     # 🎁 Día en que recogió por última vez el regalo diario de sobres.
     # Vacío = todavía no lo ha recogido nunca. Se compara con la fecha de hoy
     # (hora de Madrid) para saber si le toca otra vez.
@@ -57,6 +66,30 @@ class CustomUser(AbstractUser):
         related_name='custom_user_permissions_set',
         blank=True
     )
+
+    # Cuánto tiempo sin dar señales de vida hay que estar para contar como
+    # desconectado. 5 minutos: suficiente para que no parpadee mientras alguien
+    # lee una página, y poco para que no se quede nadie "en línea" fantasma.
+    MINUTOS_PARA_DESCONECTAR = 5
+
+    @property
+    def estado_real(self):
+        """
+        El estado que hay que enseñar, comprobado contra el reloj.
+
+        El campo 'estado' dice lo último que la persona hizo a propósito
+        (entrar, ponerse a jugar, salir), pero nadie cierra sesión: cierran la
+        pestaña. Así que si hace más de 5 minutos que no se le ve, se le da por
+        desconectado aunque en la base ponga que sigue dentro.
+        """
+        if self.estado == 'offline':
+            return 'offline'
+        if self.ultima_actividad is None:
+            return 'offline'
+        inactivo = timezone.now() - self.ultima_actividad
+        if inactivo > timedelta(minutes=self.MINUTOS_PARA_DESCONECTAR):
+            return 'offline'
+        return self.estado  # 'online' o 'ingame'
 
     @property
     def avatar_por_defecto(self):

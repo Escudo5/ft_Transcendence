@@ -325,7 +325,7 @@ def ranking(request):
             'nombre': u.nombre_mostrado or u.get_full_name() or u.username,
             # .foto: enseña el avatar que haya subido y, si no tiene, el de la Intra
             'profile_image': u.foto,
-            'estado': u.estado,
+            'estado': u.estado_real,
             'cartas_distintas': u.distintas,
             'cartas_con_repetidas': u.copias,
             'porcentaje': round(u.distintas / total_catalogo * 100, 1),

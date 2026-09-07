@@ -149,6 +149,13 @@ def me(request):
         return JsonResponse({'error': 'No hay sesión iniciada.'}, status=401)
 
     u = request.user
+
+    # 🟢 Señal de vida. El front llama aquí al abrir cualquier página, así que
+    # es el sitio natural para anotar "esta persona sigue por aquí". De esto
+    # depende que tus amigos te vean en línea (ver estado_real en el modelo).
+    u.ultima_actividad = timezone.now()
+    u.save(update_fields=['ultima_actividad'])
+
     return JsonResponse({
         'id': u.id,
         'id_42': u.id_42,
@@ -162,7 +169,7 @@ def me(request):
         'profile_image': u.foto,
         'tiene_avatar': bool(u.avatar),
         'elo': u.elo,
-        'estado': u.estado,
+        'estado': u.estado_real,
         'is_alumni': u.is_alumni,
         'sobres_disponibles_hoy': SOBRES_DIARIOS,
         # 🎁 ¿Le toca regalo hoy? Solo INFORMA, no entrega nada: para recogerlo
@@ -273,7 +280,7 @@ def _perfil_publico(usuario):
         'profile_image': usuario.foto,
         'tiene_avatar': bool(usuario.avatar),
         'elo': usuario.elo,
-        'estado': usuario.estado,
+        'estado': usuario.estado_real,
         'is_alumni': usuario.is_alumni,
         'miembro_desde': usuario.date_joined.date().isoformat(),
         'coleccion': stats,
@@ -522,7 +529,7 @@ def descargar_mis_datos(request):
             'id_42': u.id_42,
             'es_alumni': u.is_alumni,
             'puntuacion_elo': u.elo,
-            'estado': u.estado,
+            'estado': u.estado_real,
             'alta': u.date_joined.isoformat(),
             'ultimo_acceso': u.last_login.isoformat() if u.last_login else None,
             'ultimo_regalo_diario': u.ultimo_regalo_diario.isoformat() if u.ultimo_regalo_diario else None,
@@ -601,7 +608,7 @@ def list_users(request):
                 'last_name': user.last_name,
                 'profile_image': user.foto,
                 'elo': user.elo,
-                'estado': user.estado,
+                'estado': user.estado_real,
                 'is_alumni': user.is_alumni,
             }
             for user in users
