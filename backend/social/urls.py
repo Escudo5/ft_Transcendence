@@ -6,6 +6,7 @@ from .views import (
     RespondFriendRequestView,
     FriendsListView,
     RemoveFriendView,
+    BuscarUsuariosView,
 )
 
 # 🤝 RUTAS DE AMISTADES
@@ -25,6 +26,10 @@ urlpatterns = [
     path('solicitudes/pendientes/', PendingFriendRequestsView.as_view(), name='solicitudes_pendientes'),
     # Responder a una: PATCH con {"action": "accept"} o {"action": "decline"}
     path('solicitudes/<int:pk>/', RespondFriendRequestView.as_view(), name='responder_solicitud'),
+
+    # Gente a la que puedes pedir amistad (sin ti, sin tus amigos y sin
+    # los que tienen una solicitud a medias). Admite ?q= para filtrar.
+    path('buscar/', BuscarUsuariosView.as_view(), name='buscar_usuarios'),
 
     # --- Amigos ---
     # Mi lista de amigos, con su foto y si están en línea

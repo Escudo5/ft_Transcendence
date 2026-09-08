@@ -1,14 +1,12 @@
 import { useState } from 'react';
 
-function BuscarAmigos({ isOpen, onClose, agregarAmigo }) {
+function BuscarAmigos({ isOpen, onClose, usuarios = [], agregarAmigo }) {
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
 
-  // Lista simulada de la red 42
-  const usuariosRed42 = [
-    { id: 101, login: "mgarcia", nombre: "María García", avatar: "🚀" },
-    { id: 102, login: "alopez", nombre: "Álvaro López", avatar: "🎨" },
-    { id: 103, login: "cscarron", nombre: "Carlos Carron", avatar: "🎮" },
-  ];
+  // 🔌 La lista ya no está escrita aquí: llega desde ChatSocial.jsx, que se la
+  // pide al servidor (/api/social/buscar/). Viene filtrada: sin uno mismo, sin
+  // los que ya son amigos y sin los que tienen una solicitud a medias.
+  const usuariosRed42 = usuarios;
 
   if (!isOpen) return null;
 
