@@ -149,7 +149,7 @@ function Home() {
 
       {/* PARTE 3: ABAJO (Tablón de anuncios rectangular con 4 columnas) */}
       <section className="control-panel" style={{ marginTop: '2rem', display: 'block' }}>
-        <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--accent-color)' }}>
+        <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--accent)' }}>
            Tablón de estadisticas
         </h2>
         
@@ -162,7 +162,7 @@ function Home() {
         }}>
           
           {/* Columna 1 (Sección provisional) */}
-          <div style={{ borderLeft: '2px solid var(--accent-color)', paddingLeft: '0.75rem' }}>
+          <div style={{ borderLeft: '2px solid var(--accent)', paddingLeft: '0.75rem' }}>
             <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Ya se vera el titulo</h4>
             <p>• Datos por añadir</p>
           </div>
@@ -180,7 +180,7 @@ function Home() {
           </div>
 
           {/* Columna 4 (Sección provisional para añadir más cosas) */}
-          <div style={{ borderLeft: '2px solid var(--border-color)', paddingLeft: '0.75rem' }}>
+          <div style={{ borderLeft: '2px solid var(--border-default)', paddingLeft: '0.75rem' }}>
             <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Ya se vera el titulo</h4>
             <p>• Datos por añadir</p>
           </div>

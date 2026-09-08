@@ -39,24 +39,11 @@
   --border-strong: var(--color-neutral-600);
   --border-accent: var(--color-accent-500);
 
-  /* ------------------------------------------------------------------
-     PUENTES TEMPORALES CON LOS NOMBRES ANTIGUOS
-     ------------------------------------------------------------------
-     El sistema de diseño renombro estas cuatro variables, pero siete
-     pantallas siguen usando los nombres viejos (29 veces solo en el
-     perfil). Sin estas lineas, esas pantallas se quedan sin fondo, sin
-     bordes y con el texto invisible.
-
-     Cada una apunta al equivalente nuevo, respetando su papel:
-     el fondo de control era mas claro que el de la tarjeta, y sigue
-     siendolo. Segun se vaya migrando cada pantalla a los componentes de
-     ui.jsx, estas lineas se pueden ir borrando. Cuando ninguna pantalla
-     use ya los nombres viejos, fuera el bloque entero.
-     ------------------------------------------------------------------ */
-  --accent-color: var(--border-accent);
-  --bg-card-base: var(--surface-raised);
-  --bg-control: var(--surface-overlay);
-  --border-color: var(--border-default);
+  /* El color de acento cuando NO es un borde: fondos de boton, cifras
+     destacadas, enlaces. Antes se usaba --border-accent para todo, y
+     llamar "borde" al fondo de un boton confunde a quien lo lee. */
+  --accent: var(--color-accent-500);
+  --accent-strong: var(--color-accent-700);
 
   /* Guino de la casa: el degradado de los titulos grandes.
      Se recupera, pero DENTRO de la familia del acento y suave. El de

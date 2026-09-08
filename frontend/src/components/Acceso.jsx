@@ -14,7 +14,7 @@ import { Alert, Button, Card, SecondaryButton, TextField } from './ui';
  * Las dos son independientes: quien entra por una nunca pasa por la otra.
  *
  * 🎨 NOTA PARA KONRAD Y SERGIO: los estilos usan las variables de styles.css
- * (--bg-card-base, --accent-color, etc.), así que si cambiáis la paleta esta
+ * (--surface-raised, --accent, etc.), así que si cambiáis la paleta esta
  * pantalla cambia con el resto. Está hecha para que funcione; el diseño fino
  * es vuestro, cambiadlo sin miedo. La lógica vive en las funciones de arriba
  * y lo visual está todo en el objeto 'estilos'.
@@ -35,8 +35,8 @@ const estilos = {
   tarjeta: {
     width: '100%',
     maxWidth: '420px',
-    background: 'var(--bg-card-base)',
-    border: '1px solid var(--border-color)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-default)',
     borderRadius: '16px',
     padding: '2rem',
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
@@ -47,7 +47,7 @@ const estilos = {
     fontWeight: 800,
     textAlign: 'center',
     margin: 0,
-    color: 'var(--accent-color)',
+    color: 'var(--accent)',
     letterSpacing: 0,
   },
   subtitulo: {
@@ -69,8 +69,8 @@ const estilos = {
   campo: {
     width: '100%',
     boxSizing: 'border-box',
-    background: 'var(--bg-control)',
-    border: '1px solid var(--border-color)',
+    background: 'var(--surface-overlay)',
+    border: '1px solid var(--border-default)',
     color: 'var(--text-primary)',
     padding: '0.75rem 1rem',
     borderRadius: '8px',
@@ -100,7 +100,7 @@ const estilos = {
   },
   botonPrincipal: {
     width: '100%',
-    background: 'var(--accent-color)',
+    background: 'var(--accent)',
     color: '#0c0f16',
     border: 'none',
     borderRadius: '8px',
@@ -114,9 +114,9 @@ const estilos = {
   },
   botonSecundario: {
     width: '100%',
-    background: 'var(--bg-control)',
+    background: 'var(--surface-overlay)',
     color: 'var(--text-primary)',
-    border: '1px solid var(--border-color)',
+    border: '1px solid var(--border-default)',
     borderRadius: '8px',
     minHeight: '44px',
     padding: '0.9rem',
@@ -129,7 +129,7 @@ const estilos = {
   enlace: {
     background: 'none',
     border: 'none',
-    color: 'var(--accent-color)',
+    color: 'var(--accent)',
     cursor: 'pointer',
     fontSize: '0.88rem',
     fontFamily: 'var(--font-body)',
@@ -152,7 +152,7 @@ const estilos = {
   lineaSeparador: {
     flex: 1,
     height: '1px',
-    background: 'var(--border-color)',
+    background: 'var(--border-default)',
   },
 };
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion'; // 👈 IMPORTAMOS FRAMER MOTION
 import FondoTiendaSobres from './FondoTiendaSobres';
+import { Alert } from './ui';
 
 // 1. IMPORTA LAS 3 IMÁGENES DE TUS SOBRES
 import sobreIntacto from '../assets/sobre_verde_0.png';
@@ -216,23 +217,22 @@ function TiendaSobres() {
         {/* ⚠️ El aviso va ARRIBA del sobre: el sobre mide 800px y cualquier cosa
             que se ponga debajo se queda fuera de la pantalla y no se ve. */}
         {error && (
-          <div style={{
-            position: 'fixed',
-            top: '1.5rem',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 50,
-            color: '#fff',
-            background: 'rgba(190, 40, 40, 0.95)',
-            border: '2px solid #fca5a5',
-            borderRadius: '10px',
-            padding: '0.9rem 1.4rem',
-            fontWeight: 'bold',
-            fontSize: '1.05rem',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-          }}>
+          // Aviso del sistema de diseño (ui.jsx): los colores y el role="alert"
+          // para lectores de pantalla los pone él. Aquí solo se mantiene la
+          // posición fija arriba, que es lo que este caso necesita.
+          <Alert
+            tone="error"
+            style={{
+              position: 'fixed',
+              top: '1.5rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 50,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+            }}
+          >
             {error}
-          </div>
+          </Alert>
         )}
 
         <motion.img
