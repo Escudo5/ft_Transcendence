@@ -28,10 +28,7 @@ const estilos = {
     fontFamily: 'var(--font-heading)',
     fontSize: '2.1rem',
     fontWeight: 800,
-    background: 'linear-gradient(to right, #38bdf8, #818cf8, #c084fc)',
-    WebkitBackgroundClip: 'text',
-    backgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+    color: 'var(--accent)',
     marginBottom: '0.3rem',
   },
   fecha: {
@@ -43,15 +40,15 @@ const estilos = {
     fontFamily: 'var(--font-heading)',
     fontSize: '1.15rem',
     fontWeight: 700,
-    color: 'var(--accent-color)',
+    color: 'var(--accent)',
     marginTop: '2rem',
     marginBottom: '0.6rem',
   },
   parrafo: { marginBottom: '0.9rem' },
   lista: { marginBottom: '0.9rem', paddingLeft: '1.3rem' },
   destacado: {
-    background: 'var(--bg-card-base)',
-    border: '1px solid var(--border-color)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-default)',
     borderRadius: '12px',
     padding: '1.2rem',
     marginTop: '1rem',
@@ -63,7 +60,7 @@ const FECHA = '3 de septiembre de 2026';
 function Privacidad() {
   return (
     <>
-      <h1 style={estilos.titulo}>Política de Privacidad</h1>
+      <h1 className="titulo-degradado" style={estilos.titulo}>Política de Privacidad</h1>
       <p style={estilos.fecha}>Última actualización: {FECHA}</p>
 
       <p style={estilos.parrafo}>
@@ -149,7 +146,7 @@ function Privacidad() {
       <h2 style={estilos.apartado}>Tus derechos</h2>
       <div style={estilos.destacado}>
         <p style={estilos.parrafo}>
-          Desde <a href="/perfil" style={{ color: 'var(--accent-color)' }}>tu perfil</a> puedes,
+          Desde <a href="/perfil" style={{ color: 'var(--accent)' }}>tu perfil</a> puedes,
           en cualquier momento y sin pedir permiso a nadie:
         </p>
         <ul style={{ ...estilos.lista, marginBottom: 0 }}>
@@ -175,7 +172,7 @@ function Privacidad() {
 function Terminos() {
   return (
     <>
-      <h1 style={estilos.titulo}>Términos de Servicio</h1>
+      <h1 className="titulo-degradado" style={estilos.titulo}>Términos de Servicio</h1>
       <p style={estilos.fecha}>Última actualización: {FECHA}</p>
 
       <p style={estilos.parrafo}>
@@ -233,7 +230,7 @@ function Terminos() {
       <h2 style={estilos.apartado}>Tu cuenta</h2>
       <p style={estilos.parrafo}>
         Puedes borrarla cuando quieras desde{' '}
-        <a href="/perfil" style={{ color: 'var(--accent-color)' }}>tu perfil</a>. También
+        <a href="/perfil" style={{ color: 'var(--accent)' }}>tu perfil</a>. También
         podemos cerrar cuentas que incumplan estas normas.
       </p>
 
@@ -258,10 +255,10 @@ export default function Legal({ tipo }) {
       <div style={estilos.pagina}>
         {tipo === 'privacidad' ? <Privacidad /> : <Terminos />}
 
-        <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+        <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-default)' }}>
           <a
             href={tipo === 'privacidad' ? '/terminos' : '/privacidad'}
-            style={{ color: 'var(--accent-color)' }}
+            style={{ color: 'var(--accent)' }}
           >
             {tipo === 'privacidad' ? 'Ver los Términos de Servicio →' : 'Ver la Política de Privacidad →'}
           </a>

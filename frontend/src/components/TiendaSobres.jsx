@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion'; // 👈 IMPORTAMOS FRAMER MOTION
 import FondoTiendaSobres from './FondoTiendaSobres';
+import { Alert } from './ui';
 
 // 1. IMPORTA LAS 3 IMÁGENES DE TUS SOBRES
 import sobreIntacto from '../assets/sobre_verde_0.png';
@@ -158,9 +159,9 @@ function TiendaSobres() {
 
   const obtenerEstiloRareza = (rareza) => {
     switch (rareza) {
-      case 'legendary': return { color: '#ffb700', border: '3px solid #ffb700', shadow: '0 0 25px rgba(255, 183, 0, 0.6)' };
-      case 'epic': return { color: '#a335ee', border: '3px solid #a335ee', shadow: '0 0 25px rgba(163, 53, 238, 0.6)' };
-      case 'rare': return { color: '#0070dd', border: '3px solid #0070dd', shadow: '0 0 20px rgba(0, 112, 221, 0.5)' };
+      case 'legendary': return { color: 'var(--rarity-legendary)', border: '3px solid var(--rarity-legendary)', shadow: '0 0 25px rgba(217, 119, 6, 0.6)' };
+      case 'epic': return { color: 'var(--rarity-epic)', border: '3px solid var(--rarity-epic)', shadow: '0 0 25px rgba(168, 85, 247, 0.6)' };
+      case 'rare': return { color: 'var(--rarity-rare)', border: '3px solid var(--rarity-rare)', shadow: '0 0 20px rgba(2, 132, 199, 0.5)' };
       default: return { color: '#ffffff', border: '2px solid #ffffff', shadow: '0 4px 15px rgba(255, 255, 255, 0.2)' };
     }
   };
@@ -187,7 +188,7 @@ function TiendaSobres() {
           top: '1.5rem',
           left: '1.5rem',
           zIndex: 10,
-          backgroundColor: '#15151b',
+          backgroundColor: 'var(--surface-raised)',
           color: '#fff',
           border: '2px solid #ff9ffc',
           boxShadow: '0 0 10px rgba(255,159,252,0.3)'
@@ -216,23 +217,22 @@ function TiendaSobres() {
         {/* ⚠️ El aviso va ARRIBA del sobre: el sobre mide 800px y cualquier cosa
             que se ponga debajo se queda fuera de la pantalla y no se ve. */}
         {error && (
-          <div style={{
-            position: 'fixed',
-            top: '1.5rem',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 50,
-            color: '#fff',
-            background: 'rgba(190, 40, 40, 0.95)',
-            border: '2px solid #fca5a5',
-            borderRadius: '10px',
-            padding: '0.9rem 1.4rem',
-            fontWeight: 'bold',
-            fontSize: '1.05rem',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-          }}>
+          // Aviso del sistema de diseño (ui.jsx): los colores y el role="alert"
+          // para lectores de pantalla los pone él. Aquí solo se mantiene la
+          // posición fija arriba, que es lo que este caso necesita.
+          <Alert
+            tone="error"
+            style={{
+              position: 'fixed',
+              top: '1.5rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 50,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+            }}
+          >
             {error}
-          </div>
+          </Alert>
         )}
 
         <motion.img
@@ -250,8 +250,8 @@ function TiendaSobres() {
             objectFit: 'contain',
             cursor: 'pointer',
             filter: `
-              drop-shadow(0 0 25px rgba(0, 255, 170, 0.5)) 
-              drop-shadow(0 0 50px rgba(163, 53, 238, 0.6))
+              drop-shadow(0 0 25px rgba(20, 184, 166, 0.5)) 
+              drop-shadow(0 0 50px rgba(168, 85, 247, 0.6))
             `
           }}
         />
@@ -345,7 +345,7 @@ function TiendaSobres() {
                       width: '100%',
                       height: '100%',
                       backfaceVisibility: 'hidden',
-                      backgroundColor: '#15151b',
+                      backgroundColor: 'var(--surface-raised)',
                       border: '3px solid #ff9ffc',
                       borderRadius: '12px',
                       display: 'flex',
@@ -367,7 +367,7 @@ function TiendaSobres() {
                       height: '100%',
                       backfaceVisibility: 'hidden',
                       transform: 'rotateY(180deg)', // Arranca invertida para el efecto de giro
-                      backgroundColor: 'rgba(10, 10, 15, 0.95)',
+                      backgroundColor: 'rgba(9, 9, 11, 0.95)',
                       borderRadius: '12px',
                       border: estiloRareza.border,
                       boxShadow: estiloRareza.shadow,
@@ -385,7 +385,7 @@ function TiendaSobres() {
                       </span>
                     </div>
 
-                    <div style={{ width: '100%', height: '110px', backgroundColor: '#20202b', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', overflow: 'hidden' }}>
+                    <div style={{ width: '100%', height: '110px', backgroundColor: 'var(--surface-overlay)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', overflow: 'hidden' }}>
                       {carta.foto ? (
                         <img
                           src={carta.foto}
@@ -417,13 +417,13 @@ function TiendaSobres() {
             style={{
               padding: '0.9rem 3rem',
               fontSize: '1.2rem',
-              backgroundColor: '#00ffcc',
+              backgroundColor: 'var(--accent)',
               color: '#000',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
               fontWeight: 'bold',
-              boxShadow: '0 0 20px #00ffcc'
+              boxShadow: '0 0 20px var(--accent)'
             }}
           >
             SALIR DE ESTA APERTURA
@@ -435,8 +435,8 @@ function TiendaSobres() {
 
   const PaginaTiendaSobres = () => {
     return (
-      <div className="app-container" style={{ position: 'relative', minHeight: '95vh', padding: '2rem', overflowX: 'hidden' }}>
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}>
+      <main className="app-container" style={{ position: 'relative', minHeight: '100dvh', padding: '2rem', overflowX: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100dvh', zIndex: 0, pointerEvents: 'none' }}>
           <FondoTiendaSobres
             topColor="#5227FF"
             bottomColor="#FF9FFC"
@@ -457,7 +457,7 @@ function TiendaSobres() {
 
         {fase === 'PRE_APERTURA' && Sobrepreeapertura()}
         {fase === 'REVELADO' && PantallaCincoCartas()}
-      </div>
+      </main>
     );
   };
 

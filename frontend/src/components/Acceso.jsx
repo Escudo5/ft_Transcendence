@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import PieLegal from './PieLegal';
+import { Alert, Button, Card, SecondaryButton, TextField } from './ui';
 
 /**
  * PANTALLA DE ACCESO
@@ -13,7 +14,7 @@ import PieLegal from './PieLegal';
  * Las dos son independientes: quien entra por una nunca pasa por la otra.
  *
  * 🎨 NOTA PARA KONRAD Y SERGIO: los estilos usan las variables de styles.css
- * (--bg-card-base, --accent-color, etc.), así que si cambiáis la paleta esta
+ * (--surface-raised, --accent, etc.), así que si cambiáis la paleta esta
  * pantalla cambia con el resto. Está hecha para que funcione; el diseño fino
  * es vuestro, cambiadlo sin miedo. La lógica vive en las funciones de arriba
  * y lo visual está todo en el objeto 'estilos'.
@@ -24,7 +25,7 @@ import PieLegal from './PieLegal';
 // ==========================================================================
 const estilos = {
   pantalla: {
-    minHeight: '100vh',
+    minHeight: '100dvh',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -34,8 +35,8 @@ const estilos = {
   tarjeta: {
     width: '100%',
     maxWidth: '420px',
-    background: 'var(--bg-card-base)',
-    border: '1px solid var(--border-color)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-default)',
     borderRadius: '16px',
     padding: '2rem',
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
@@ -46,11 +47,8 @@ const estilos = {
     fontWeight: 800,
     textAlign: 'center',
     margin: 0,
-    background: 'linear-gradient(to right, #38bdf8, #818cf8, #c084fc)',
-    WebkitBackgroundClip: 'text',
-    backgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    letterSpacing: '-0.025em',
+    color: 'var(--accent)',
+    letterSpacing: 0,
   },
   subtitulo: {
     color: 'var(--text-secondary)',
@@ -71,15 +69,14 @@ const estilos = {
   campo: {
     width: '100%',
     boxSizing: 'border-box',
-    background: 'var(--bg-control)',
-    border: '1px solid var(--border-color)',
+    background: 'var(--surface-overlay)',
+    border: '1px solid var(--border-default)',
     color: 'var(--text-primary)',
     padding: '0.75rem 1rem',
     borderRadius: '8px',
     fontFamily: 'var(--font-body)',
     fontSize: '0.95rem',
-    outline: 'none',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    transition: 'background-color 160ms var(--ease-out), border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out)',
   },
   campoConError: {
     borderColor: '#f87171',
@@ -103,10 +100,11 @@ const estilos = {
   },
   botonPrincipal: {
     width: '100%',
-    background: 'var(--accent-color)',
+    background: 'var(--accent)',
     color: '#0c0f16',
     border: 'none',
     borderRadius: '8px',
+    minHeight: '44px',
     padding: '0.9rem',
     fontFamily: 'var(--font-heading)',
     fontSize: '1rem',
@@ -116,10 +114,11 @@ const estilos = {
   },
   botonSecundario: {
     width: '100%',
-    background: 'var(--bg-control)',
+    background: 'var(--surface-overlay)',
     color: 'var(--text-primary)',
-    border: '1px solid var(--border-color)',
+    border: '1px solid var(--border-default)',
     borderRadius: '8px',
+    minHeight: '44px',
     padding: '0.9rem',
     fontFamily: 'var(--font-heading)',
     fontSize: '1rem',
@@ -130,7 +129,7 @@ const estilos = {
   enlace: {
     background: 'none',
     border: 'none',
-    color: 'var(--accent-color)',
+    color: 'var(--accent)',
     cursor: 'pointer',
     fontSize: '0.88rem',
     fontFamily: 'var(--font-body)',
@@ -153,7 +152,7 @@ const estilos = {
   lineaSeparador: {
     flex: 1,
     height: '1px',
-    background: 'var(--border-color)',
+    background: 'var(--border-default)',
   },
 };
 
@@ -182,19 +181,15 @@ function validarRegistro({ nombre, email, password, password2 }) {
 // ==========================================================================
 function Campo({ id, etiqueta, tipo = 'text', valor, onChange, error, autoComplete }) {
   return (
-    <div style={estilos.grupo}>
-      <label htmlFor={id} style={estilos.etiqueta}>{etiqueta}</label>
-      <input
-        id={id}
-        type={tipo}
-        value={valor}
-        onChange={onChange}
-        autoComplete={autoComplete}
-        style={{ ...estilos.campo, ...(error ? estilos.campoConError : {}) }}
-        aria-invalid={error ? 'true' : 'false'}
-      />
-      {error && <div style={estilos.errorCampo}>{error}</div>}
-    </div>
+    <TextField
+      id={id}
+      label={etiqueta}
+      type={tipo}
+      value={valor}
+      onChange={onChange}
+      autoComplete={autoComplete}
+      error={error}
+    />
   );
 }
 
@@ -275,32 +270,31 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
 
   return (
     <div style={estilos.pantalla}>
-      <div style={estilos.tarjeta}>
+      <Card className="acceso-card">
         <h1 style={estilos.titulo}>ft_transcendence</h1>
         <p style={estilos.subtitulo}>El álbum de cromos de 42</p>
 
         {/* ---------- VISTA 1: elegir cómo entrar ---------- */}
         {vista === 'elegir' && (
           <>
-            <button
+            <Button
               type="button"
-              style={estilos.botonPrincipal}
               onClick={() => { window.location.href = urlLogin42; }}
             >
               Entrar con mi cuenta de 42
-            </button>
+            </Button>
 
             <div style={estilos.separador}>
               <span style={estilos.lineaSeparador} />o<span style={estilos.lineaSeparador} />
             </div>
 
-            <button type="button" style={estilos.botonSecundario} onClick={() => irA('login')}>
+            <SecondaryButton type="button" onClick={() => irA('login')}>
               Entrar con email y contraseña
-            </button>
+            </SecondaryButton>
 
             <p style={estilos.pie}>
               ¿No tienes cuenta?{' '}
-              <button type="button" style={estilos.enlace} onClick={() => irA('registro')}>
+              <button type="button" className="ui-link" onClick={() => irA('registro')}>
                 Regístrate
               </button>
             </p>
@@ -310,22 +304,22 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
         {/* ---------- VISTA 2: iniciar sesión ---------- */}
         {vista === 'login' && (
           <form onSubmit={enviarLogin} noValidate>
-            {avisoGeneral && <div style={estilos.avisoGeneral}>{avisoGeneral}</div>}
+            {avisoGeneral && <Alert>{avisoGeneral}</Alert>}
 
             <Campo id="email" etiqueta="Correo" tipo="email" autoComplete="email"
                    valor={datos.email} onChange={cambiar('email')} error={errores.email} />
             <Campo id="password" etiqueta="Contraseña" tipo="password" autoComplete="current-password"
                    valor={datos.password} onChange={cambiar('password')} error={errores.password} />
 
-            <button type="submit" style={{ ...estilos.botonPrincipal, opacity: enviando ? 0.6 : 1 }} disabled={enviando}>
+            <Button type="submit" disabled={enviando}>
               {enviando ? 'Entrando…' : 'Entrar'}
-            </button>
+            </Button>
 
             <p style={estilos.pie}>
               ¿No tienes cuenta?{' '}
-              <button type="button" style={estilos.enlace} onClick={() => irA('registro')}>Regístrate</button>
+              <button type="button" className="ui-link" onClick={() => irA('registro')}>Regístrate</button>
               <br />
-              <button type="button" style={{ ...estilos.enlace, marginTop: '0.6rem' }} onClick={() => irA('elegir')}>
+              <button type="button" className="ui-link ui-link-spaced" onClick={() => irA('elegir')}>
                 ← Volver
               </button>
             </p>
@@ -335,7 +329,7 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
         {/* ---------- VISTA 3: crear cuenta ---------- */}
         {vista === 'registro' && (
           <form onSubmit={enviarRegistro} noValidate>
-            {avisoGeneral && <div style={estilos.avisoGeneral}>{avisoGeneral}</div>}
+            {avisoGeneral && <Alert>{avisoGeneral}</Alert>}
 
             <Campo id="nombre" etiqueta="Nombre" autoComplete="nickname"
                    valor={datos.nombre} onChange={cambiar('nombre')} error={errores.nombre} />
@@ -346,15 +340,15 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
             <Campo id="password2" etiqueta="Repite la contraseña" tipo="password" autoComplete="new-password"
                    valor={datos.password2} onChange={cambiar('password2')} error={errores.password2} />
 
-            <button type="submit" style={{ ...estilos.botonPrincipal, opacity: enviando ? 0.6 : 1 }} disabled={enviando}>
+            <Button type="submit" disabled={enviando}>
               {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
-            </button>
+            </Button>
 
             <p style={estilos.pie}>
               ¿Ya tienes cuenta?{' '}
-              <button type="button" style={estilos.enlace} onClick={() => irA('login')}>Inicia sesión</button>
+              <button type="button" className="ui-link" onClick={() => irA('login')}>Inicia sesión</button>
               <br />
-              <button type="button" style={{ ...estilos.enlace, marginTop: '0.6rem' }} onClick={() => irA('elegir')}>
+              <button type="button" className="ui-link ui-link-spaced" onClick={() => irA('elegir')}>
                 ← Volver
               </button>
             </p>
@@ -363,7 +357,7 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
 
         {/* Enlaces legales: tienen que poder leerse ANTES de registrarse */}
         <PieLegal estilo={{ marginTop: '1.5rem', paddingBottom: 0, fontSize: '0.8rem' }} />
-      </div>
+      </Card>
     </div>
   );
 }

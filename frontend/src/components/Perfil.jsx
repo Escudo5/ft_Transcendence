@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Alert, Avatar, Button, Card, ProgressBar, SecondaryButton, StatusDot, TextField } from './ui';
 
 /**
  * PÁGINA DE PERFIL
@@ -39,8 +40,8 @@ const TEXTO_ESTADO = {
 
 const estilos = {
   tarjeta: {
-    background: 'var(--bg-card-base)',
-    border: '1px solid var(--border-color)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-default)',
     borderRadius: '16px',
     padding: '2rem',
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
@@ -57,15 +58,15 @@ const estilos = {
     height: '120px',
     borderRadius: '50%',
     objectFit: 'cover',
-    border: '3px solid var(--accent-color)',
+    border: '3px solid var(--accent)',
     flexShrink: 0,
   },
   fotoVacia: {
     width: '120px',
     height: '120px',
     borderRadius: '50%',
-    background: 'var(--bg-control)',
-    border: '3px solid var(--border-color)',
+    background: 'var(--surface-overlay)',
+    border: '3px solid var(--border-default)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -117,8 +118,8 @@ const estilos = {
     marginTop: '1rem',
   },
   dato: {
-    background: 'var(--bg-control)',
-    border: '1px solid var(--border-color)',
+    background: 'var(--surface-overlay)',
+    border: '1px solid var(--border-default)',
     borderRadius: '10px',
     padding: '1rem',
     textAlign: 'center',
@@ -127,7 +128,7 @@ const estilos = {
     fontFamily: 'var(--font-heading)',
     fontSize: '1.6rem',
     fontWeight: 800,
-    color: 'var(--accent-color)',
+    color: 'var(--accent)',
   },
   datoEtiqueta: {
     fontSize: '0.78rem',
@@ -137,30 +138,28 @@ const estilos = {
     marginTop: '0.25rem',
   },
   barraFuera: {
-    background: 'var(--bg-control)',
+    background: 'var(--surface-overlay)',
     borderRadius: '999px',
     height: '14px',
     overflow: 'hidden',
-    border: '1px solid var(--border-color)',
+    border: '1px solid var(--border-default)',
     marginTop: '0.6rem',
   },
   barraDentro: (pct) => ({
     width: `${pct}%`,
     height: '100%',
-    background: 'linear-gradient(to right, #38bdf8, #818cf8, #c084fc)',
-    transition: 'width 0.4s',
+    background: 'var(--accent)',
   }),
   campo: {
     width: '100%',
     boxSizing: 'border-box',
-    background: 'var(--bg-control)',
-    border: '1px solid var(--border-color)',
+    background: 'var(--surface-overlay)',
+    border: '1px solid var(--border-default)',
     color: 'var(--text-primary)',
     padding: '0.75rem 1rem',
     borderRadius: '8px',
     fontFamily: 'var(--font-body)',
     fontSize: '0.95rem',
-    outline: 'none',
   },
   etiqueta: {
     fontFamily: 'var(--font-heading)',
@@ -173,7 +172,7 @@ const estilos = {
     display: 'block',
   },
   boton: {
-    background: 'var(--accent-color)',
+    background: 'var(--accent)',
     color: '#0c0f16',
     border: 'none',
     borderRadius: '8px',
@@ -184,9 +183,9 @@ const estilos = {
     cursor: 'pointer',
   },
   botonSecundario: {
-    background: 'var(--bg-control)',
+    background: 'var(--surface-overlay)',
     color: 'var(--text-primary)',
-    border: '1px solid var(--border-color)',
+    border: '1px solid var(--border-default)',
     borderRadius: '8px',
     padding: '0.8rem 1.4rem',
     fontFamily: 'var(--font-heading)',
@@ -210,9 +209,9 @@ const estilos = {
     flexShrink: 0,
   },
   botonFoto: {
-    background: 'var(--bg-control)',
+    background: 'var(--surface-overlay)',
     color: 'var(--text-primary)',
-    border: '1px solid var(--border-color)',
+    border: '1px solid var(--border-default)',
     borderRadius: '999px',
     padding: '0.35rem 0.85rem',
     fontFamily: 'var(--font-body)',
@@ -223,14 +222,14 @@ const estilos = {
   barraProgresoFuera: {
     width: '120px',
     height: '5px',
-    background: 'var(--bg-control)',
+    background: 'var(--surface-overlay)',
     borderRadius: '999px',
     overflow: 'hidden',
   },
   barraProgresoDentro: (pct) => ({
     width: `${pct}%`,
     height: '100%',
-    background: 'var(--accent-color)',
+    background: 'var(--accent)',
     transition: 'width 0.15s linear',
   }),
 };
@@ -569,26 +568,15 @@ export default function Perfil() {
       </header>
 
       {cargando ? (
-        <div style={estilos.tarjeta}>Cargando perfil…</div>
+        <Card>Cargando perfil…</Card>
       ) : error ? (
-        <div style={estilos.tarjeta}>
-          <p style={{ color: '#fca5a5', fontWeight: 600 }}>{error}</p>
-        </div>
+        <Card><Alert>{error}</Alert></Card>
       ) : (
         <>
           {/* ---------- Datos del usuario ---------- */}
-          <section style={estilos.tarjeta}>
+          <Card>
             {aviso && (
-              <div
-                style={{
-                  ...estilos.aviso,
-                  background: aviso.ok ? 'rgba(74, 222, 128, 0.12)' : 'rgba(248, 113, 113, 0.12)',
-                  border: `1px solid ${aviso.ok ? 'rgba(74,222,128,0.4)' : 'rgba(248,113,113,0.4)'}`,
-                  color: aviso.ok ? '#86efac' : '#fca5a5',
-                }}
-              >
-                {aviso.texto}
-              </div>
+              <Alert tone={aviso.ok ? 'success' : 'error'}>{aviso.texto}</Alert>
             )}
 
             <div style={estilos.cabecera}>
@@ -596,22 +584,15 @@ export default function Perfil() {
                 {/* Mientras sube, se enseña la foto elegida (vistaPrevia).
                     El backend siempre manda una foto, así que el muñequito de
                     abajo ya casi nunca sale: se deja por si acaso. */}
-                {vistaPrevia || perfil.profile_image ? (
-                  <img
-                    src={vistaPrevia || perfil.profile_image}
-                    alt={perfil.username}
-                    style={{ ...estilos.foto, opacity: subiendoFoto ? 0.55 : 1 }}
-                  />
-                ) : (
-                  <div style={estilos.fotoVacia}>👤</div>
-                )}
+                <Avatar
+                src={vistaPrevia || perfil.profile_image}
+                alt={perfil.username}
+                size="large"
+                className={subiendoFoto ? 'avatar-uploading' : ''}
+                />
 
                 {/* Barra de progreso: solo mientras se está subiendo */}
-                {subiendoFoto && (
-                  <div style={estilos.barraProgresoFuera}>
-                    <div style={estilos.barraProgresoDentro(progreso)} />
-                  </div>
-                )}
+                {subiendoFoto && <ProgressBar value={progreso} className="profile-progress" />}
 
                 {/* Cambiar la foto: solo en tu propio perfil */}
                 {perfil.es_mi_perfil && (
@@ -646,10 +627,9 @@ export default function Perfil() {
               <div style={{ flex: 1, minWidth: '240px' }}>
                 {editando ? (
                   <>
-                    <label style={estilos.etiqueta} htmlFor="nombre">Nombre a mostrar</label>
-                    <input
+                    <TextField
                       id="nombre"
-                      style={estilos.campo}
+                      label="Nombre a mostrar"
                       value={borrador.nombre_mostrado}
                       maxLength={50}
                       onChange={(e) => setBorrador({ ...borrador, nombre_mostrado: e.target.value })}
@@ -666,10 +646,7 @@ export default function Perfil() {
                 )}
 
                 <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <span style={estilos.etiquetaEstado(perfil.estado)}>
-                    <span style={estilos.punto(perfil.estado)} />
-                    {TEXTO_ESTADO[perfil.estado] || perfil.estado}
-                  </span>
+                  <StatusDot status={perfil.estado} label={TEXTO_ESTADO[perfil.estado] || perfil.estado} />
                   <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                     Miembro desde {perfil.miembro_desde}
                   </span>
@@ -685,10 +662,11 @@ export default function Perfil() {
             {/* Biografía */}
             {editando ? (
               <div style={{ marginTop: '1.2rem' }}>
-                <label style={estilos.etiqueta} htmlFor="bio">Sobre mí</label>
-                <textarea
+                <TextField
                   id="bio"
-                  style={{ ...estilos.campo, minHeight: '90px', resize: 'vertical' }}
+                  label="Sobre mí"
+                  as="textarea"
+                  className="profile-bio-input"
                   value={borrador.bio}
                   maxLength={500}
                   onChange={(e) => setBorrador({ ...borrador, bio: e.target.value })}
@@ -753,25 +731,25 @@ export default function Perfil() {
               <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.3rem', flexWrap: 'wrap' }}>
                 {editando ? (
                   <>
-                    <button style={estilos.boton} onClick={guardar} disabled={guardando}>
+                    <Button onClick={guardar} disabled={guardando}>
                       {guardando ? 'Guardando…' : 'Guardar cambios'}
-                    </button>
-                    <button style={estilos.botonSecundario} onClick={cancelar} disabled={guardando}>
+                    </Button>
+                    <SecondaryButton onClick={cancelar} disabled={guardando}>
                       Cancelar
-                    </button>
+                    </SecondaryButton>
                   </>
                 ) : (
-                  <button style={estilos.boton} onClick={() => { setEditando(true); setAviso(null); }}>
+                  <Button onClick={() => { setEditando(true); setAviso(null); }}>
                     ✏️ Editar perfil
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
-          </section>
+          </Card>
 
           {/* ---------- Colección ---------- */}
-          <section style={estilos.tarjeta}>
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent-color)' }}>
+          <Card>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>
               Colección
             </h2>
 
@@ -780,9 +758,7 @@ export default function Perfil() {
                 <span>Álbum completado</span>
                 <strong style={{ color: 'var(--text-primary)' }}>{perfil.coleccion.porcentaje}%</strong>
               </div>
-              <div style={estilos.barraFuera}>
-                <div style={estilos.barraDentro(perfil.coleccion.porcentaje)} />
-              </div>
+              <ProgressBar value={perfil.coleccion.porcentaje} />
             </div>
 
             <div style={estilos.rejilla}>
@@ -827,13 +803,13 @@ export default function Perfil() {
                 </div>
               </div>
             )}
-          </section>
+          </Card>
 
           {/* ---------- Logros ---------- */}
           {perfil.logros && (
-            <section style={estilos.tarjeta}>
+            <Card>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent-color)' }}>
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>
                   Logros
                 </h2>
                 <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -850,9 +826,9 @@ export default function Perfil() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.8rem',
-                      background: 'var(--bg-control)',
+                      background: 'var(--surface-overlay)',
                       // Los que faltan se ven apagados, para que se note lo que queda
-                      border: `1px solid ${l.conseguido ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                      border: `1px solid ${l.conseguido ? 'var(--accent)' : 'var(--border-default)'}`,
                       borderRadius: '10px',
                       padding: '0.8rem',
                       opacity: l.conseguido ? 1 : 0.55,
@@ -869,43 +845,43 @@ export default function Perfil() {
                         {l.conseguido ? l.descripcion : `${l.actual} de ${l.objetivo}`}
                       </div>
                       {!l.conseguido && (
-                        <div style={{ background: 'var(--bg-card-base)', borderRadius: '999px', height: '4px', marginTop: '0.35rem', overflow: 'hidden' }}>
-                          <div style={{ width: `${(l.actual / l.objetivo) * 100}%`, height: '100%', background: 'var(--accent-color)' }} />
+                        <div style={{ background: 'var(--surface-raised)', borderRadius: '999px', height: '4px', marginTop: '0.35rem', overflow: 'hidden' }}>
+                          <div style={{ width: `${(l.actual / l.objetivo) * 100}%`, height: '100%', background: 'var(--accent)' }} />
                         </div>
                       )}
                     </div>
-                    {l.conseguido && <span style={{ color: 'var(--accent-color)', fontWeight: 800 }}>✓</span>}
+                    {l.conseguido && <span style={{ color: 'var(--accent)', fontWeight: 800 }}>✓</span>}
                   </div>
                 ))}
               </div>
-            </section>
+            </Card>
           )}
 
           {/* ---------- Tus datos (RGPD) — solo en tu propio perfil ---------- */}
           {perfil.es_mi_perfil && (
-            <section style={estilos.tarjeta}>
-              <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent-color)' }}>
+            <Card>
+              <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>
                 Tus datos
               </h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
                 Puedes llevarte todo lo que guardamos de ti o borrar tu cuenta cuando quieras.
                 Lo explicamos en la{' '}
-                <Link to="/privacidad" style={{ color: 'var(--accent-color)' }}>Política de Privacidad</Link>.
+                <Link to="/privacidad" style={{ color: 'var(--accent)' }}>Política de Privacidad</Link>.
               </p>
 
               <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.2rem', flexWrap: 'wrap' }}>
                 <a
                   href={`${apiBaseUrl}/users/me/datos/`}
-                  style={{ ...estilos.botonSecundario, textDecoration: 'none', display: 'inline-block' }}
+                  className="ui-button ui-button-secondary"
                 >
                   ⬇️ Descargar mis datos
                 </a>
-                <button
-                  style={{ ...estilos.botonSecundario, borderColor: '#f87171', color: '#fca5a5' }}
+                <SecondaryButton
+                  className="danger-button"
                   onClick={() => { setBorrandoCuenta(true); setAviso(null); }}
                 >
                   🗑️ Borrar mi cuenta
-                </button>
+                </SecondaryButton>
               </div>
 
               {/* Confirmación: borrar una cuenta no puede ser un solo clic */}
@@ -929,36 +905,31 @@ export default function Perfil() {
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                     Escribe <strong style={{ color: '#fca5a5' }}>BORRAR MI CUENTA</strong> para confirmar:
                   </p>
-                  <input
-                    style={estilos.campo}
+                  <TextField
+                    id="confirmacion-borrado"
+                    label="Confirmación"
+                    className="confirmation-input"
                     value={textoConfirmacion}
                     onChange={(e) => setTextoConfirmacion(e.target.value)}
                     placeholder="BORRAR MI CUENTA"
                   />
                   <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                    <button
-                      style={{
-                        ...estilos.boton,
-                        background: '#dc2626',
-                        color: 'white',
-                        opacity: textoConfirmacion === 'BORRAR MI CUENTA' ? 1 : 0.5,
-                        cursor: textoConfirmacion === 'BORRAR MI CUENTA' ? 'pointer' : 'not-allowed',
-                      }}
+                    <Button
+                      className="danger-button"
                       disabled={textoConfirmacion !== 'BORRAR MI CUENTA' || borrando}
                       onClick={borrarCuenta}
                     >
                       {borrando ? 'Borrando…' : 'Borrar mi cuenta definitivamente'}
-                    </button>
-                    <button
-                      style={estilos.botonSecundario}
+                    </Button>
+                    <SecondaryButton
                       onClick={() => { setBorrandoCuenta(false); setTextoConfirmacion(''); }}
                     >
                       Cancelar
-                    </button>
+                    </SecondaryButton>
                   </div>
                 </div>
               )}
-            </section>
+            </Card>
           )}
         </>
       )}

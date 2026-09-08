@@ -365,6 +365,8 @@ function App() {
   const codeYaProcesado = useRef(false);
 
   useEffect(() => {
+    document.title = '42 Cards Game | Colección y partidas';
+
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
@@ -415,9 +417,9 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#1e1e1e', color: 'white', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <main className="session-loading" aria-live="polite">
         <h2>Verificando sesión...</h2>
-      </div>
+      </main>
     );
   }
 
@@ -431,7 +433,7 @@ function App() {
   if (!isAuthenticated && !enRutaPublica) {
     return (
       <>
-        <DotField style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
+        <DotField style={{ position: 'fixed', inset: 0, width: '100vw', height: '100dvh', zIndex: -1, pointerEvents: 'none' }} />
         <Acceso
           apiBaseUrl={apiBaseUrl}
           urlLogin42={URL_LOGIN_42}
@@ -446,7 +448,7 @@ function App() {
 
   return (
     <>
-      <DotField style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
+      <DotField style={{ position: 'fixed', inset: 0, width: '100vw', height: '100dvh', zIndex: -1, pointerEvents: 'none' }} />
       {/* 🎁 Flota por encima de todas las pantallas: el regalo debe poder
           recogerse estés donde estés, no solo en la portada */}
       <RegaloDiario />
