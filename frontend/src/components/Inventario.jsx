@@ -78,8 +78,8 @@ function Inventario() {
           height: '220px',
           margin: '10rem auto 2rem auto',
           padding: '2.5rem',
-          backgroundColor: 'rgba(20, 20, 27, 0.2)',
-          border: '5px solid rgba(0, 255, 204, 0.2)',
+          backgroundColor: 'rgba(24, 24, 27, 0.2)',
+          border: '5px solid rgba(20, 184, 166, 0.2)',
           borderRadius: '16px',
           boxShadow: '0 12px 40px rgba(0, 0, 0, 0.6)',
           display: 'flex',
@@ -108,8 +108,8 @@ function Inventario() {
           height: '220px',
           margin: '2rem auto',
           padding: '2.5rem',
-          backgroundColor: 'rgba(20, 20, 27, 0.2)',
-          border: '5px solid rgba(0, 255, 204, 0.2)',
+          backgroundColor: 'rgba(24, 24, 27, 0.2)',
+          border: '5px solid rgba(20, 184, 166, 0.2)',
           borderRadius: '16px',
           boxShadow: '0 12px 40px rgba(0, 0, 0, 0.6)',
           display: 'flex',
@@ -187,8 +187,8 @@ function Inventario() {
           minHeight: '220px',
           margin: '2rem auto',
           padding: '2.5rem',
-          backgroundColor: 'rgba(20, 20, 27, 0.2)',
-          border: '5px solid rgba(0, 255, 204, 0.2)',
+          backgroundColor: 'rgba(24, 24, 27, 0.2)',
+          border: '5px solid rgba(20, 184, 166, 0.2)',
           borderRadius: '16px',
           boxShadow: '0 12px 40px rgba(0, 0, 0, 0.6)',
           display: 'flex',
@@ -207,12 +207,12 @@ function Inventario() {
             style={{
               width: '140px',
               height: '90px',
-              backgroundColor: '#1a1a24',
-              border: '3px solid #00ffcc',
+              backgroundColor: 'var(--surface-raised)',
+              border: '3px solid var(--accent)',
               borderRadius: '8px',
               position: 'relative',
               cursor: 'pointer',
-              boxShadow: '0 0 15px rgba(0, 255, 204, 0.3)',
+              boxShadow: '0 0 15px rgba(20, 184, 166, 0.3)',
               transition: 'transform 0.2s, box-shadow 0.2s',
               display: 'flex',
               justifyContent: 'center',
@@ -220,11 +220,11 @@ function Inventario() {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'scale(1.08)';
-              e.currentTarget.style.boxShadow = '0 0 25px rgba(0, 255, 204, 0.6)';
+              e.currentTarget.style.boxShadow = '0 0 25px rgba(20, 184, 166, 0.6)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 255, 204, 0.3)';
+              e.currentTarget.style.boxShadow = '0 0 15px rgba(20, 184, 166, 0.3)';
             }}
           >
             {/* Triángulo superior del sobre (Efecto carta clásica) */}
@@ -236,7 +236,7 @@ function Inventario() {
               height: 0,
               borderStyle: 'solid',
               borderWidth: '40px 67px 0 67px',
-              borderColor: 'rgba(0, 255, 204, 0.15) transparent transparent transparent'
+              borderColor: 'rgba(20, 184, 166, 0.15) transparent transparent transparent'
             }} />
             
             {/* Sello central místico estilo Bakugan / Orbe de Energía */}
@@ -250,14 +250,14 @@ function Inventario() {
               border: '2px solid #fff'
             }} />
 
-            <span style={{ position: 'absolute', bottom: '5px', fontSize: '0.65rem', color: '#00ffcc', fontWeight: 'bold', letterSpacing: '1px', zIndex: 2 }}>
+            <span style={{ position: 'absolute', bottom: '5px', fontSize: '0.65rem', color: 'var(--accent)', fontWeight: 'bold', letterSpacing: '1px', zIndex: 2 }}>
               COMPRAR
             </span>
           </div>
         </div>
 
         {mensajeSobre && (
-          <div style={{ color: '#8ef5e1', fontWeight: '600' }}>
+          <div style={{ color: '#5eead4', fontWeight: '600' }}>
             {mensajeSobre}
           </div>
         )}
