@@ -16,6 +16,31 @@ const TEXTO_ESTADO = {
 // El mismo tope que comprueba el servidor en chat/models.py
 const LARGO_MAXIMO = 1000;
 
+/**
+ * El día de un mensaje, para la banderita que separa las conversaciones por
+ * fechas (como en WhatsApp): "Hoy", "Ayer" o la fecha entera.
+ *
+ * El año solo se pone si NO es este año. Escribir "12 de septiembre de 2026"
+ * en un mensaje de esta semana sobra, y ocupa el doble.
+ */
+function etiquetaDelDia(fecha) {
+  const cuando = new Date(fecha);
+  const hoy = new Date();
+  const ayer = new Date();
+  ayer.setDate(hoy.getDate() - 1);
+
+  // toDateString compara solo el día, sin la hora
+  const mismoDia = (a, b) => a.toDateString() === b.toDateString();
+  if (mismoDia(cuando, hoy)) return 'Hoy';
+  if (mismoDia(cuando, ayer)) return 'Ayer';
+
+  return cuando.toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'long',
+    ...(cuando.getFullYear() !== hoy.getFullYear() ? { year: 'numeric' } : {}),
+  });
+}
+
 /** La foto ya montada. El servidor decide cuál: la que subió esa persona, la
  *  de la Intra, o un círculo con su inicial si no tiene ninguna. */
 function foto(u) {
@@ -402,34 +427,63 @@ function ChatSocial() {
                   <p style={{ fontSize: '0.9rem' }}>Escribe algo abajo para empezar.</p>
                 </div>
               ) : (
-                mensajes.map((m) => (
-                  // Los míos a la derecha, los suyos a la izquierda. El 'mio'
-                  // lo calcula el servidor, aquí no se compara ningún nombre.
-                  <div
-                    key={m.id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: m.mio ? 'flex-end' : 'flex-start',
-                      marginBottom: '0.6rem',
-                    }}
-                  >
-                    <div
-                      style={{
-                        backgroundColor: m.mio ? 'rgba(0, 255, 204, 0.15)' : '#1f2433',
-                        border: `1px solid ${m.mio ? '#00ffcc' : '#2a2e3d'}`,
-                        padding: '0.6rem 1rem',
-                        borderRadius: '10px',
-                        maxWidth: '70%',
-                        wordBreak: 'break-word',
-                      }}
-                    >
-                      <div style={{ whiteSpace: 'pre-wrap' }}>{m.texto}</div>
-                      <div style={{ fontSize: '0.7rem', color: '#8b92b0', marginTop: '0.25rem', textAlign: 'right' }}>
-                        {new Date(m.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                mensajes.map((m, i) => {
+                  // Banderita con el día cuando cambia la fecha respecto al
+                  // mensaje anterior, como en WhatsApp. Así se sabe de cuándo
+                  // es cada trozo de conversación sin poner la fecha en todos.
+                  const dia = etiquetaDelDia(m.fecha);
+                  const cambiaElDia = i === 0 || dia !== etiquetaDelDia(mensajes[i - 1].fecha);
+
+                  return (
+                    <div key={m.id}>
+                      {cambiaElDia && (
+                        <div style={{ textAlign: 'center', margin: '1rem 0 0.8rem' }}>
+                          <span style={{
+                            backgroundColor: '#1f2433',
+                            border: '1px solid #2a2e3d',
+                            color: '#8b92b0',
+                            fontSize: '0.72rem',
+                            padding: '0.25rem 0.8rem',
+                            borderRadius: '12px',
+                          }}>
+                            {dia}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Los míos a la derecha, los suyos a la izquierda. El
+                          'mio' lo calcula el servidor: aquí no se compara
+                          ningún nombre. */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: m.mio ? 'flex-end' : 'flex-start',
+                          marginBottom: '0.6rem',
+                        }}
+                      >
+                        <div
+                          style={{
+                            backgroundColor: m.mio ? 'rgba(0, 255, 204, 0.15)' : '#1f2433',
+                            border: `1px solid ${m.mio ? '#00ffcc' : '#2a2e3d'}`,
+                            padding: '0.6rem 1rem',
+                            borderRadius: '10px',
+                            maxWidth: '70%',
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          <div style={{ whiteSpace: 'pre-wrap' }}>{m.texto}</div>
+                          <div
+                            style={{ fontSize: '0.7rem', color: '#8b92b0', marginTop: '0.25rem', textAlign: 'right' }}
+                            // Al pasar el ratón, la fecha y la hora completas
+                            title={new Date(m.fecha).toLocaleString('es-ES')}
+                          >
+                            {new Date(m.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
               {/* Marca invisible del final, para bajar del todo solo */}
               <div ref={finDeLaLista} />
