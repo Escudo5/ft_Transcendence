@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Badge } from "./ui";
+import { Badge, TextField } from "./ui";
 
 /**
  * EL ÁLBUM
@@ -155,16 +155,16 @@ export default function Catalogo() {
 
       {/* Panel de control para filtros, búsqueda y ordenación */}
       <section className="control-panel">
-        <div className="control-group">
-          <label htmlFor="search">Buscar carta</label>
-          <input
-            id="search"
-            type="text"
-            placeholder="Por login, título o coalición…"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        {/* Campo del sistema de diseño (ui.jsx): trae ya la etiqueta, el
+            aviso de error y el aria-invalid para los lectores de pantalla */}
+        <TextField
+          id="search"
+          type="text"
+          label="Buscar carta"
+          placeholder="Por login, título o coalición…"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
 
         <div className="control-group">
           <label htmlFor="rarity">Rareza</label>
@@ -242,8 +242,8 @@ export default function Catalogo() {
                         right: "8px",
                         zIndex: 3,
                         background: "rgba(12, 15, 22, 0.85)",
-                        border: "2px solid var(--accent-color)",
-                        color: "var(--accent-color)",
+                        border: "2px solid var(--accent)",
+                        color: "var(--accent)",
                         borderRadius: "999px",
                         padding: "0.15rem 0.55rem",
                         fontFamily: "var(--font-heading)",

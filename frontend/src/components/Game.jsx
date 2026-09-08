@@ -25,7 +25,7 @@ function Game() {
         display: 'inline-block', 
         padding: '10px', 
         marginBottom: '2rem',
-        backgroundColor: 'var(--bg-card-base)'
+        backgroundColor: 'var(--surface-raised)'
       }}>
         <img 
           /* URL alternativa y directa para evitar bloqueos del navegador en local */

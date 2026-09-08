@@ -14,8 +14,8 @@ import { Avatar, Card, ProgressBar } from './ui';
 
 const estilos = {
   tarjeta: {
-    background: 'var(--bg-card-base)',
-    border: '1px solid var(--border-color)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-default)',
     borderRadius: '16px',
     padding: '1.5rem',
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
@@ -27,8 +27,8 @@ const estilos = {
     padding: '0.85rem 1rem',
     borderRadius: '10px',
     background: soyYo ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
-    border: soyYo ? '1px solid var(--accent-color)' : '1px solid transparent',
-    borderBottom: soyYo ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+    border: soyYo ? '1px solid var(--accent)' : '1px solid transparent',
+    borderBottom: soyYo ? '1px solid var(--accent)' : '1px solid var(--border-default)',
     textDecoration: 'none',
     color: 'inherit',
   }),
@@ -51,13 +51,13 @@ const estilos = {
     borderRadius: '50%',
     objectFit: 'cover',
     flexShrink: 0,
-    border: '2px solid var(--border-color)',
+    border: '2px solid var(--border-default)',
   },
   fotoVacia: {
     width: '44px',
     height: '44px',
     borderRadius: '50%',
-    background: 'var(--bg-control)',
+    background: 'var(--surface-overlay)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -75,7 +75,7 @@ const estilos = {
     fontFamily: 'var(--font-heading)',
     fontWeight: 800,
     fontSize: '1.1rem',
-    color: 'var(--accent-color)',
+    color: 'var(--accent)',
   },
   cifraEtiqueta: {
     color: 'var(--text-secondary)',
@@ -84,7 +84,7 @@ const estilos = {
     letterSpacing: '0.04em',
   },
   barraFuera: {
-    background: 'var(--bg-control)',
+    background: 'var(--surface-overlay)',
     borderRadius: '999px',
     height: '6px',
     overflow: 'hidden',
@@ -93,7 +93,7 @@ const estilos = {
   barraDentro: (pct) => ({
     width: `${pct}%`,
     height: '100%',
-    background: 'var(--accent-color)',
+    background: 'var(--accent)',
   }),
 };
 
@@ -164,7 +164,7 @@ export default function Ranking() {
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={estilos.nombre}>
-                  {u.nombre} {u.soy_yo && <span style={{ color: 'var(--accent-color)' }}>· tú</span>}
+                  {u.nombre} {u.soy_yo && <span style={{ color: 'var(--accent)' }}>· tú</span>}
                 </div>
                 <div style={estilos.login}>@{u.username}</div>
                 <ProgressBar value={u.porcentaje} />

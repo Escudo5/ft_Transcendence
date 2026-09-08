@@ -40,8 +40,8 @@ const TEXTO_ESTADO = {
 
 const estilos = {
   tarjeta: {
-    background: 'var(--bg-card-base)',
-    border: '1px solid var(--border-color)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-default)',
     borderRadius: '16px',
     padding: '2rem',
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
@@ -58,15 +58,15 @@ const estilos = {
     height: '120px',
     borderRadius: '50%',
     objectFit: 'cover',
-    border: '3px solid var(--accent-color)',
+    border: '3px solid var(--accent)',
     flexShrink: 0,
   },
   fotoVacia: {
     width: '120px',
     height: '120px',
     borderRadius: '50%',
-    background: 'var(--bg-control)',
-    border: '3px solid var(--border-color)',
+    background: 'var(--surface-overlay)',
+    border: '3px solid var(--border-default)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -118,8 +118,8 @@ const estilos = {
     marginTop: '1rem',
   },
   dato: {
-    background: 'var(--bg-control)',
-    border: '1px solid var(--border-color)',
+    background: 'var(--surface-overlay)',
+    border: '1px solid var(--border-default)',
     borderRadius: '10px',
     padding: '1rem',
     textAlign: 'center',
@@ -128,7 +128,7 @@ const estilos = {
     fontFamily: 'var(--font-heading)',
     fontSize: '1.6rem',
     fontWeight: 800,
-    color: 'var(--accent-color)',
+    color: 'var(--accent)',
   },
   datoEtiqueta: {
     fontSize: '0.78rem',
@@ -138,23 +138,23 @@ const estilos = {
     marginTop: '0.25rem',
   },
   barraFuera: {
-    background: 'var(--bg-control)',
+    background: 'var(--surface-overlay)',
     borderRadius: '999px',
     height: '14px',
     overflow: 'hidden',
-    border: '1px solid var(--border-color)',
+    border: '1px solid var(--border-default)',
     marginTop: '0.6rem',
   },
   barraDentro: (pct) => ({
     width: `${pct}%`,
     height: '100%',
-    background: 'var(--accent-color)',
+    background: 'var(--accent)',
   }),
   campo: {
     width: '100%',
     boxSizing: 'border-box',
-    background: 'var(--bg-control)',
-    border: '1px solid var(--border-color)',
+    background: 'var(--surface-overlay)',
+    border: '1px solid var(--border-default)',
     color: 'var(--text-primary)',
     padding: '0.75rem 1rem',
     borderRadius: '8px',
@@ -172,7 +172,7 @@ const estilos = {
     display: 'block',
   },
   boton: {
-    background: 'var(--accent-color)',
+    background: 'var(--accent)',
     color: '#0c0f16',
     border: 'none',
     borderRadius: '8px',
@@ -183,9 +183,9 @@ const estilos = {
     cursor: 'pointer',
   },
   botonSecundario: {
-    background: 'var(--bg-control)',
+    background: 'var(--surface-overlay)',
     color: 'var(--text-primary)',
-    border: '1px solid var(--border-color)',
+    border: '1px solid var(--border-default)',
     borderRadius: '8px',
     padding: '0.8rem 1.4rem',
     fontFamily: 'var(--font-heading)',
@@ -209,9 +209,9 @@ const estilos = {
     flexShrink: 0,
   },
   botonFoto: {
-    background: 'var(--bg-control)',
+    background: 'var(--surface-overlay)',
     color: 'var(--text-primary)',
-    border: '1px solid var(--border-color)',
+    border: '1px solid var(--border-default)',
     borderRadius: '999px',
     padding: '0.35rem 0.85rem',
     fontFamily: 'var(--font-body)',
@@ -222,14 +222,14 @@ const estilos = {
   barraProgresoFuera: {
     width: '120px',
     height: '5px',
-    background: 'var(--bg-control)',
+    background: 'var(--surface-overlay)',
     borderRadius: '999px',
     overflow: 'hidden',
   },
   barraProgresoDentro: (pct) => ({
     width: `${pct}%`,
     height: '100%',
-    background: 'var(--accent-color)',
+    background: 'var(--accent)',
     transition: 'width 0.15s linear',
   }),
 };
@@ -638,7 +638,7 @@ export default function Perfil() {
 
           {/* ---------- Colección ---------- */}
           <Card>
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent-color)' }}>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>
               Colección
             </h2>
 
@@ -698,7 +698,7 @@ export default function Perfil() {
           {perfil.logros && (
             <Card>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent-color)' }}>
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>
                   Logros
                 </h2>
                 <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -715,9 +715,9 @@ export default function Perfil() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.8rem',
-                      background: 'var(--bg-control)',
+                      background: 'var(--surface-overlay)',
                       // Los que faltan se ven apagados, para que se note lo que queda
-                      border: `1px solid ${l.conseguido ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                      border: `1px solid ${l.conseguido ? 'var(--accent)' : 'var(--border-default)'}`,
                       borderRadius: '10px',
                       padding: '0.8rem',
                       opacity: l.conseguido ? 1 : 0.55,
@@ -734,12 +734,12 @@ export default function Perfil() {
                         {l.conseguido ? l.descripcion : `${l.actual} de ${l.objetivo}`}
                       </div>
                       {!l.conseguido && (
-                        <div style={{ background: 'var(--bg-card-base)', borderRadius: '999px', height: '4px', marginTop: '0.35rem', overflow: 'hidden' }}>
-                          <div style={{ width: `${(l.actual / l.objetivo) * 100}%`, height: '100%', background: 'var(--accent-color)' }} />
+                        <div style={{ background: 'var(--surface-raised)', borderRadius: '999px', height: '4px', marginTop: '0.35rem', overflow: 'hidden' }}>
+                          <div style={{ width: `${(l.actual / l.objetivo) * 100}%`, height: '100%', background: 'var(--accent)' }} />
                         </div>
                       )}
                     </div>
-                    {l.conseguido && <span style={{ color: 'var(--accent-color)', fontWeight: 800 }}>✓</span>}
+                    {l.conseguido && <span style={{ color: 'var(--accent)', fontWeight: 800 }}>✓</span>}
                   </div>
                 ))}
               </div>
@@ -749,13 +749,13 @@ export default function Perfil() {
           {/* ---------- Tus datos (RGPD) — solo en tu propio perfil ---------- */}
           {perfil.es_mi_perfil && (
             <Card>
-              <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent-color)' }}>
+              <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>
                 Tus datos
               </h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
                 Puedes llevarte todo lo que guardamos de ti o borrar tu cuenta cuando quieras.
                 Lo explicamos en la{' '}
-                <Link to="/privacidad" style={{ color: 'var(--accent-color)' }}>Política de Privacidad</Link>.
+                <Link to="/privacidad" style={{ color: 'var(--accent)' }}>Política de Privacidad</Link>.
               </p>
 
               <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.2rem', flexWrap: 'wrap' }}>
