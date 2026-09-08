@@ -1,0 +1,177 @@
+/* Contenedor principal estilo WhatsApp Web */
+.chat-main-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background-color: #0b0e14;
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* Columna Izquierda: Lista de Amigos */
+.chat-sidebar {
+  width: 30%;
+  min-width: 320px;
+  background-color: #151821;
+  border-right: 1px solid #2a2e3d;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cabecera de la columna izquierda (Con botón Volver) */
+.sidebar-header {
+  padding: 1rem;
+  background-color: #1a1e2b;
+  border-bottom: 1px solid #2a2e3d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-volver {
+  background-color: #202533;
+  color: #00ffcc;
+  border: 1px solid #00ffcc;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.btn-volver:hover {
+  background-color: #00ffcc;
+  color: #000;
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
+}
+
+/* Tarjeta de cada Amigo en la lista izquierda */
+.item-amigo-sidebar {
+  position: relative;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background-color: #202533;
+  border: 1px solid #2a2e3d;
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background-color 0.2s;
+}
+
+.item-amigo-sidebar:hover {
+  background-color: #282e40;
+}
+
+.info-amigo-click {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  cursor: pointer;
+  flex: 1; /* Ocupa casi todo el ancho para que al pulsar abra el chat */
+}
+
+/* Botón de 3 puntos en la columna izquierda */
+.btn-opciones-sidebar {
+  background: none;
+  border: none;
+  color: #8b92b0;
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 0.3rem 0.6rem;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.btn-opciones-sidebar:hover {
+  background-color: #3a3f55;
+  color: #fff;
+}
+
+/* Menú flotante desplegable desde el botón de la izquierda */
+.menu-desplegable-sidebar {
+  position: absolute;
+  top: 45px;
+  right: 10px;
+  background-color: #1f2433;
+  border: 1px solid #3a3f55;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  min-width: 170px;
+}
+
+.opcion-item {
+  padding: 0.8rem 1rem;
+  background: none;
+  border: none;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.opcion-item:hover {
+  background-color: #2a2d3d;
+}
+
+.opcion-bloquear {
+  color: #ff4d4d;
+}
+
+.opcion-bloquear:hover {
+  background-color: rgba(255, 77, 77, 0.15);
+}
+
+.opcion-desbloquear {
+  color: #00ffcc;
+}
+
+.opcion-desbloquear:hover {
+  background-color: rgba(0, 255, 204, 0.15);
+}
+
+/* Columna Derecha: Área de conversación */
+.chat-area {
+  width: 70%;
+  flex: 1;
+  background-color: #0d1017;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Cabecera del chat abierto */
+.chat-header {
+  padding: 0.8rem 1.5rem;
+  background-color: #151821;
+  border-bottom: 1px solid #2a2e3d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.avatar-header {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #2a2e3d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+/* Estado cuando no hay nadie seleccionado */
+.no-chat-selected {
+  margin: auto;
+  text-align: center;
+  color: #6c728f;
+}
