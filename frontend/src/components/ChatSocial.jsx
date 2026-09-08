@@ -91,9 +91,10 @@ function ChatSocial() {
   // una solicitud y la lista sigue igual hasta que recargas la página.
   const recargar = async () => {
     try {
-      const [resAmigos, resSolic] = await Promise.all([
+      const [resAmigos, resSolic, resSinLeer] = await Promise.all([
         fetch(`${API}/social/amigos/`, { credentials: 'include' }),
         fetch(`${API}/social/solicitudes/pendientes/`, { credentials: 'include' }),
+        fetch(`${API}/chat/sin-leer/`, { credentials: 'include' }),
       ]);
 
       if (resAmigos.status === 401 || resAmigos.status === 403) {
@@ -106,7 +107,16 @@ function ChatSocial() {
       }
 
       setError('');
-      setAmigos((await resAmigos.json()).map(adaptarAmigo));
+
+      // Cuántos mensajes sin leer hay de cada persona, para el puntito rojo
+      // de su fila. El servidor ya lo sabe; solo había que preguntárselo.
+      let sinLeer = {};
+      if (resSinLeer.ok) sinLeer = (await resSinLeer.json()).por_persona || {};
+
+      setAmigos((await resAmigos.json()).map((u) => ({
+        ...adaptarAmigo(u),
+        sinLeer: sinLeer[u.username] || 0,
+      })));
       if (resSolic.ok) {
         // Solo las recibidas: las enviadas son las mías y no hay nada que decidir
         setSolicitudes(((await resSolic.json()).received || []).map(adaptarSolicitud));
@@ -120,6 +130,22 @@ function ChatSocial() {
   };
 
   useEffect(() => { recargar(); }, []);
+
+  // Refrescar los "sin leer" de la lista cada 10 segundos. Se pregunta solo
+  // por eso (es una consulta de contar, no trae mensajes ni fotos), en vez de
+  // recargar amigos y solicitudes enteros cada rato.
+  useEffect(() => {
+    let vivo = true;
+    const reloj = setInterval(async () => {
+      try {
+        const res = await fetch(`${API}/chat/sin-leer/`, { credentials: 'include' });
+        if (!vivo || !res.ok) return;
+        const porPersona = (await res.json()).por_persona || {};
+        setAmigos((prev) => prev.map((a) => ({ ...a, sinLeer: porPersona[a.login] || 0 })));
+      } catch { /* si el servidor no responde, se deja lo que había */ }
+    }, 10000);
+    return () => { vivo = false; clearInterval(reloj); };
+  }, []);
 
   // =====================================================================
   // 💬 LA CONVERSACIÓN

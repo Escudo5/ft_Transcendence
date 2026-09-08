@@ -276,6 +276,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import DotField from "./components/Fondo_animado";
 import Acceso from './components/Acceso';
 import RegaloDiario from './components/RegaloDiario';
+import AvisoMensajes from './components/AvisoMensajes';
 import Home from './components/Home';
 import Catalogo from './components/Catalogo';
 import CrearCarta from './components/CrearCarta';
@@ -449,6 +450,10 @@ function App() {
       {/* 🎁 Flota por encima de todas las pantallas: el regalo debe poder
           recogerse estés donde estés, no solo en la portada */}
       <RegaloDiario />
+      {/* 💬 Igual que el regalo: avisa de los mensajes sin leer estés en la
+          pantalla que estés. Sin esto, alguien te escribe mientras estás en
+          el álbum y no te enteras hasta que abres el chat por tu cuenta. */}
+      <AvisoMensajes />
       <RouterProvider router={router} />
     </>
   );

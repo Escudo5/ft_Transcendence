@@ -121,6 +121,33 @@ class ConversacionView(APIView):
         return Response(_mensaje_json(mensaje, request.user), status=status.HTTP_201_CREATED)
 
 
+class SinLeerView(APIView):
+    """
+    GET /api/chat/sin-leer/
+
+    Cuántos mensajes tienes sin leer y de quién. Es el aviso de "tienes
+    mensajes nuevos" que flota por encima de todas las pantallas.
+
+    Va aparte de /conversaciones/ a propósito: esto se pregunta cada pocos
+    segundos desde cualquier página, así que tiene que ser barato. Son dos
+    consultas de contar, sin traerse ni un mensaje ni una foto.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        pendientes = (
+            Message.objects
+            .filter(receiver=request.user, leido=False)
+            .values('sender__username')
+            .annotate(n=Count('id'))
+        )
+        por_persona = {p['sender__username']: p['n'] for p in pendientes}
+        return Response({
+            'total': sum(por_persona.values()),
+            'por_persona': por_persona,
+        }, status=status.HTTP_200_OK)
+
+
 class ConversacionesView(APIView):
     """
     GET /api/chat/conversaciones/
