@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { Badge } from "./ui";
 
 /**
  * EL ÁLBUM
@@ -222,9 +223,9 @@ export default function Catalogo() {
               <article key={card.id} className={`card-item rarity-${card.rareza}`}>
                 <div className="card-header">
                   <span className="card-type">{card.coalicion}</span>
-                  <span className={`rarity-badge badge-${card.rareza}`}>
+                  <Badge tone={card.rareza}>
                     {card.tier.toUpperCase()}
-                  </span>
+                  </Badge>
                 </div>
 
                 <div className="card-artwork">

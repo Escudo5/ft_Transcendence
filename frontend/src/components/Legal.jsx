@@ -28,10 +28,7 @@ const estilos = {
     fontFamily: 'var(--font-heading)',
     fontSize: '2.1rem',
     fontWeight: 800,
-    background: 'linear-gradient(to right, #38bdf8, #818cf8, #c084fc)',
-    WebkitBackgroundClip: 'text',
-    backgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+    color: 'var(--accent-color)',
     marginBottom: '0.3rem',
   },
   fecha: {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PieLegal from './PieLegal';
+import { Avatar, Badge, Button, Card, Modal } from './ui';
 
 // 👥 Tarjetas base de presentación del equipo de desarrollo
 const INTEGRANTES_BASE = [
@@ -64,6 +65,17 @@ function Home() {
     return () => controller.abort();
   }, [cardsEndpoint]);
 
+  useEffect(() => {
+    if (indiceSeleccionado === null) return undefined;
+
+    const cerrarConEscape = (event) => {
+      if (event.key === 'Escape') setIndiceSeleccionado(null);
+    };
+
+    document.addEventListener('keydown', cerrarConEscape);
+    return () => document.removeEventListener('keydown', cerrarConEscape);
+  }, [indiceSeleccionado]);
+
   // Función que se activa al pulsar el botón de Game
   const Game = () => {
     navigate('/game'); // Te manda directo a la pantalla de game
@@ -84,7 +96,7 @@ function Home() {
   const integranteActivo = indiceSeleccionado !== null ? integrantes[indiceSeleccionado] : null;
 
   return (
-    <div className="app-container" style={{ padding: '2rem 0', backgroundColor: 'transparent', color: 'white', minHeight: '100vh', textAlign: 'center' }}>
+    <main className="app-container" style={{ padding: '2rem 0', backgroundColor: 'transparent', color: 'white', minHeight: '100dvh', textAlign: 'center' }}>
       <header className="app-header">
         <div className="logo-section">
           <h1>ft_transcendence</h1>
@@ -95,25 +107,21 @@ function Home() {
       </header>
 
       {/* Fila con las 5 cartas de los miembros del grupo */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', marginTop: '1rem' }}>
+      <section className="team-grid" aria-label="Integrantes del proyecto">
         {integrantes.map((user, index) => (
           <article
           key={user.login}
           className={`card-item rarity-${user.rareza}`}
           style={{ padding: '1rem', textAlign: 'center', cursor: 'pointer'}}
           onClick={() => setIndiceSeleccionado(index)} // Al hacer click, guardamos su índice
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') setIndiceSeleccionado(index);
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label={`Ver carta de ${user.nombre}`}
           >
-            <div style={{ width: '72px', height: '72px', margin: '0 auto 0.5rem', borderRadius: '50%', overflow: 'hidden', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {user.avatar && user.avatar !== 'imagen' ? (
-                <img
-                  src={user.avatar}
-                  alt={user.nombre}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                <span style={{ fontSize: '1.5rem' }}>👤</span>
-              )}
-            </div>
+            <Avatar src={user.avatar !== 'imagen' ? user.avatar : undefined} alt={user.nombre} size="medium" />
             <h3 style={{ fontSize: '1rem', margin: '0' }}>{user.nombre}</h3>
             <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>@{user.login}</span>
           </article>
@@ -123,7 +131,7 @@ function Home() {
       {/* 🧭 BOTONES DE ACCIÓN: las opciones del juego.
           La rejilla se ajusta sola al número de botones (antes eran dos fijos),
           así añadir o quitar alguno no descuadra la fila. */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2rem', marginTop: '4rem', padding: '0 2rem' }}>
+      <nav className="action-grid" aria-label="Acciones principales">
         <Link to="/catalogo" className="back-btn-link" style={{ textAlign: 'center', padding: '1.5rem', fontSize: '1.25rem', display: 'block', background: '#00BABC', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
           📂 Ver Álbum
         </Link>
@@ -136,7 +144,7 @@ function Home() {
         <button className="back-btn-link" style={{ padding: '1.5rem', fontSize: '1.25rem', cursor: 'pointer', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', fontWeight: 'bold' }} onClick={() => navigate('/game')}>
           🎮 Iniciar Game
         </button>
-      </section>
+      </nav>
 
 
       {/* PARTE 3: ABAJO (Tablón de anuncios rectangular con 4 columnas) */}
@@ -146,9 +154,8 @@ function Home() {
         </h2>
         
         {/* Rejilla interna de 4 columnas (Grid) preparada para los futuros datos del Backend */}
-        <div style={{ 
+        <div className="stats-grid" style={{
           display: 'grid', 
-          gridTemplateColumns: 'repeat(4, 1fr)', 
           gap: '1.5rem',
           color: 'var(--text-secondary)',
           fontSize: '0.9rem'
@@ -183,77 +190,45 @@ function Home() {
 
       {/* MODAL / CAPA FLOTANTE AMPLRIADA (Solo se dibuja si indiceSeleccionado tiene un número) */}
       {integranteActivo && (
-        <div 
-          onClick={() => setIndiceSeleccionado(null)} // Si haces click fuera de la carta, se cierra
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)', // Fondo oscuro semitransparente
-            backdropFilter: 'blur(8px)',           // EFECTO BORROSO PREMIUM
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zindex: 1000,                          // Se dibuja por encima de todo
-            animation: 'fadeIn 0.3s ease'
-          }}
-        >
+        <Modal onClose={() => setIndiceSeleccionado(null)} labelledBy="integrante-activo">
           {/* Contenedor de navegación (Botón Izquierda, Carta, Botón Derecha) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
             
             {/* Botón Anterior */}
-            <button className="pagination-btn" onClick={irAnterior} style={{ fontSize: '1.5rem', padding: '1rem' }}>
-              ◀
-            </button>
+            <Button type="button" className="pagination-btn" onClick={irAnterior} aria-label="Integrante anterior">
+              <span aria-hidden="true">&#9664;</span>
+            </Button>
 
             {/* Carta Ampliada */}
-            <article 
-              className={`card-item rarity-${integranteActivo.rareza}`} 
+            <Card
+              as="article"
+              className={`home-modal-card rarity-${integranteActivo.rareza}`}
               onClick={(e) => e.stopPropagation()} // Evita que se cierre el modal al hacer click dentro de la carta
-              style={{ 
-                width: '320px', 
-                padding: '2rem', 
-                textAlign: 'center',
-                transform: 'scale(1.1)', // Un poco más grande que las normales
-                boxShadow: '0 20px 50px rgba(0,0,0,0.9)'
-              }}
             >
-              <div style={{ width: '120px', height: '120px', margin: '0 auto 1rem', borderRadius: '50%', overflow: 'hidden', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {integranteActivo.avatar && integranteActivo.avatar !== 'imagen' ? (
-                  <img
-                    src={integranteActivo.avatar}
-                    alt={integranteActivo.nombre}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <span style={{ fontSize: '3rem' }}>👤</span>
-                )}
-              </div>
-              <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.75rem', margin: '0 0 0.5rem 0' }}>
+              <Avatar src={integranteActivo.avatar !== 'imagen' ? integranteActivo.avatar : undefined} alt={integranteActivo.nombre} size="large" />
+              <h2 id="integrante-activo" style={{ fontFamily: 'var(--font-heading)', fontSize: '1.75rem', margin: '0 0 0.5rem 0' }}>
                 {integranteActivo.nombre}
               </h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', margin: '0 0 1.5rem 0' }}>
                 @{integranteActivo.login}
               </p>
-              <div className="rarity-badge" style={{ display: 'inline-block', textTransform: 'uppercase', fontSize: '0.8rem' }}>
+              <Badge tone={integranteActivo.rareza}>
                 Rarity: {integranteActivo.rareza}
-              </div>
-            </article>
+              </Badge>
+            </Card>
 
             {/* Botón Siguiente */}
-            <button className="pagination-btn" onClick={irSiguiente} style={{ fontSize: '1.5rem', padding: '1rem' }}>
-              ▶
-            </button>
+            <Button type="button" className="pagination-btn" onClick={irSiguiente} aria-label="Siguiente integrante">
+              <span aria-hidden="true">&#9654;</span>
+            </Button>
 
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Enlaces legales, obligatorios en el subject */}
       <PieLegal estilo={{ marginTop: '3rem' }} />
-    </div>
+    </main>
   );
 }
 

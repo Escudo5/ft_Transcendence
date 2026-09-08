@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Avatar, Card, ProgressBar } from './ui';
 
 /**
  * CLASIFICACIÓN DE COLECCIONISTAS
@@ -92,7 +93,7 @@ const estilos = {
   barraDentro: (pct) => ({
     width: `${pct}%`,
     height: '100%',
-    background: 'linear-gradient(to right, #38bdf8, #818cf8, #c084fc)',
+    background: 'var(--accent-color)',
   }),
 };
 
@@ -145,7 +146,7 @@ export default function Ranking() {
         </p>
       </header>
 
-      <section style={estilos.tarjeta}>
+      <Card>
         {cargando ? (
           <p style={{ color: 'var(--text-secondary)' }}>Cargando clasificación…</p>
         ) : error ? (
@@ -159,20 +160,14 @@ export default function Ranking() {
                 {MEDALLA[u.posicion] || u.posicion}
               </span>
 
-              {u.profile_image ? (
-                <img src={u.profile_image} alt={u.username} style={estilos.foto} />
-              ) : (
-                <div style={estilos.fotoVacia}>👤</div>
-              )}
+              <Avatar src={u.profile_image} alt={u.username} size="small" />
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={estilos.nombre}>
                   {u.nombre} {u.soy_yo && <span style={{ color: 'var(--accent-color)' }}>· tú</span>}
                 </div>
                 <div style={estilos.login}>@{u.username}</div>
-                <div style={estilos.barraFuera}>
-                  <div style={estilos.barraDentro(u.porcentaje)} />
-                </div>
+                <ProgressBar value={u.porcentaje} />
               </div>
 
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -182,7 +177,7 @@ export default function Ranking() {
             </Link>
           ))
         )}
-      </section>
+      </Card>
     </main>
   );
 }

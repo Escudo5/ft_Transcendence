@@ -31,6 +31,9 @@ function Game() {
           /* URL alternativa y directa para evitar bloqueos del navegador en local */
           src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3hvaDE5bHFvbmR0aG1jZnN4aTB5dXBnY3Qwd3o5OXlxOWpkbXEwbyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/r1IMdmkhUcpzy/giphy.webp" 
           alt="Cristiano Ronaldo SIUUU" 
+          width="640"
+          height="360"
+          loading="eager"
           style={{ 
             maxWidth: '100%', 
             borderRadius: '8px',
