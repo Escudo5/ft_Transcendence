@@ -13,21 +13,56 @@ const TEXTO_ESTADO = {
   offline: 'Desconectado',
 };
 
+/** La foto ya montada. El servidor decide cuál: la que subió esa persona, la
+ *  de la Intra, o un círculo con su inicial si no tiene ninguna. */
+function foto(u) {
+  return (
+    <img
+      src={u.profile_image}
+      alt={u.username}
+      style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+    />
+  );
+}
+
+/** Un amigo del servidor, al formato que espera ListaChats. */
 function adaptarAmigo(u) {
   return {
     id: u.id,
     login: u.username,
     nombre: u.nombre,
-    avatar: (
-      <img
-        src={u.profile_image}
-        alt={u.username}
-        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-      />
-    ),
+    avatar: foto(u),
     estado: TEXTO_ESTADO[u.estado] || u.estado,
-    bloqueado: false,
+    bloqueado: false, // todavía no hay bloqueo en el servidor
   };
+}
+
+/** Una solicitud recibida, al formato que espera SolicitudesRecibidas.
+ *  Ojo: el id que se manda para responder es EL DE LA SOLICITUD, no el de
+ *  la persona. Si se manda el del usuario, el servidor devuelve 404. */
+function adaptarSolicitud(s) {
+  return {
+    id: s.id,
+    login: s.sender.username,
+    nombre: s.sender.nombre,
+    avatar: foto(s.sender),
+  };
+}
+
+/** Alguien a quien puedes pedir amistad, al formato de BuscarAmigos. */
+function adaptarCandidato(u) {
+  return {
+    id: u.id,
+    login: u.username,
+    nombre: u.nombre,
+    avatar: foto(u),
+  };
+}
+
+/** Django exige un token para todo lo que no sea leer. */
+async function pedirToken() {
+  const res = await fetch(`${API}/users/csrf/`, { credentials: 'include' });
+  return (await res.json()).csrfToken;
 }
 
 function ChatSocial() {
@@ -42,34 +77,46 @@ function ChatSocial() {
   const [modalBuscarAbierto, setModalBuscarAbierto] = useState(false);
   const [modalSolicitudesAbierto, setModalSolicitudesAbierto] = useState(false);
 
-  // Lista de solicitudes recibidas pendientes de aceptar
-  const [solicitudes, setSolicitudes] = useState([
-    { id: 1, login: "jdoe", nombre: "John Doe", avatar: "👨‍💻" }
-  ]);
+  // Solicitudes que me han mandado y aún no he respondido
+  const [solicitudes, setSolicitudes] = useState([]);
+  // Gente a la que puedo pedir amistad (para la ventana de buscar)
+  const [candidatos, setCandidatos] = useState([]);
 
-  // Traer lista de amigos real del servidor
-  useEffect(() => {
-    async function cargarAmigos() {
-      try {
-        const res = await fetch(`${API}/social/amigos/`, { credentials: 'include' });
-        if (res.status === 401 || res.status === 403) {
-          setError('Tienes que iniciar sesión para ver tus amigos.');
-          return;
-        }
-        if (!res.ok) {
-          setError('No se ha podido cargar la lista de amigos.');
-          return;
-        }
-        setAmigos((await res.json()).map(adaptarAmigo));
-      } catch (e) {
-        console.error('Error al cargar los amigos:', e);
-        setError('No se ha podido conectar con el servidor.');
-      } finally {
-        setCargando(false);
+  // 📡 Traer amigos y solicitudes del servidor.
+  // Van juntas en una función y no dentro del useEffect porque hay que poder
+  // volver a llamarlas después de aceptar o añadir a alguien. Si no, aceptas
+  // una solicitud y la lista sigue igual hasta que recargas la página.
+  const recargar = async () => {
+    try {
+      const [resAmigos, resSolic] = await Promise.all([
+        fetch(`${API}/social/amigos/`, { credentials: 'include' }),
+        fetch(`${API}/social/solicitudes/pendientes/`, { credentials: 'include' }),
+      ]);
+
+      if (resAmigos.status === 401 || resAmigos.status === 403) {
+        setError('Tienes que iniciar sesión para ver tus amigos.');
+        return;
       }
+      if (!resAmigos.ok) {
+        setError('No se ha podido cargar la lista de amigos.');
+        return;
+      }
+
+      setError('');
+      setAmigos((await resAmigos.json()).map(adaptarAmigo));
+      if (resSolic.ok) {
+        // Solo las recibidas: las enviadas son las mías y no hay nada que decidir
+        setSolicitudes(((await resSolic.json()).received || []).map(adaptarSolicitud));
+      }
+    } catch (e) {
+      console.error('Error al cargar amigos y solicitudes:', e);
+      setError('No se ha podido conectar con el servidor.');
+    } finally {
+      setCargando(false);
     }
-    cargarAmigos();
-  }, []);
+  };
+
+  useEffect(() => { recargar(); }, []);
 
   const clickVolverHome = () => {
     navigate('/Home');
@@ -96,32 +143,67 @@ function ChatSocial() {
     }
   };
 
-  // Añadir amigo desde BuscarAmigos.jsx
-  const agregarNuevoAmigo = (nuevoUsuario) => {
-    const yaExiste = amigos.some(a => a.login === nuevoUsuario.login);
-    if (yaExiste) {
-      alert("Este usuario ya está en tu lista de amigos.");
-      return;
+  // 🔎 Traer a quién puedo pedir amistad. Al servidor le pedimos la lista ya
+  // filtrada (sin mí, sin mis amigos y sin los que tienen algo pendiente),
+  // para no ofrecer botones que van a dar error al pulsarlos.
+  const abrirBuscador = async () => {
+    setModalBuscarAbierto(true);
+    try {
+      const res = await fetch(`${API}/social/buscar/`, { credentials: 'include' });
+      if (res.ok) setCandidatos((await res.json()).map(adaptarCandidato));
+    } catch (e) {
+      console.error('Error al buscar gente:', e);
     }
-    const nuevoContacto = {
-      ...nuevoUsuario,
-      estado: "En línea",
-      bloqueado: false
-    };
-    setAmigos([...amigos, nuevoContacto]);
-    alert(`¡Has añadido a ${nuevoUsuario.nombre}!`);
   };
 
-  // Decisión del usuario en SolicitudesRecibidas.jsx
-  const responderSolicitud = (idSolicitud, accion) => {
-    if (accion === 'aceptar') {
-      const solicitudAceptada = solicitudes.find(s => s.id === idSolicitud);
-      if (solicitudAceptada) {
-        agregarNuevoAmigo(solicitudAceptada);
+  // ➕ Pedir amistad de verdad. No añade a nadie a la lista: manda una
+  // solicitud, y hasta que el otro la acepte no sois amigos.
+  const agregarNuevoAmigo = async (usuario) => {
+    try {
+      const res = await fetch(`${API}/social/solicitudes/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': await pedirToken() },
+        body: JSON.stringify({ receiver_id: usuario.id }),
+      });
+      const datos = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        // El servidor manda el motivo en castellano, listo para enseñar
+        const motivo = Array.isArray(datos.non_field_errors) ? datos.non_field_errors[0] : datos.detail;
+        alert(motivo || 'No se ha podido enviar la solicitud.');
+        return;
       }
+      alert(`Solicitud enviada a ${usuario.nombre}. Aparecerá en tu lista cuando la acepte.`);
+      // Ya no se le puede volver a pedir: fuera del buscador
+      setCandidatos(prev => prev.filter(c => c.id !== usuario.id));
+    } catch (e) {
+      console.error('Error al enviar la solicitud:', e);
+      alert('No se ha podido conectar con el servidor.');
     }
-    // Eliminamos la solicitud de la lista tras decidir
-    setSolicitudes(solicitudes.filter(s => s.id !== idSolicitud));
+  };
+
+  // ✅ / ✕ Responder a una solicitud recibida.
+  // El id que se manda es EL DE LA SOLICITUD, no el de la persona.
+  const responderSolicitud = async (idSolicitud, accion) => {
+    try {
+      const res = await fetch(`${API}/social/solicitudes/${idSolicitud}/`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': await pedirToken() },
+        body: JSON.stringify({ action: accion === 'aceptar' ? 'accept' : 'decline' }),
+      });
+      if (!res.ok) {
+        alert('No se ha podido responder a la solicitud.');
+        return;
+      }
+      // Volvemos a preguntar al servidor en vez de adivinar cómo ha quedado:
+      // así el nuevo amigo aparece en la lista al momento.
+      await recargar();
+    } catch (e) {
+      console.error('Error al responder la solicitud:', e);
+      alert('No se ha podido conectar con el servidor.');
+    }
   };
 
   return (
@@ -134,7 +216,7 @@ function ChatSocial() {
         clickVolverHome={clickVolverHome}
         visitarPerfil={visitarPerfil}
         alternarBloqueoUsuario={alternarBloqueoUsuario}
-        abrirModalAmigos={() => setModalBuscarAbierto(true)}
+        abrirModalAmigos={abrirBuscador}
         abrirModalSolicitudes={() => setModalSolicitudesAbierto(true)}
         numSolicitudesPendientes={solicitudes.length}
       />
@@ -143,6 +225,7 @@ function ChatSocial() {
       <BuscarAmigos
         isOpen={modalBuscarAbierto}
         onClose={() => setModalBuscarAbierto(false)}
+        usuarios={candidatos}
         agregarAmigo={agregarNuevoAmigo}
       />
 
