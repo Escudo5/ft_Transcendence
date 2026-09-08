@@ -16,6 +16,9 @@ urlpatterns = [
     # 🤝 RUTAS DE AMISTADES (solicitudes y lista de amigos)
     path('api/social/', include('social.urls')),
 
+    # 💬 RUTAS DEL CHAT (conversaciones y mensajes)
+    path('api/chat/', include('chat.urls')),
+
     # 🖥️ Vistas directas que teníais para pruebas en el navegador
     path('home/', home, name='home'),
     path('crear/', crear_carta, name='crear_carta'),
