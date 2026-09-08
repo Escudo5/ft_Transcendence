@@ -60,7 +60,7 @@ const FECHA = '3 de septiembre de 2026';
 function Privacidad() {
   return (
     <>
-      <h1 style={estilos.titulo}>Política de Privacidad</h1>
+      <h1 className="titulo-degradado" style={estilos.titulo}>Política de Privacidad</h1>
       <p style={estilos.fecha}>Última actualización: {FECHA}</p>
 
       <p style={estilos.parrafo}>
@@ -172,7 +172,7 @@ function Privacidad() {
 function Terminos() {
   return (
     <>
-      <h1 style={estilos.titulo}>Términos de Servicio</h1>
+      <h1 className="titulo-degradado" style={estilos.titulo}>Términos de Servicio</h1>
       <p style={estilos.fecha}>Última actualización: {FECHA}</p>
 
       <p style={estilos.parrafo}>

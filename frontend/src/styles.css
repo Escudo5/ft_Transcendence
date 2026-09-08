@@ -24,7 +24,10 @@
   --surface-base: var(--color-neutral-950);
   --surface-raised: var(--color-neutral-900);
   --surface-overlay: var(--color-neutral-800);
-  --surface-sunken: #000000;
+  /* Casi negro y no negro del todo: la propia auditoria de calidad
+     (skills/web-quality-audit) avisa de que el #000000 "mata la
+     profundidad y se ve plano", y recomienda un off-black. */
+  --surface-sunken: #0a0a0a;
 
   /* Semantic Text */
   --text-primary: var(--color-neutral-50);
@@ -35,6 +38,34 @@
   --border-default: var(--color-neutral-800);
   --border-strong: var(--color-neutral-600);
   --border-accent: var(--color-accent-500);
+
+  /* ------------------------------------------------------------------
+     PUENTES TEMPORALES CON LOS NOMBRES ANTIGUOS
+     ------------------------------------------------------------------
+     El sistema de diseño renombro estas cuatro variables, pero siete
+     pantallas siguen usando los nombres viejos (29 veces solo en el
+     perfil). Sin estas lineas, esas pantallas se quedan sin fondo, sin
+     bordes y con el texto invisible.
+
+     Cada una apunta al equivalente nuevo, respetando su papel:
+     el fondo de control era mas claro que el de la tarjeta, y sigue
+     siendolo. Segun se vaya migrando cada pantalla a los componentes de
+     ui.jsx, estas lineas se pueden ir borrando. Cuando ninguna pantalla
+     use ya los nombres viejos, fuera el bloque entero.
+     ------------------------------------------------------------------ */
+  --accent-color: var(--border-accent);
+  --bg-card-base: var(--surface-raised);
+  --bg-control: var(--surface-overlay);
+  --border-color: var(--border-default);
+
+  /* Guino de la casa: el degradado de los titulos grandes.
+     Se recupera, pero DENTRO de la familia del acento y suave. El de
+     antes iba de azul a morado, y la propia auditoria de calidad
+     (skills/web-quality-audit) marca ese degradado concreto como el
+     delator numero uno de una web hecha con IA, ademas de avisar de que
+     el texto en degradado grande se lee mal. Este se queda en dos tonos
+     del mismo verde azulado: se nota el detalle y sigue leyendose. */
+  --degradado-titulo: linear-gradient(100deg, var(--color-accent-500), #5eead4);
 
   /* Rarity Colors (Desaturated slightly to avoid slop) */
   --rarity-common: #94a3b8;
@@ -79,6 +110,17 @@
   --radius-btn: 8px;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* Clase para el guino: se pone en los titulos grandes y ya esta.
+   Se usa una clase y no estilos sueltos para que el degradado se cambie
+   en un solo sitio, que es de lo que va tener un sistema de diseno. */
+.titulo-degradado {
+  background: var(--degradado-titulo);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 /* ==========================================================================

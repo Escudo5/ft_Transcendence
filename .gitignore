@@ -38,4 +38,8 @@ backend/media/
 .idea/
 .DS_Store
 
+# Basura que genera Windows al descargar un fichero y pasarlo a WSL.
+# No son ficheros de verdad, son una marca interna: fuera del repo.
+*:Zone.Identifier
+
 mierdas_de_pablo/
