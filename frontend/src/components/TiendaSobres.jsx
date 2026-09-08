@@ -435,8 +435,8 @@ function TiendaSobres() {
 
   const PaginaTiendaSobres = () => {
     return (
-      <div className="app-container" style={{ position: 'relative', minHeight: '95vh', padding: '2rem', overflowX: 'hidden' }}>
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}>
+      <main className="app-container" style={{ position: 'relative', minHeight: '100dvh', padding: '2rem', overflowX: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100dvh', zIndex: 0, pointerEvents: 'none' }}>
           <FondoTiendaSobres
             topColor="#5227FF"
             bottomColor="#FF9FFC"
@@ -457,7 +457,7 @@ function TiendaSobres() {
 
         {fase === 'PRE_APERTURA' && Sobrepreeapertura()}
         {fase === 'REVELADO' && PantallaCincoCartas()}
-      </div>
+      </main>
     );
   };
 
