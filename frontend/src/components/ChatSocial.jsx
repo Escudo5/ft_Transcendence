@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ListaChats from './ListaChats';
 import BuscarAmigos from './BuscarAmigos';
@@ -12,6 +12,9 @@ const TEXTO_ESTADO = {
   ingame: 'Jugando',
   offline: 'Desconectado',
 };
+
+// El mismo tope que comprueba el servidor en chat/models.py
+const LARGO_MAXIMO = 1000;
 
 /** La foto ya montada. El servidor decide cuál: la que subió esa persona, la
  *  de la Intra, o un círculo con su inicial si no tiene ninguna. */
@@ -117,6 +120,107 @@ function ChatSocial() {
   };
 
   useEffect(() => { recargar(); }, []);
+
+  // =====================================================================
+  // 💬 LA CONVERSACIÓN
+  // =====================================================================
+  const [mensajes, setMensajes] = useState([]);
+  const [borrador, setBorrador] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  // Id del último mensaje que ya tenemos. Va en una referencia y no en el
+  // estado porque lo lee el temporizador de abajo: si fuera estado, el
+  // temporizador se quedaría con el valor de cuando se creó.
+  const ultimoId = useRef(null);
+  const finDeLaLista = useRef(null);
+
+  const conQuien = chatSeleccionado?.login || null;
+
+  // Cargar la conversación al elegir a alguien, y refrescarla cada 3 segundos.
+  //
+  // Se pregunta cada pocos segundos en vez de recibir los mensajes al vuelo.
+  // Para eso harían falta WebSockets, que obligan a cambiar el servidor y a
+  // rehacer el HTTPS; queda pendiente con Pablo. Mientras tanto esto funciona
+  // y no toca la infraestructura. Para que no cueste caro, solo se piden los
+  // mensajes NUEVOS (?desde=), no la conversación entera cada vez.
+  useEffect(() => {
+    if (!conQuien) {
+      setMensajes([]);
+      return undefined;
+    }
+
+    let vivo = true;            // evita escribir en un componente ya cerrado
+    ultimoId.current = null;
+    setMensajes([]);
+
+    async function traer() {
+      try {
+        const desde = ultimoId.current;
+        const url = `${API}/chat/${encodeURIComponent(conQuien)}/`
+          + (desde ? `?desde=${desde}` : '');
+        const res = await fetch(url, { credentials: 'include' });
+        if (!vivo || !res.ok) return;
+
+        const nuevos = (await res.json()).mensajes || [];
+        if (!nuevos.length) return;
+
+        ultimoId.current = nuevos[nuevos.length - 1].id;
+        setMensajes((prev) => (desde ? [...prev, ...nuevos] : nuevos));
+      } catch (e) {
+        console.error('Error al cargar la conversación:', e);
+      }
+    }
+
+    traer();
+    const reloj = setInterval(traer, 3000);
+    // Al cambiar de conversación o salir de la página hay que parar el
+    // temporizador: si no, se van acumulando y la web acaba preguntando
+    // al servidor una vez por cada chat que hayas abierto.
+    return () => { vivo = false; clearInterval(reloj); };
+  }, [conQuien]);
+
+  // Bajar del todo cuando llegan mensajes, como en cualquier chat
+  useEffect(() => {
+    finDeLaLista.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [mensajes]);
+
+  const enviarMensaje = async (e) => {
+    e.preventDefault();
+    const texto = borrador.trim();
+    if (!texto || enviando) return;
+
+    // Se comprueba aquí para avisar al momento; el servidor lo vuelve a
+    // comprobar, que es lo que de verdad manda.
+    if (texto.length > LARGO_MAXIMO) {
+      alert(`El mensaje no puede pasar de ${LARGO_MAXIMO} caracteres.`);
+      return;
+    }
+
+    setEnviando(true);
+    try {
+      const res = await fetch(`${API}/chat/${encodeURIComponent(conQuien)}/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': await pedirToken() },
+        body: JSON.stringify({ texto }),
+      });
+      const datos = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        alert(datos.detail || 'No se ha podido enviar el mensaje.');
+        return;
+      }
+
+      // Se pinta al momento, sin esperar al siguiente refresco
+      setMensajes((prev) => [...prev, datos]);
+      ultimoId.current = datos.id;
+      setBorrador('');
+    } catch (e) {
+      console.error('Error al enviar el mensaje:', e);
+      alert('No se ha podido conectar con el servidor.');
+    } finally {
+      setEnviando(false);
+    }
+  };
 
   const clickVolverHome = () => {
     navigate('/Home');
@@ -260,12 +364,90 @@ function ChatSocial() {
                     Desbloquear para hablar
                   </button>
                 </div>
-              ) : (
-                <div style={{ backgroundColor: '#1f2433', padding: '0.8rem 1.2rem', borderRadius: '8px', maxWidth: '60%' }}>
-                  👋 Chat activo con {chatSeleccionado.nombre}.
+              ) : mensajes.length === 0 ? (
+                <div style={{ textAlign: 'center', marginTop: '3rem', color: '#8b92b0' }}>
+                  <p>Todavía no os habéis escrito nada.</p>
+                  <p style={{ fontSize: '0.9rem' }}>Escribe algo abajo para empezar.</p>
                 </div>
+              ) : (
+                mensajes.map((m) => (
+                  // Los míos a la derecha, los suyos a la izquierda. El 'mio'
+                  // lo calcula el servidor, aquí no se compara ningún nombre.
+                  <div
+                    key={m.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: m.mio ? 'flex-end' : 'flex-start',
+                      marginBottom: '0.6rem',
+                    }}
+                  >
+                    <div
+                      style={{
+                        backgroundColor: m.mio ? 'rgba(0, 255, 204, 0.15)' : '#1f2433',
+                        border: `1px solid ${m.mio ? '#00ffcc' : '#2a2e3d'}`,
+                        padding: '0.6rem 1rem',
+                        borderRadius: '10px',
+                        maxWidth: '70%',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      <div style={{ whiteSpace: 'pre-wrap' }}>{m.texto}</div>
+                      <div style={{ fontSize: '0.7rem', color: '#8b92b0', marginTop: '0.25rem', textAlign: 'right' }}>
+                        {new Date(m.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  </div>
+                ))
               )}
+              {/* Marca invisible del final, para bajar del todo solo */}
+              <div ref={finDeLaLista} />
             </div>
+
+            {/* Caja de escribir. Solo si no está bloqueado. */}
+            {!chatSeleccionado.bloqueado && (
+              <form
+                onSubmit={enviarMensaje}
+                style={{
+                  display: 'flex',
+                  gap: '0.6rem',
+                  padding: '0.8rem 1rem',
+                  borderTop: '1px solid #2a2e3d',
+                }}
+              >
+                <input
+                  type="text"
+                  value={borrador}
+                  onChange={(e) => setBorrador(e.target.value)}
+                  placeholder={`Escribe a ${chatSeleccionado.nombre}…`}
+                  maxLength={LARGO_MAXIMO}
+                  style={{
+                    flex: 1,
+                    padding: '0.7rem 1rem',
+                    borderRadius: '20px',
+                    border: '1px solid #2a2e3d',
+                    backgroundColor: '#0d1017',
+                    color: '#fff',
+                    outline: 'none',
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={enviando || !borrador.trim()}
+                  style={{
+                    padding: '0.7rem 1.4rem',
+                    borderRadius: '20px',
+                    border: '1px solid #00ffcc',
+                    backgroundColor: 'rgba(0, 255, 204, 0.15)',
+                    color: '#00ffcc',
+                    fontWeight: 'bold',
+                    cursor: enviando || !borrador.trim() ? 'not-allowed' : 'pointer',
+                    opacity: enviando || !borrador.trim() ? 0.5 : 1,
+                  }}
+                >
+                  {enviando ? '…' : 'Enviar'}
+                </button>
+              </form>
+            )}
           </>
         ) : (
           <div className="no-chat-selected">
