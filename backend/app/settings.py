@@ -29,7 +29,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "cards",
     "users",
-    "social"
+    "social",
+    "chat"
 ]
 
 MIDDLEWARE = [
