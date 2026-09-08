@@ -1,6 +1,14 @@
-import { useState } from 'react';
+/**
+ * SOLICITUDES DE AMISTAD RECIBIDAS
+ * --------------------------------
+ * Las que te ha mandado OTRA gente y tú puedes aceptar o rechazar.
+ *
+ * Antes se llamaba SolicitudesEnviadas, que era justo lo contrario: las
+ * enviadas son las tuyas y en esas no hay nada que decidir. Se renombra para
+ * que el nombre diga lo que hace.
+ */
 
-function SolicitudesEnviadas({ isOpen, onClose, solicitudes, responderSolicitud }) {
+function SolicitudesRecibidas({ isOpen, onClose, solicitudes, responderSolicitud }) {
   if (!isOpen) return null;
 
   return (
@@ -108,4 +116,4 @@ function SolicitudesEnviadas({ isOpen, onClose, solicitudes, responderSolicitud 
   );
 }
 
-export default SolicitudesEnviadas;
+export default SolicitudesRecibidas;

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ListaChats from './ListaChats';
 import BuscarAmigos from './BuscarAmigos';
-import SolicitudesEnviadas from './SolicitudesEnviadas';
+import SolicitudesRecibidas from './SolicitudesRecibidas';
 import './Chat.css';
 
 const API = import.meta.env.VITE_API_URL || '/api';
@@ -112,7 +112,7 @@ function ChatSocial() {
     alert(`¡Has añadido a ${nuevoUsuario.nombre}!`);
   };
 
-  // Decisión del usuario en SolicitudesEnviadas.jsx
+  // Decisión del usuario en SolicitudesRecibidas.jsx
   const responderSolicitud = (idSolicitud, accion) => {
     if (accion === 'aceptar') {
       const solicitudAceptada = solicitudes.find(s => s.id === idSolicitud);
@@ -146,7 +146,7 @@ function ChatSocial() {
         agregarAmigo={agregarNuevoAmigo}
       />
 
-      <SolicitudesEnviadas
+      <SolicitudesRecibidas
         isOpen={modalSolicitudesAbierto}
         onClose={() => setModalSolicitudesAbierto(false)}
         solicitudes={solicitudes}
