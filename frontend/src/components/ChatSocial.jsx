@@ -178,6 +178,12 @@ function ChatSocial() {
     ultimoId.current = null;
     setMensajes([]);
 
+    // Abrir la conversación da por leídos sus mensajes: el servidor lo hace al
+    // pedirlos, y aquí se quita la bolita al momento en vez de esperar al
+    // siguiente refresco. Si no, abres el chat y el aviso sigue ahí 10
+    // segundos, como si no te hubieras enterado.
+    setAmigos((prev) => prev.map((a) => (a.login === conQuien ? { ...a, sinLeer: 0 } : a)));
+
     async function traer() {
       try {
         const desde = ultimoId.current;

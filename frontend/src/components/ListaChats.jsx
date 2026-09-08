@@ -125,9 +125,32 @@ function ListaChats({
                     setMenuAbiertoLogin(null);
                   }}
                 >
-                  <div className="avatar-header">{amigo.avatar}</div>
+                  {/* La foto lleva encima la bolita de mensajes sin leer,
+                      con el mismo estilo que la del botón de Solicitudes */}
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <div className="avatar-header">{amigo.avatar}</div>
+                    {amigo.sinLeer > 0 && (
+                      <span style={{
+                        position: 'absolute',
+                        top: '-5px',
+                        right: '-5px',
+                        backgroundColor: '#ff007f',
+                        color: '#fff',
+                        borderRadius: '50%',
+                        padding: '2px 6px',
+                        fontSize: '0.65rem',
+                        fontWeight: 'bold'
+                      }}>
+                        {amigo.sinLeer > 9 ? '9+' : amigo.sinLeer}
+                      </span>
+                    )}
+                  </div>
                   <div style={{ textAlign: 'left' }}>
-                    <strong>{amigo.nombre} ({amigo.login})</strong>
+                    {/* Con mensajes sin leer el nombre va más marcado, como
+                        en cualquier chat: se localiza de un vistazo */}
+                    <strong style={{ color: amigo.sinLeer > 0 ? '#fff' : undefined }}>
+                      {amigo.nombre} ({amigo.login})
+                    </strong>
                     <div style={{ fontSize: '0.75rem', color: amigo.bloqueado ? '#ff4d4d' : '#00ffcc' }}>
                       {amigo.bloqueado ? '🚫 [Bloqueado]' : amigo.estado}
                     </div>
