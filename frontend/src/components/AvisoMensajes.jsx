@@ -24,7 +24,7 @@ const CADA_CUANTO = 10000; // 10 segundos
 export default function AvisoMensajes() {
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
   const [total, setTotal] = useState(0);
-  const [ruta, setRuta] = useState(window.location.pathname);
+  const [deQuien, setDeQuien] = useState([]); // logins de quien te ha escrito
 
   useEffect(() => {
     let vivo = true;
@@ -39,8 +39,9 @@ export default function AvisoMensajes() {
           setTotal(0);
           return;
         }
-        setTotal((await res.json()).total || 0);
-        setRuta(window.location.pathname);
+        const datos = await res.json();
+        setTotal(datos.total || 0);
+        setDeQuien(Object.keys(datos.por_persona || {}));
       } catch {
         // Si el servidor no responde, mejor no enseñar un aviso a medias
         if (vivo) setTotal(0);
@@ -52,13 +53,24 @@ export default function AvisoMensajes() {
     return () => { vivo = false; clearInterval(reloj); };
   }, [apiBaseUrl]);
 
-  // Nada que avisar, o ya estás en el chat leyéndolos
-  if (total === 0 || ruta.toLowerCase().includes('chatsocial')) return null;
+  // Nada que avisar
+  //
+  // ⚠️ Antes esto también se escondía estando en el chat, dando por hecho que
+  // allí ya se vería el aviso en la lista de amigos. Pero esa lista todavía no
+  // pinta el número (falta que Konrad lo enseñe), así que justo en la pantalla
+  // donde más falta hace no avisaba nada: te escribían, estabas en el chat, y
+  // no te enterabas salvo que pincharas a esa persona por casualidad.
+  //
+  // Cuando la lista lleve su puntito, se puede volver a esconder aquí.
+  if (total === 0) return null;
 
   return (
     <button
       onClick={() => { window.location.href = '/chatsocial'; }}
-      title={`Tienes ${total} ${total === 1 ? 'mensaje sin leer' : 'mensajes sin leer'}`}
+      title={
+        `Tienes ${total} ${total === 1 ? 'mensaje sin leer' : 'mensajes sin leer'}`
+        + (deQuien.length ? ` de ${deQuien.join(', ')}` : '')
+      }
       style={{
         position: 'fixed',
         // Debajo del regalo diario, que ocupa la esquina de arriba
