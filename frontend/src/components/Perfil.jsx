@@ -259,6 +259,9 @@ export default function Perfil() {
   // que se esconde y lo abrimos desde nuestro propio botón con esta referencia
   const inputFoto = useRef(null);
 
+  // 🤝 Amistad con la persona de este perfil
+  const [enviandoAmistad, setEnviandoAmistad] = useState(false);
+
   // Borrado de cuenta (RGPD)
   const [borrandoCuenta, setBorrandoCuenta] = useState(false); // ¿se ve la confirmación?
   const [textoConfirmacion, setTextoConfirmacion] = useState('');
@@ -486,6 +489,70 @@ export default function Perfil() {
     }
   };
 
+  /**
+   * 🤝 Pedir amistad, responder o dejar de ser amigos.
+   *
+   * El servidor nos dice en 'perfil.amistad' en qué punto estamos, y según eso
+   * se enseña un botón u otro. Después de cada acción se vuelve a preguntar,
+   * para no adivinar el estado nuevo por nuestra cuenta.
+   */
+  const accionAmistad = async (accion) => {
+    setEnviandoAmistad(true);
+    setAviso(null);
+    try {
+      const resToken = await fetch(`${apiBaseUrl}/users/csrf/`, { credentials: 'include' });
+      const { csrfToken } = await resToken.json();
+      const cabeceras = { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken };
+
+      let res;
+      if (accion === 'pedir') {
+        res = await fetch(`${apiBaseUrl}/social/solicitudes/`, {
+          method: 'POST', credentials: 'include', headers: cabeceras,
+          body: JSON.stringify({ receiver_id: perfil.id }),
+        });
+      } else if (accion === 'aceptar' || accion === 'rechazar') {
+        res = await fetch(`${apiBaseUrl}/social/solicitudes/${perfil.solicitud_id}/`, {
+          method: 'PATCH', credentials: 'include', headers: cabeceras,
+          body: JSON.stringify({ action: accion === 'aceptar' ? 'accept' : 'decline' }),
+        });
+      } else {
+        res = await fetch(`${apiBaseUrl}/social/amigos/${perfil.id}/`, {
+          method: 'DELETE', credentials: 'include', headers: cabeceras,
+        });
+      }
+
+      const datos = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // El servidor manda el motivo en castellano, listo para enseñar
+        const motivo = datos.detail || datos.error
+          || (Array.isArray(datos.non_field_errors) ? datos.non_field_errors[0] : null);
+        setAviso({ texto: motivo || 'No se ha podido completar la acción.', ok: false });
+        return;
+      }
+
+      // Volvemos a pedir el perfil para que el botón refleje el estado nuevo
+      const refresco = await fetch(`${apiBaseUrl}/users/${encodeURIComponent(perfil.username)}/`, {
+        credentials: 'include',
+      });
+      if (refresco.ok) setPerfil(await refresco.json());
+
+      setAviso({
+        texto: {
+          pedir: 'Solicitud de amistad enviada.',
+          aceptar: '¡Ya sois amigos!',
+          rechazar: 'Solicitud rechazada.',
+          eliminar: 'Ya no sois amigos.',
+        }[accion],
+        ok: true,
+      });
+    } catch (e) {
+      console.error('Error en la acción de amistad:', e);
+      setAviso({ texto: 'No se ha podido conectar con el servidor.', ok: false });
+    } finally {
+      setEnviandoAmistad(false);
+    }
+  };
+
   const cancelar = () => {
     setBorrador({ nombre_mostrado: perfil.nombre || '', bio: perfil.bio || '' });
     setEditando(false);
@@ -636,6 +703,50 @@ export default function Perfil() {
             ) : perfil.es_mi_perfil ? (
               <p style={estilos.bioVacia}>Todavía no has escrito nada sobre ti.</p>
             ) : null}
+
+            {/* 🤝 Amistad: solo en el perfil de OTRA persona */}
+            {!perfil.es_mi_perfil && perfil.amistad && (
+              <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.3rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                {perfil.amistad === 'ninguna' && (
+                  <button style={estilos.boton} onClick={() => accionAmistad('pedir')} disabled={enviandoAmistad}>
+                    {enviandoAmistad ? 'Enviando…' : '🤝 Añadir amigo'}
+                  </button>
+                )}
+
+                {perfil.amistad === 'enviada' && (
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
+                    ⏳ Solicitud enviada, esperando respuesta
+                  </span>
+                )}
+
+                {perfil.amistad === 'recibida' && (
+                  <>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                      Te ha enviado una solicitud
+                    </span>
+                    <button style={estilos.boton} onClick={() => accionAmistad('aceptar')} disabled={enviandoAmistad}>
+                      Aceptar
+                    </button>
+                    <button style={estilos.botonSecundario} onClick={() => accionAmistad('rechazar')} disabled={enviandoAmistad}>
+                      Rechazar
+                    </button>
+                  </>
+                )}
+
+                {perfil.amistad === 'amigos' && (
+                  <>
+                    <span style={{ color: '#86efac', fontWeight: 700 }}>✅ Sois amigos</span>
+                    <button
+                      style={{ ...estilos.botonSecundario, borderColor: '#f87171', color: '#fca5a5' }}
+                      onClick={() => accionAmistad('eliminar')}
+                      disabled={enviandoAmistad}
+                    >
+                      Eliminar amigo
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Botones (solo en tu propio perfil) */}
             {perfil.es_mi_perfil && (

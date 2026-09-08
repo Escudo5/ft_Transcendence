@@ -149,6 +149,13 @@ def me(request):
         return JsonResponse({'error': 'No hay sesión iniciada.'}, status=401)
 
     u = request.user
+
+    # 🟢 Señal de vida. El front llama aquí al abrir cualquier página, así que
+    # es el sitio natural para anotar "esta persona sigue por aquí". De esto
+    # depende que tus amigos te vean en línea (ver estado_real en el modelo).
+    u.ultima_actividad = timezone.now()
+    u.save(update_fields=['ultima_actividad'])
+
     return JsonResponse({
         'id': u.id,
         'id_42': u.id_42,
@@ -162,7 +169,7 @@ def me(request):
         'profile_image': u.foto,
         'tiene_avatar': bool(u.avatar),
         'elo': u.elo,
-        'estado': u.estado,
+        'estado': u.estado_real,
         'is_alumni': u.is_alumni,
         'sobres_disponibles_hoy': SOBRES_DIARIOS,
         # 🎁 ¿Le toca regalo hoy? Solo INFORMA, no entrega nada: para recogerlo
@@ -266,6 +273,9 @@ def _perfil_publico(usuario):
     # Se calculan una sola vez: los logros salen de estas mismas cifras
     stats = _estadisticas_coleccion(usuario)
     return {
+        # El id interno hace falta para pedirle amistad. No es el id_42 ni
+        # revela nada: es el número de fila en nuestra base de datos.
+        'id': usuario.id,
         'username': usuario.username,
         # El nombre que él haya elegido; si no puso ninguno, el de la Intra
         'nombre': usuario.nombre_mostrado or usuario.get_full_name() or usuario.username,
@@ -273,7 +283,7 @@ def _perfil_publico(usuario):
         'profile_image': usuario.foto,
         'tiene_avatar': bool(usuario.avatar),
         'elo': usuario.elo,
-        'estado': usuario.estado,
+        'estado': usuario.estado_real,
         'is_alumni': usuario.is_alumni,
         'miembro_desde': usuario.date_joined.date().isoformat(),
         'coleccion': stats,
@@ -297,7 +307,42 @@ def perfil_usuario(request, username):
 
     datos = _perfil_publico(usuario)
     datos['es_mi_perfil'] = usuario.pk == request.user.pk
+    # 🤝 En qué punto está la amistad con esta persona, para que el front sepa
+    # qué botón enseñar: pedir amistad, "pendiente", responder o eliminar.
+    datos.update(_estado_amistad(request.user, usuario))
     return JsonResponse(datos)
+
+
+def _estado_amistad(yo, otro):
+    """
+    Cómo estamos esta persona y yo. Devuelve uno de:
+        'yo'        -> es mi propio perfil
+        'ninguna'   -> no hay nada, se le puede pedir amistad
+        'enviada'   -> yo se la mandé y está esperando
+        'recibida'  -> me la mandó él, puedo aceptar o rechazar
+        'amigos'    -> ya lo somos
+    Con 'recibida' va también el id de la solicitud, para poder responderla.
+    """
+    from social.models import FriendRequest
+
+    if yo.pk == otro.pk:
+        return {'amistad': 'yo', 'solicitud_id': None}
+
+    solicitud = FriendRequest.objects.filter(
+        sender__in=[yo, otro],
+        receiver__in=[yo, otro],
+    ).first()
+
+    if solicitud is None or solicitud.status == FriendRequest.StatusChoice.DECLINED:
+        # Una rechazada no cuenta: se puede volver a intentar
+        return {'amistad': 'ninguna', 'solicitud_id': None}
+
+    if solicitud.status == FriendRequest.StatusChoice.ACCEPTED:
+        return {'amistad': 'amigos', 'solicitud_id': solicitud.id}
+
+    if solicitud.sender_id == yo.pk:
+        return {'amistad': 'enviada', 'solicitud_id': solicitud.id}
+    return {'amistad': 'recibida', 'solicitud_id': solicitud.id}
 
 
 @require_http_methods(['PATCH'])
@@ -522,7 +567,7 @@ def descargar_mis_datos(request):
             'id_42': u.id_42,
             'es_alumni': u.is_alumni,
             'puntuacion_elo': u.elo,
-            'estado': u.estado,
+            'estado': u.estado_real,
             'alta': u.date_joined.isoformat(),
             'ultimo_acceso': u.last_login.isoformat() if u.last_login else None,
             'ultimo_regalo_diario': u.ultimo_regalo_diario.isoformat() if u.ultimo_regalo_diario else None,
@@ -601,7 +646,7 @@ def list_users(request):
                 'last_name': user.last_name,
                 'profile_image': user.foto,
                 'elo': user.elo,
-                'estado': user.estado,
+                'estado': user.estado_real,
                 'is_alumni': user.is_alumni,
             }
             for user in users
