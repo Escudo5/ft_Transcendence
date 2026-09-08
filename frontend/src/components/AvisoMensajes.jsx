@@ -25,11 +25,24 @@ export default function AvisoMensajes() {
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
   const [total, setTotal] = useState(0);
   const [deQuien, setDeQuien] = useState([]); // logins de quien te ha escrito
+  const [ruta, setRuta] = useState(window.location.pathname);
+
+  // En la portada NO hace falta: allí el aviso va pegado al botón de
+  // ChatSocial (ContadorMensajes.jsx), que es donde uno lo busca. Este
+  // flotante es para el resto de pantallas, donde no hay botón al que pegarlo.
+  const enLaPortada = ['/', '/home'].includes(ruta.toLowerCase());
 
   useEffect(() => {
     let vivo = true;
 
     async function mirar() {
+      // Si estamos en la portada ni se pregunta: el contador del botón ya lo
+      // hace, y no tiene sentido preguntar dos veces lo mismo cada 10 segundos
+      setRuta(window.location.pathname);
+      if (['/', '/home'].includes(window.location.pathname.toLowerCase())) {
+        setTotal(0);
+        return;
+      }
       try {
         const res = await fetch(`${apiBaseUrl}/chat/sin-leer/`, { credentials: 'include' });
         // Sin sesión responde 401/403: no es un fallo, es que no hay nadie
@@ -53,16 +66,12 @@ export default function AvisoMensajes() {
     return () => { vivo = false; clearInterval(reloj); };
   }, [apiBaseUrl]);
 
-  // Nada que avisar
+  // Nada que avisar, o estamos en la portada (allí lo lleva el botón)
   //
-  // ⚠️ Antes esto también se escondía estando en el chat, dando por hecho que
-  // allí ya se vería el aviso en la lista de amigos. Pero esa lista todavía no
-  // pinta el número (falta que Konrad lo enseñe), así que justo en la pantalla
-  // donde más falta hace no avisaba nada: te escribían, estabas en el chat, y
-  // no te enterabas salvo que pincharas a esa persona por casualidad.
-  //
-  // Cuando la lista lleve su puntito, se puede volver a esconder aquí.
-  if (total === 0) return null;
+  // Sí se enseña estando DENTRO del chat, a propósito: si te escribe alguien
+  // con quien no tienes la conversación abierta, la lista de la izquierda lo
+  // marca con su bolita, pero el flotante lo hace imposible de perder.
+  if (total === 0 || enLaPortada) return null;
 
   return (
     <button
