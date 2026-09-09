@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Badge, TextField } from "./ui";
 
 /**
@@ -219,8 +220,27 @@ export default function Catalogo() {
           </div>
         ) : (
           <div className="album-grid">
-            {currentCards.map((card) => (
-              <article key={card.id} className={`card-item rarity-${card.rareza}`}>
+            {currentCards.map((card, index) => (
+              <motion.article
+                key={card.id}
+                className={`card-item rarity-${card.rareza}`}
+                initial={{ opacity: 0, y: 24, scale: 0.94 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.38, type: 'spring', stiffness: 190, damping: 17 }}
+                whileHover={{
+                  y: -6,
+                  scale: 1.02,
+                  transition: { duration: 0.18, delay: 0, type: 'tween' },
+                }}
+                whileTap={{
+                  scale: 0.96,
+                  transition: { duration: 0.12, delay: 0, type: 'tween' },
+                }}
+                whileFocus={{
+                  scale: 1.02,
+                  transition: { duration: 0.18, delay: 0, type: 'tween' },
+                }}
+              >
                 <div className="card-header">
                   <span className="card-type">{card.coalicion}</span>
                   <Badge tone={card.rareza}>
@@ -282,7 +302,7 @@ export default function Catalogo() {
                     <span className="stat-value">{card.evaluaciones}</span>
                   </div>
                 </div>
-              </article>
+              </motion.article>
             ))}
           </div>
         )}
