@@ -275,3 +275,97 @@ class ResponderIntercambioView(APIView):
         i.resuelto_en = timezone.now()
         i.save(update_fields=['estado', 'resuelto_en'])
         return Response({'detail': 'Propuesta retirada.'}, status=status.HTTP_200_OK)
+
+
+# =====================================================================
+# 🎴 DESCARTE: 4 copias de la MISMA carta -> 1 sobre raro
+#
+# Es distinto del contrato de Pablo, no lo pisa:
+#   Contrato: 4 cartas DISTINTAS de la misma rareza -> 1 carta mejor
+#   Descarte: 4 copias de la MISMA carta            -> 1 sobre raro
+#
+# Resuelve dos cosas de golpe:
+#   - Las cartas de las que tienes 10 copias dejan de ser basura
+#   - Los sobres RAROS existían con sus probabilidades y nadie los
+#     repartía nunca. Esta es la primera forma de conseguir uno.
+#
+# No desequilibra el juego: entregas 4 y recibes 5 (ganancia de 1, y
+# aleatoria), y juntar 4 copias de la MISMA carta es raro de por sí.
+# =====================================================================
+
+COPIAS_PARA_DESCARTAR = 4
+SOBRE_DEL_DESCARTE = 'raro'
+
+
+class DescartarView(APIView):
+    """
+    GET  /api/cards/descartar/   -> qué cartas puedes descartar ya
+    POST /api/cards/descartar/   -> hacerlo, con {"carta": <id>}
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        Las cartas de las que tienes 4 copias o más. Existe para que el
+        álbum pueda enseñar el botón solo donde se puede pulsar.
+        """
+        filas = (UserCard.objects
+                 .filter(user=request.user, cantidad__gte=COPIAS_PARA_DESCARTAR)
+                 .select_related('card')
+                 .order_by('-cantidad'))
+        return Response({
+            'copias_necesarias': COPIAS_PARA_DESCARTAR,
+            'sobre_que_dan': SOBRE_DEL_DESCARTE,
+            'descartables': [
+                {**_carta_json(f.card), 'copias': f.cantidad,
+                 'sobres_posibles': f.cantidad // COPIAS_PARA_DESCARTAR}
+                for f in filas
+            ],
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        from .models import UserPack   # aquí para no cargarlo si no hace falta
+
+        id_carta = request.data.get('carta')
+
+        # Todo junto o nada: o se quitan las 4 y se da el sobre, o no pasa
+        # nada. El bloqueo de fila evita que un doble clic gaste 8 cartas
+        # y entregue un solo sobre.
+        with transaction.atomic():
+            fila = (UserCard.objects.select_for_update()
+                    .filter(user=request.user, card_id=id_carta)
+                    .select_related('card').first())
+
+            if fila is None:
+                return Response({'detail': 'No tienes esa carta.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if fila.cantidad < COPIAS_PARA_DESCARTAR:
+                return Response(
+                    {'detail': f'Necesitas {COPIAS_PARA_DESCARTAR} copias de '
+                               f'{fila.card.login} y solo tienes {fila.cantidad}.'},
+                    status=status.HTTP_400_BAD_REQUEST)
+
+            fila.cantidad -= COPIAS_PARA_DESCARTAR
+            if fila.cantidad == 0:
+                # Sin copias, la fila sobra: si no, el álbum enseñaría una
+                # carta que ya no tienes
+                carta = fila.card
+                fila.delete()
+                quedan = 0
+            else:
+                fila.save(update_fields=['cantidad'])
+                carta = fila.card
+                quedan = fila.cantidad
+
+            pack, _ = UserPack.objects.select_for_update().get_or_create(
+                user=request.user, tipo_sobre=SOBRE_DEL_DESCARTE)
+            pack.cantidad += 1
+            pack.save(update_fields=['cantidad'])
+
+        return Response({
+            'mensaje': f'Has descartado {COPIAS_PARA_DESCARTAR} copias de '
+                       f'{carta.login} y te has llevado un sobre raro.',
+            'carta': carta.login,
+            'copias_restantes': quedan,
+            'sobres_raros': pack.cantidad,
+        }, status=status.HTTP_200_OK)
