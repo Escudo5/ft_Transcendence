@@ -26,7 +26,18 @@ LAS SEIS REGLAS, y por qué cada una:
 
   6. Las dos cartas cambian de dueño A LA VEZ O NINGUNA. Con transacción
      atómica y bloqueo de filas, igual que la apertura de sobres.
+
+  7. A los 3 DÍAS sin respuesta, la propuesta caduca. No para "devolver"
+     nada (nunca se retiene nada), sino porque si no se acumulan para
+     siempre y, peor, bloquean la regla 4: si alguien te ignora, esa
+     combinación de cartas se te quedaría vetada con esa persona de por
+     vida. Caducando, a los 3 días puedes volver a intentarlo.
+
+     No hace falta ningún proceso que corra por las noches borrando: basta
+     con dejar de contarlas cuando son viejas. Menos piezas que mantener.
 """
+
+from datetime import timedelta
 
 from django.db import transaction
 from django.db.models import Q
@@ -41,6 +52,21 @@ from social.models import FriendRequest
 from .models import Card, Intercambio, UserCard
 
 User = get_user_model()
+
+DIAS_PARA_CADUCAR = 3
+
+
+def _vivas(consulta):
+    """
+    De un conjunto de intercambios, los que siguen contando: pendientes y
+    con menos de 3 días. Los viejos no se borran de la base (queda el
+    rastro de que existieron), simplemente dejan de contar en todas
+    partes: ni salen en las listas, ni impiden volver a proponer, ni se
+    pueden aceptar.
+    """
+    limite = timezone.now() - timedelta(days=DIAS_PARA_CADUCAR)
+    return consulta.filter(estado=Intercambio.Estado.PENDIENTE,
+                           created_at__gte=limite)
 
 
 def _son_amigos(a, b):
@@ -128,11 +154,9 @@ class IntercambiosView(APIView):
 
     def get(self, request):
         yo = request.user
-        pendientes = (
-            Intercambio.objects
-            .filter(Q(de=yo) | Q(para=yo), estado=Intercambio.Estado.PENDIENTE)
-            .select_related('de', 'para', 'carta_ofrecida', 'carta_pedida')
-        )
+        pendientes = _vivas(
+            Intercambio.objects.filter(Q(de=yo) | Q(para=yo))
+        ).select_related('de', 'para', 'carta_ofrecida', 'carta_pedida')
         return Response({
             'recibidos': [_intercambio_json(i, yo) for i in pendientes if i.para_id == yo.pk],
             'enviados': [_intercambio_json(i, yo) for i in pendientes if i.de_id == yo.pk],
@@ -170,10 +194,11 @@ class IntercambiosView(APIView):
             return Response({'detail': f'{otro.username} no tiene {pedida.login} repetida.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        ya_existe = Intercambio.objects.filter(
+        # Solo cuentan las que siguen vivas: una caducada no debe impedirte
+        # volver a intentarlo, que es justo para lo que sirve que caduquen.
+        ya_existe = _vivas(Intercambio.objects.filter(
             de=yo, para=otro, carta_ofrecida=ofrecida, carta_pedida=pedida,
-            estado=Intercambio.Estado.PENDIENTE,
-        ).exists()
+        )).exists()
         if ya_existe:
             return Response({'detail': 'Ya le has propuesto ese mismo cambio.'},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -204,12 +229,20 @@ class ResponderIntercambioView(APIView):
             # select_for_update bloquea la fila: si llegan dos peticiones a la
             # vez (doble clic), la segunda espera y luego ve que ya no está
             # pendiente, en vez de ejecutar el intercambio dos veces.
-            i = (Intercambio.objects
-                 .select_for_update()
-                 .filter(pk=pk, para=yo, estado=Intercambio.Estado.PENDIENTE)
+            i = (_vivas(Intercambio.objects.select_for_update().filter(pk=pk, para=yo))
                  .select_related('de', 'para', 'carta_ofrecida', 'carta_pedida')
                  .first())
             if i is None:
+                # Puede ser que no exista, que ya se resolviera, o que haya
+                # caducado. Se distingue para dar un mensaje que se entienda:
+                # "ha caducado" explica algo, "no existe" confunde.
+                vieja = Intercambio.objects.filter(
+                    pk=pk, para=yo, estado=Intercambio.Estado.PENDIENTE).exists()
+                if vieja:
+                    return Response(
+                        {'detail': f'Esta propuesta ha caducado: llevaba más de '
+                                   f'{DIAS_PARA_CADUCAR} días sin respuesta.'},
+                        status=status.HTTP_400_BAD_REQUEST)
                 return Response({'detail': 'Esa propuesta no existe o ya está resuelta.'},
                                 status=status.HTTP_404_NOT_FOUND)
 
@@ -266,8 +299,7 @@ class ResponderIntercambioView(APIView):
 
     def delete(self, request, pk):
         """Retirar una propuesta. Solo puede hacerlo quien la envió."""
-        i = Intercambio.objects.filter(
-            pk=pk, de=request.user, estado=Intercambio.Estado.PENDIENTE).first()
+        i = _vivas(Intercambio.objects.filter(pk=pk, de=request.user)).first()
         if i is None:
             return Response({'detail': 'Esa propuesta no existe o ya está resuelta.'},
                             status=status.HTTP_404_NOT_FOUND)
