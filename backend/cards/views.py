@@ -231,12 +231,12 @@ def open_pack(tipo_sobre):
 
 # =====================================================================
 # 🎁 REGALO DIARIO
-# Cada persona recibe 2 sobres comunes al día. NO se acumulan: si pasas
+# Cada persona recibe 3 sobres comunes al día. NO se acumulan: si pasas
 # tres días sin entrar, al volver recibes 2, no seis. Así entrar cada día
 # tiene sentido.
 # El día cambia a medianoche, hora de Madrid (la zona horaria del proyecto).
 # =====================================================================
-SOBRES_REGALO_DIARIO = 2
+SOBRES_REGALO_DIARIO = 3
 TIPO_SOBRE_REGALO = 'comun'
 
 

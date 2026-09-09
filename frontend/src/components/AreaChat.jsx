@@ -1,0 +1,271 @@
+import { useRef, useEffect } from 'react';
+
+const LARGO_MAXIMO = 1000;
+
+function obtenerEtiquetaDelDia(fechaMensaje) {
+  const fechaObjeto = new Date(fechaMensaje);
+  const hoy = new Date();
+  const ayer = new Date();
+  ayer.setDate(hoy.getDate() - 1);
+
+  const esMismoDia = (fechaA, fechaB) => fechaA.toDateString() === fechaB.toDateString();
+
+  if (esMismoDia(fechaObjeto, hoy)) return 'Hoy';
+  if (esMismoDia(fechaObjeto, ayer)) return 'Ayer';
+
+  return fechaObjeto.toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'long',
+    ...(fechaObjeto.getFullYear() !== hoy.getFullYear() ? { year: 'numeric' } : {}),
+  });
+}
+
+function AreaChat({
+  chatSeleccionado,
+  setChatSeleccionado,
+  mensajes,
+  borrador,
+  setBorrador,
+  enviando,
+  enviarMensaje,
+  visitarPerfil,
+  alternarBloqueoUsuario,
+  cargando,
+  error,
+  amigos,
+}) {
+  const finDeLaListaRef = useRef(null);
+
+  useEffect(() => {
+    finDeLaListaRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [mensajes]);
+
+  if (!chatSeleccionado) {
+    return (
+      <div className="chat-area">
+        <div className="no-chat-selected">
+          {cargando ? (
+            <p>Cargando tus amigos…</p>
+          ) : error ? (
+            <>
+              <span style={{ fontSize: '4rem' }}>⚠️</span>
+              <h3>Algo ha ido mal</h3>
+              <p style={{ color: '#ff9b9b' }}>{error}</p>
+            </>
+          ) : amigos.length === 0 ? (
+            <>
+              <span style={{ fontSize: '4rem' }}>👋</span>
+              <h3>Todavía no tienes amigos</h3>
+              <p>Entra en la sección de búsqueda para añadir a tus compañeros de 42.</p>
+            </>
+          ) : (
+            <>
+              <span style={{ fontSize: '4rem' }}>🌐</span>
+              <h3>Módulo Social 42</h3>
+              <p>Selecciona un amigo de la lista izquierda para chatear.</p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Comprobamos los dos estados de bloqueo
+  const yoLoHeBloqueado = chatSeleccionado.bloqueado;
+  const meHaBloqueadoAEstudiando = chatSeleccionado.meHaBloqueado;
+  const hayBloqueoActivo = yoLoHeBloqueado || meHaBloqueadoAEstudiando;
+
+  return (
+    <div className="chat-area">
+      {/* CABECERA DEL CHAT */}
+      <div className="chat-header">
+        {/* ⬅️ Botón de volver a la lista. Solo se ve en móvil (lo esconde
+            Chat.css en pantalla grande): allí la conversación ocupa toda la
+            pantalla y sin esto no habría forma de volver a los contactos.
+            Es de Sergio; se recupera aquí porque la conversación se mudó a
+            este fichero después de que él lo hiciera. */}
+        <button
+          type="button"
+          className="mobile-chat-back"
+          onClick={() => setChatSeleccionado(null)}
+          aria-label="Volver a la lista de conversaciones"
+        >
+          ←
+        </button>
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}
+          onClick={() => visitarPerfil(chatSeleccionado.login)}
+        >
+          <div className="avatar-header">{chatSeleccionado.avatar}</div>
+          <div>
+            <h4 style={{ margin: 0 }}>
+              {chatSeleccionado.nombre} ({chatSeleccionado.login})
+            </h4>
+            <span style={{ fontSize: '0.8rem', color: hayBloqueoActivo ? '#ff4d4d' : '#00ffcc' }}>
+              {yoLoHeBloqueado
+                ? 'Usuario Bloqueado por ti'
+                : meHaBloqueadoAEstudiando
+                ? 'Te ha bloqueado'
+                : chatSeleccionado.estado}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* HISTORIAL DE MENSAJES (Se muestra SIEMPRE, incluso con bloqueo) */}
+      <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
+        {mensajes.length === 0 ? (
+          <div style={{ textAlign: 'center', marginTop: '3rem', color: '#8b92b0' }}>
+            <p>Todavía no os habéis escrito nada.</p>
+            <p style={{ fontSize: '0.9rem' }}>Escribe algo abajo para empezar.</p>
+          </div>
+        ) : (
+          mensajes.map((mensajeActual, indice) => {
+            const etiquetaDia = obtenerEtiquetaDelDia(mensajeActual.fecha);
+            const mensajeAnterior = mensajes[indice - 1];
+            const cambiaElDia =
+              indice === 0 || etiquetaDia !== obtenerEtiquetaDelDia(mensajeAnterior.fecha);
+
+            return (
+              <div key={mensajeActual.id}>
+                {cambiaElDia && (
+                  <div style={{ textAlign: 'center', margin: '1rem 0 0.8rem' }}>
+                    <span
+                      style={{
+                        backgroundColor: '#1f2433',
+                        border: '1px solid #2a2e3d',
+                        color: '#8b92b0',
+                        fontSize: '0.72rem',
+                        padding: '0.25rem 0.8rem',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      {etiquetaDia}
+                    </span>
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: mensajeActual.mio ? 'flex-end' : 'flex-start',
+                    marginBottom: '0.6rem',
+                  }}
+                >
+                  <div
+                    style={{
+                      backgroundColor: mensajeActual.mio ? 'rgba(0, 255, 204, 0.15)' : '#1f2433',
+                      border: `1px solid ${mensajeActual.mio ? '#00ffcc' : '#2a2e3d'}`,
+                      padding: '0.6rem 1rem',
+                      borderRadius: '10px',
+                      maxWidth: '70%',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    <div style={{ whiteSpace: 'pre-wrap' }}>{mensajeActual.texto}</div>
+                    <div
+                      style={{
+                        fontSize: '0.7rem',
+                        color: '#8b92b0',
+                        marginTop: '0.25rem',
+                        textAlign: 'right',
+                      }}
+                      title={new Date(mensajeActual.fecha).toLocaleString('es-ES')}
+                    >
+                      {new Date(mensajeActual.fecha).toLocaleTimeString('es-ES', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+        <div ref={finDeLaListaRef} />
+      </div>
+
+      {/* AVISOS DE BLOQUEO O CAJA DE TEXTO */}
+      {yoLoHeBloqueado ? (
+        <div
+          style={{
+            padding: '1rem',
+            backgroundColor: '#151821',
+            borderTop: '1px solid #2a2e3d',
+            textAlign: 'center',
+          }}
+        >
+          <span style={{ color: '#ff4d4d', fontSize: '0.9rem', marginRight: '1rem' }}>
+            🚫 Has bloqueado a este usuario.
+          </span>
+          <button
+            onClick={() => alternarBloqueoUsuario(chatSeleccionado.login)}
+            className="btn-volver"
+            style={{ fontSize: '0.8rem', padding: '0.3rem 0.8rem' }}
+          >
+            Desbloquear
+          </button>
+        </div>
+      ) : meHaBloqueadoAEstudiando ? (
+        <div
+          style={{
+            padding: '1rem',
+            backgroundColor: '#151821',
+            borderTop: '1px solid #2a2e3d',
+            textAlign: 'center',
+            color: '#8b92b0',
+            fontSize: '0.9rem',
+          }}
+        >
+          🔒 Este usuario te ha bloqueado. No puedes enviarle mensajes.
+        </div>
+      ) : (
+        <form
+          onSubmit={enviarMensaje}
+          style={{
+            display: 'flex',
+            gap: '0.6rem',
+            padding: '0.8rem 1rem',
+            borderTop: '1px solid #2a2e3d',
+          }}
+        >
+          <input
+            type="text"
+            value={borrador}
+            onChange={(e) => setBorrador(e.target.value)}
+            placeholder={`Escribe a ${chatSeleccionado.nombre}…`}
+            maxLength={LARGO_MAXIMO}
+            style={{
+              flex: 1,
+              padding: '0.7rem 1rem',
+              borderRadius: '20px',
+              border: '1px solid #2a2e3d',
+              backgroundColor: '#0d1017',
+              color: '#fff',
+              outline: 'none',
+            }}
+          />
+          <button
+            type="submit"
+            disabled={enviando || !borrador.trim()}
+            style={{
+              padding: '0.7rem 1.4rem',
+              borderRadius: '20px',
+              border: '1px solid #00ffcc',
+              backgroundColor: 'rgba(0, 255, 204, 0.15)',
+              color: '#00ffcc',
+              fontWeight: 'bold',
+              cursor: enviando || !borrador.trim() ? 'not-allowed' : 'pointer',
+              opacity: enviando || !borrador.trim() ? 0.5 : 1,
+            }}
+          >
+            {enviando ? '…' : 'Enviar'}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+export default AreaChat;
