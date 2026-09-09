@@ -368,7 +368,7 @@ function ChatSocial() {
   };
 
   return (
-    <div className="chat-main-container">
+    <div className={`chat-main-container${chatSeleccionado ? ' has-selected-chat' : ''}`}>
       {/* 1. COLUMNA IZQUIERDA */}
       <ListaChats
         amigos={amigos}
@@ -402,6 +402,14 @@ function ChatSocial() {
         {chatSeleccionado ? (
           <>
             <div className="chat-header">
+              <button
+                type="button"
+                className="mobile-chat-back"
+                onClick={() => setChatSeleccionado(null)}
+                aria-label="Volver a la lista de conversaciones"
+              >
+                ←
+              </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => visitarPerfil(chatSeleccionado.login)}>
                 <div className="avatar-header">{chatSeleccionado.avatar}</div>
                 <div>

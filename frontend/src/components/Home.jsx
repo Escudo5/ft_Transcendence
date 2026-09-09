@@ -97,7 +97,7 @@ function Home() {
   const integranteActivo = indiceSeleccionado !== null ? integrantes[indiceSeleccionado] : null;
 
   return (
-    <main className="app-container" style={{ padding: '2rem 0', backgroundColor: 'transparent', color: 'white', minHeight: '100dvh', textAlign: 'center' }}>
+    <main className="app-container" style={{ padding: '2rem 0', backgroundColor: 'transparent', color: 'white', minHeight: '100vh', textAlign: 'center' }}>
       <header className="app-header">
         <div className="logo-section">
           <h1>ft_transcendence</h1>

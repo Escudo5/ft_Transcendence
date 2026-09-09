@@ -433,7 +433,7 @@ function App() {
   if (!isAuthenticated && !enRutaPublica) {
     return (
       <>
-        <DotField style={{ position: 'fixed', inset: 0, width: '100vw', height: '100dvh', zIndex: -1, pointerEvents: 'none' }} />
+        <DotField style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
         <Acceso
           apiBaseUrl={apiBaseUrl}
           urlLogin42={URL_LOGIN_42}
@@ -448,7 +448,7 @@ function App() {
 
   return (
     <>
-      <DotField style={{ position: 'fixed', inset: 0, width: '100vw', height: '100dvh', zIndex: -1, pointerEvents: 'none' }} />
+      <DotField style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
       {/* 🎁 Flota por encima de todas las pantallas: el regalo debe poder
           recogerse estés donde estés, no solo en la portada */}
       <RegaloDiario />
