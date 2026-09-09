@@ -1,8 +1,9 @@
 /* Contenedor principal estilo WhatsApp Web */
 .chat-main-container {
   display: flex;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
+  height: 100dvh;
   background-color: #0b0e14;
   color: #ffffff;
   font-family: Arial, sans-serif;
@@ -12,7 +13,8 @@
 /* Columna Izquierda: Lista de Amigos */
 .chat-sidebar {
   width: 30%;
-  min-width: 320px;
+  min-width: 0;
+  flex: 0 1 30%;
   background-color: #151821;
   border-right: 1px solid #2a2e3d;
   display: flex;
@@ -141,7 +143,8 @@
 /* Columna Derecha: Área de conversación */
 .chat-area {
   width: 70%;
-  flex: 1;
+  min-width: 0;
+  flex: 1 1 70%;
   background-color: #0d1017;
   display: flex;
   flex-direction: column;
@@ -156,6 +159,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.mobile-chat-back {
+  display: none;
 }
 
 .avatar-header {
@@ -174,4 +181,95 @@
   margin: auto;
   text-align: center;
   color: #6c728f;
+}
+
+@media (max-width: 640px) {
+  .chat-main-container {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .chat-sidebar,
+  .chat-area {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .chat-sidebar {
+    border-right: 0;
+  }
+
+  .has-selected-chat .chat-sidebar {
+    display: none;
+  }
+
+  .chat-area {
+    display: none;
+  }
+
+  .has-selected-chat .chat-area {
+    display: flex;
+  }
+
+  .sidebar-header,
+  .chat-header {
+    padding: 0.75rem;
+  }
+
+  .sidebar-header {
+    gap: 0.5rem;
+  }
+
+  .sidebar-header > div {
+    min-width: 0;
+  }
+
+  .btn-volver {
+    padding: 0.45rem 0.65rem;
+    white-space: nowrap;
+  }
+
+  .chat-header {
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+
+  .mobile-chat-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 2.25rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 1px solid #00ffcc;
+    border-radius: 50%;
+    background: #202533;
+    color: #00ffcc;
+    font-size: 1.25rem;
+  }
+
+  .chat-header > div {
+    min-width: 0;
+  }
+
+  .chat-header h4 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chat-area form {
+    padding: 0.65rem;
+  }
+
+  .chat-area form input {
+    min-width: 0;
+  }
+
+  .chat-area form button {
+    flex: 0 0 auto;
+    padding-inline: 1rem !important;
+  }
 }

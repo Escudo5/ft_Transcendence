@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import PieLegal from './PieLegal';
 import ContadorMensajes from './ContadorMensajes';
 import { Avatar, Badge, Button, Card, Modal } from './ui';
@@ -97,7 +98,7 @@ function Home() {
   const integranteActivo = indiceSeleccionado !== null ? integrantes[indiceSeleccionado] : null;
 
   return (
-    <main className="app-container" style={{ padding: '2rem 0', backgroundColor: 'transparent', color: 'white', minHeight: '100dvh', textAlign: 'center' }}>
+    <main className="app-container" style={{ padding: '2rem 0', backgroundColor: 'transparent', color: 'white', minHeight: '100vh', textAlign: 'center' }}>
       <header className="app-header">
         <div className="logo-section">
           <h1>ft_transcendence</h1>
@@ -110,7 +111,7 @@ function Home() {
       {/* Fila con las 5 cartas de los miembros del grupo */}
       <section className="team-grid" aria-label="Integrantes del proyecto">
         {integrantes.map((user, index) => (
-          <article
+          <motion.article
           key={user.login}
           className={`card-item rarity-${user.rareza}`}
           style={{ padding: '1rem', textAlign: 'center', cursor: 'pointer'}}
@@ -121,11 +122,30 @@ function Home() {
           role="button"
           tabIndex={0}
           aria-label={`Ver carta de ${user.nombre}`}
+          initial={{ opacity: 0, y: 20, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{
+            opacity: { duration: 0.3, delay: index * 0.08 },
+            default: { type: 'spring', stiffness: 240, damping: 24, mass: 0.8 },
+          }}
+          whileHover={{
+            y: -6,
+            scale: 1.02,
+            transition: { type: 'spring', stiffness: 320, damping: 26, mass: 0.7 },
+          }}
+          whileTap={{
+            scale: 0.97,
+            transition: { type: 'spring', stiffness: 420, damping: 30, mass: 0.6 },
+          }}
+          whileFocus={{
+            scale: 1.015,
+            transition: { type: 'spring', stiffness: 320, damping: 26, mass: 0.7 },
+          }}
           >
             <Avatar src={user.avatar !== 'imagen' ? user.avatar : undefined} alt={user.nombre} size="medium" />
             <h3 style={{ fontSize: '1rem', margin: '0' }}>{user.nombre}</h3>
             <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>@{user.login}</span>
-          </article>
+          </motion.article>
         ))}
       </section>
 
@@ -194,8 +214,16 @@ function Home() {
       </section>
 
       {/* MODAL / CAPA FLOTANTE AMPLRIADA (Solo se dibuja si indiceSeleccionado tiene un número) */}
-      {integranteActivo && (
-        <Modal onClose={() => setIndiceSeleccionado(null)} labelledBy="integrante-activo">
+      <AnimatePresence>
+        {integranteActivo && (
+          <motion.div
+            key={integranteActivo.login}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Modal onClose={() => setIndiceSeleccionado(null)} labelledBy="integrante-activo">
           {/* Contenedor de navegación (Botón Izquierda, Carta, Botón Derecha) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
             
@@ -228,8 +256,10 @@ function Home() {
             </Button>
 
           </div>
-        </Modal>
-      )}
+            </Modal>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Enlaces legales, obligatorios en el subject */}
       <PieLegal estilo={{ marginTop: '3rem' }} />
