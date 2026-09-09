@@ -24,7 +24,10 @@ CLIENT_SECRET = os.environ.get('CLIENT_SECRET_NACHO')
 # 🌐 La URL exacta que tenéis guardada en la casilla "Redirect URI" de la Intra
 REDIRECT_URI = os.environ.get('FORTYTWO_REDIRECT_URI')
 
-SOBRES_DIARIOS = 2  # Sobres gratis que regala el álbum cada día por loguearse
+# Solo para INFORMAR al front de cuántos toca hoy. Quien los entrega de
+# verdad es cards/views.py (SOBRES_REGALO_DIARIO), y los dos números tienen
+# que coincidir: si no, la web promete una cosa y el servidor da otra.
+SOBRES_DIARIOS = 3
 
 
 def login_42_callback(request):
