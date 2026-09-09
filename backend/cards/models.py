@@ -61,3 +61,63 @@ class UserPack(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.cantidad}x {self.tipo_sobre}"
+
+
+class Intercambio(models.Model):
+    """
+    Una propuesta de cambio de cartas entre dos alumnos.
+
+    La idea: tienes a Konrad repetido y te falta Pablo. Le propones a
+    alguien "te doy mi Konrad por tu Pablo", y si acepta, las dos cartas
+    cambian de dueño a la vez.
+
+    Es la única parte del proyecto que aprovecha que la gente está
+    físicamente junta en el campus: da un motivo para girarse y hablar con
+    quien tienes al lado.
+
+    ⚠️ Las reglas NO viven aquí, viven en la vista, y a propósito: hay que
+    comprobarlas al ACEPTAR, no al proponer. Entre que propones y te
+    aceptan pueden pasar días, y en ese tiempo cualquiera de los dos puede
+    haber gastado esa carta en un contrato.
+    """
+
+    class Estado(models.TextChoices):
+        PENDIENTE = 'PENDIENTE', 'Pendiente'
+        ACEPTADO = 'ACEPTADO', 'Aceptado'
+        RECHAZADO = 'RECHAZADO', 'Rechazado'
+        CANCELADO = 'CANCELADO', 'Cancelado'   # lo retira quien lo propuso
+
+    de = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='intercambios_propuestos',
+    )
+    para = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='intercambios_recibidos',
+    )
+
+    # Lo que ofrece quien propone
+    carta_ofrecida = models.ForeignKey(
+        Card, on_delete=models.CASCADE, related_name='ofrecida_en',
+    )
+    # Lo que pide a cambio
+    carta_pedida = models.ForeignKey(
+        Card, on_delete=models.CASCADE, related_name='pedida_en',
+    )
+
+    estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.PENDIENTE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resuelto_en = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']   # lo más reciente arriba
+        indexes = [
+            # Las dos consultas que hace el front: "mis propuestas recibidas"
+            # y "las que he enviado", las dos filtrando por estado.
+            models.Index(fields=['para', 'estado']),
+            models.Index(fields=['de', 'estado']),
+        ]
+
+    def __str__(self):
+        return (f'{self.de} ofrece {self.carta_ofrecida.login} '
+                f'por {self.carta_pedida.login} de {self.para} [{self.estado}]')
