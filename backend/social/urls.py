@@ -7,6 +7,7 @@ from .views import (
     FriendsListView,
     RemoveFriendView,
     BuscarUsuariosView,
+    BloquearView,
 )
 
 # 🤝 RUTAS DE AMISTADES
@@ -30,6 +31,9 @@ urlpatterns = [
     # Gente a la que puedes pedir amistad (sin ti, sin tus amigos y sin
     # los que tienen una solicitud a medias). Admite ?q= para filtrar.
     path('buscar/', BuscarUsuariosView.as_view(), name='buscar_usuarios'),
+
+    # 🚫 Bloquear y desbloquear a alguien. POST bloquea, DELETE desbloquea.
+    path('bloquear/<str:username>/', BloquearView.as_view(), name='bloquear'),
 
     # --- Amigos ---
     # Mi lista de amigos, con su foto y si están en línea
