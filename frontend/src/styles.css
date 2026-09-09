@@ -24,10 +24,7 @@
   --surface-base: var(--color-neutral-950);
   --surface-raised: var(--color-neutral-900);
   --surface-overlay: var(--color-neutral-800);
-  /* Casi negro y no negro del todo: la propia auditoria de calidad
-     (skills/web-quality-audit) avisa de que el #000000 "mata la
-     profundidad y se ve plano", y recomienda un off-black. */
-  --surface-sunken: #0a0a0a;
+  --surface-sunken: #000000;
 
   /* Semantic Text */
   --text-primary: var(--color-neutral-50);
@@ -40,18 +37,15 @@
   --border-accent: var(--color-accent-500);
 
   /* El color de acento cuando NO es un borde: fondos de boton, cifras
-     destacadas, enlaces. Antes se usaba --border-accent para todo, y
-     llamar "borde" al fondo de un boton confunde a quien lo lee. */
+     destacadas, enlaces. Se usa en 32 sitios de 9 pantallas: si falta,
+     el perfil, el ranking, el acceso y el album se quedan sin acentos. */
   --accent: var(--color-accent-500);
   --accent-strong: var(--color-accent-700);
 
-  /* Guino de la casa: el degradado de los titulos grandes.
-     Se recupera, pero DENTRO de la familia del acento y suave. El de
-     antes iba de azul a morado, y la propia auditoria de calidad
-     (skills/web-quality-audit) marca ese degradado concreto como el
-     delator numero uno de una web hecha con IA, ademas de avisar de que
-     el texto en degradado grande se lee mal. Este se queda en dos tonos
-     del mismo verde azulado: se nota el detalle y sigue leyendose. */
+  /* Guino de la casa: el degradado de los titulos grandes. Dentro de la
+     familia del acento a proposito: el de antes iba de azul a morado, y la
+     guia de calidad marca ese degradado como el delator numero uno de una
+     web hecha con IA. */
   --degradado-titulo: linear-gradient(100deg, var(--color-accent-500), #5eead4);
 
   /* Rarity Colors (Desaturated slightly to avoid slop) */
@@ -99,9 +93,7 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
-/* Clase para el guino: se pone en los titulos grandes y ya esta.
-   Se usa una clase y no estilos sueltos para que el degradado se cambie
-   en un solo sitio, que es de lo que va tener un sistema de diseno. */
+/* Clase para el guino: se pone en los titulos grandes y ya esta. */
 .titulo-degradado {
   background: var(--degradado-titulo);
   -webkit-background-clip: text;
@@ -123,6 +115,7 @@ body {
   background-color: var(--surface-base);
   color: var(--text-primary);
   font-family: var(--font-body);
+  min-height: 100vh;
   min-height: 100dvh;
   padding: var(--space-8) var(--space-4);
   overflow-x: hidden;
@@ -155,9 +148,13 @@ button, a, select {
 
 .team-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--space-4);
   margin-top: var(--space-4);
+}
+
+.team-grid .card-item {
+  transition: none;
 }
 
 .action-grid {
@@ -460,7 +457,11 @@ button, a, select {
   background: rgba(0, 0, 0, 0.7);
   animation: fadeIn 0.3s ease;
 }
-.ui-modal { max-height: 100dvh; overflow: auto; }
+.ui-modal {
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow: auto;
+}
 .home-modal-card { width: 320px; text-align: center; transform: scale(1.1); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9); }
 .home-modal-card .ui-avatar { margin: 0 auto 1rem; }
 
@@ -650,6 +651,7 @@ button, a, select {
 
 /* Utilidades generales */
 .session-loading {
+  min-height: 100vh;
   min-height: 100dvh;
   display: grid;
   place-items: center;

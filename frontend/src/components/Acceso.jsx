@@ -25,7 +25,7 @@ import { Alert, Button, Card, SecondaryButton, TextField } from './ui';
 // ==========================================================================
 const estilos = {
   pantalla: {
-    minHeight: '100dvh',
+    minHeight: '100vh',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

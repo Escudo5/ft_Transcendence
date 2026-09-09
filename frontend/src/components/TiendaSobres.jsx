@@ -417,13 +417,15 @@ function TiendaSobres() {
             style={{
               padding: '0.9rem 3rem',
               fontSize: '1.2rem',
-              backgroundColor: 'var(--accent)',
-              color: '#000',
-              border: 'none',
+              backgroundColor: '#00babc',
+              color: '#101418',
+              border: '2px solid #7fffee',
               borderRadius: '8px',
               cursor: 'pointer',
               fontWeight: 'bold',
-              boxShadow: '0 0 20px var(--accent)'
+              boxShadow: '0 0 20px rgba(0, 186, 188, 0.55)',
+              maxWidth: 'calc(100vw - 2rem)',
+              textAlign: 'center'
             }}
           >
             SALIR DE ESTA APERTURA
@@ -435,8 +437,8 @@ function TiendaSobres() {
 
   const PaginaTiendaSobres = () => {
     return (
-      <main className="app-container" style={{ position: 'relative', minHeight: '100dvh', padding: '2rem', overflowX: 'hidden' }}>
-        <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100dvh', zIndex: 0, pointerEvents: 'none' }}>
+      <main className="app-container" style={{ position: 'relative', minHeight: '100vh', padding: '2rem', overflowX: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}>
           <FondoTiendaSobres
             topColor="#5227FF"
             bottomColor="#FF9FFC"
