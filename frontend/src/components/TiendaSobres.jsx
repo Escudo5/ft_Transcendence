@@ -417,13 +417,15 @@ function TiendaSobres() {
             style={{
               padding: '0.9rem 3rem',
               fontSize: '1.2rem',
-              backgroundColor: 'var(--accent)',
-              color: '#000',
-              border: 'none',
+              backgroundColor: '#00babc',
+              color: '#101418',
+              border: '2px solid #7fffee',
               borderRadius: '8px',
               cursor: 'pointer',
               fontWeight: 'bold',
-              boxShadow: '0 0 20px var(--accent)'
+              boxShadow: '0 0 20px rgba(0, 186, 188, 0.55)',
+              maxWidth: 'calc(100vw - 2rem)',
+              textAlign: 'center'
             }}
           >
             SALIR DE ESTA APERTURA

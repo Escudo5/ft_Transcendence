@@ -132,6 +132,10 @@ button, a, select {
   margin-top: var(--space-4);
 }
 
+.team-grid .card-item {
+  transition: none;
+}
+
 .action-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

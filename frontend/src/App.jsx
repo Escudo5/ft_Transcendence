@@ -273,6 +273,7 @@
 // =======
 import { useEffect, useRef, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { MotionConfig } from 'framer-motion';
 import DotField from "./components/Fondo_animado";
 import Acceso from './components/Acceso';
 import RegaloDiario from './components/RegaloDiario';
@@ -432,7 +433,7 @@ function App() {
 
   if (!isAuthenticated && !enRutaPublica) {
     return (
-      <>
+      <MotionConfig reducedMotion="user">
         <DotField style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
         <Acceso
           apiBaseUrl={apiBaseUrl}
@@ -442,12 +443,12 @@ function App() {
             setIsAuthenticated(true);
           }}
         />
-      </>
+      </MotionConfig>
     );
   }
 
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       <DotField style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
       {/* 🎁 Flota por encima de todas las pantallas: el regalo debe poder
           recogerse estés donde estés, no solo en la portada */}
@@ -457,7 +458,7 @@ function App() {
           el álbum y no te enteras hasta que abres el chat por tu cuenta. */}
       <AvisoMensajes />
       <RouterProvider router={router} />
-    </>
+    </MotionConfig>
   );
 }
 

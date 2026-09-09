@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import ListaChats from './ListaChats';
 import BuscarAmigos from './BuscarAmigos';
 import SolicitudesRecibidas from './SolicitudesRecibidas';
@@ -399,8 +400,16 @@ function ChatSocial() {
 
       {/* 3. COLUMNA DERECHA (Próximo paso: AreaChat) */}
       <div className="chat-area">
-        {chatSeleccionado ? (
-          <>
+        <AnimatePresence mode="wait" initial={false}>
+          {chatSeleccionado ? (
+            <motion.div
+              key="conversation"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+              style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}
+            >
             <div className="chat-header">
               <button
                 type="button"
@@ -542,9 +551,16 @@ function ChatSocial() {
                 </button>
               </form>
             )}
-          </>
-        ) : (
-          <div className="no-chat-selected">
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty-chat"
+              className="no-chat-selected"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.2 }}
+            >
             {cargando ? (
               <p>Cargando tus amigos…</p>
             ) : error ? (
@@ -568,8 +584,9 @@ function ChatSocial() {
                 <p>Selecciona un amigo de la lista izquierda para chatear.</p>
               </>
             )}
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
