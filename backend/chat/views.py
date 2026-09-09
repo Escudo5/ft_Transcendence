@@ -105,6 +105,16 @@ class ConversacionView(APIView):
         if error:
             return error
 
+        # 🚫 El bloqueo se comprueba SOLO al escribir, no al leer: los
+        # mensajes antiguos se pueden seguir viendo, porque bloquear no
+        # borra lo ya hablado. Y corta en los dos sentidos: da igual quién
+        # bloqueó a quién, la conversación se acaba para los dos.
+        from social.views import hay_bloqueo
+        if hay_bloqueo(request.user, otro):
+            return Response(
+                {'detail': 'No puedes escribir a esta persona: hay un bloqueo entre vosotros.'},
+                status=status.HTTP_403_FORBIDDEN)
+
         texto = (request.data.get('texto') or '').strip()
 
         # Validación en el servidor. El navegador comprueba lo mismo, pero

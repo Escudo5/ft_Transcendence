@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 
-from .models import FriendRequest
+from .models import Bloqueo, FriendRequest
 from .serializers import FriendRequestSerializer, UserMinSerializer
 
 User = get_user_model()
@@ -87,7 +87,83 @@ class FriendsListView(APIView):
                 friends.append(req.sender)
 
         serializer = UserMinSerializer(friends, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # 🚫 Añadimos el estado de bloqueo de cada amigo. Son DOS campos
+        # distintos porque son dos cosas distintas: que yo bloquee a alguien
+        # no significa que él me haya bloqueado a mí, y la pantalla enseña
+        # una cosa u otra según el caso.
+        #
+        # Se sacan en dos consultas para toda la lista, no una por amigo.
+        bloqueados_por_mi = set(
+            Bloqueo.objects.filter(de=request.user).values_list('a_id', flat=True))
+        me_han_bloqueado = set(
+            Bloqueo.objects.filter(a=request.user).values_list('de_id', flat=True))
+
+        datos = serializer.data
+        for ficha, amigo in zip(datos, friends):
+            ficha['bloqueado'] = amigo.pk in bloqueados_por_mi
+            ficha['me_ha_bloqueado'] = amigo.pk in me_han_bloqueado
+        return Response(datos, status=status.HTTP_200_OK)
+
+
+def hay_bloqueo(a, b):
+    """
+    ¿Hay un bloqueo entre estos dos, en cualquier dirección?
+
+    Se mira en los dos sentidos a propósito: si yo te he bloqueado, no
+    quiero que me escribas; y si tú me has bloqueado a mí, tampoco tiene
+    sentido que yo te escriba. En los dos casos la conversación se corta.
+
+    Lo usa el chat para rechazar mensajes (ver chat/views.py).
+    """
+    return Bloqueo.objects.filter(
+        Q(de=a, a=b) | Q(de=b, a=a)
+    ).exists()
+
+
+class BloquearView(APIView):
+    """
+    POST   /api/social/bloquear/<username>/   -> bloquear a esa persona
+    DELETE /api/social/bloquear/<username>/   -> desbloquearla
+
+    Bloquear NO deshace la amistad: la persona sigue en tu lista, marcada,
+    para que puedas desbloquearla sin volver a pedirle amistad.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _buscar(self, request, username):
+        otro = User.objects.filter(username=username).first()
+        if otro is None:
+            return None, Response({'detail': f'No existe ningún usuario llamado {username}.'},
+                                  status=status.HTTP_404_NOT_FOUND)
+        if otro.pk == request.user.pk:
+            return None, Response({'detail': 'No puedes bloquearte a ti mismo.'},
+                                  status=status.HTTP_400_BAD_REQUEST)
+        return otro, None
+
+    def post(self, request, username):
+        otro, error = self._buscar(request, username)
+        if error:
+            return error
+        # get_or_create: bloquear dos veces no da error, simplemente no
+        # hace nada la segunda. Así un doble clic no rompe la pantalla.
+        _, creado = Bloqueo.objects.get_or_create(de=request.user, a=otro)
+        return Response({
+            'detail': f'Has bloqueado a {otro.username}.' if creado
+                      else f'{otro.username} ya estaba bloqueado.',
+            'bloqueado': True,
+        }, status=status.HTTP_200_OK)
+
+    def delete(self, request, username):
+        otro, error = self._buscar(request, username)
+        if error:
+            return error
+        borrados, _ = Bloqueo.objects.filter(de=request.user, a=otro).delete()
+        if not borrados:
+            return Response({'detail': f'{otro.username} no estaba bloqueado.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response({'detail': f'Has desbloqueado a {otro.username}.',
+                         'bloqueado': False}, status=status.HTTP_200_OK)
 
 
 class BuscarUsuariosView(APIView):
