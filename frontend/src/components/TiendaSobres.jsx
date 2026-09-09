@@ -435,8 +435,8 @@ function TiendaSobres() {
 
   const PaginaTiendaSobres = () => {
     return (
-      <main className="app-container" style={{ position: 'relative', minHeight: '100dvh', padding: '2rem', overflowX: 'hidden' }}>
-        <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100dvh', zIndex: 0, pointerEvents: 'none' }}>
+      <main className="app-container" style={{ position: 'relative', minHeight: '100vh', padding: '2rem', overflowX: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}>
           <FondoTiendaSobres
             topColor="#5227FF"
             bottomColor="#FF9FFC"

@@ -7,6 +7,9 @@ export default defineConfig({
     react(),
     basicSsl(), // 👈 2. Añadimos el plugin aquí
   ],
+  build: {
+    target: ['es2020', 'firefox90', 'safari15'],
+  },
   // ⚙️ Añadimos esta sección para domar los puertos de Docker:
   server: {
     https: true,     // 👈 3. Activamos HTTPS
