@@ -1,7 +1,9 @@
 from django.urls import path
 from .views import CardListCreateView, HealthCheckView, abrir_sobre_endpoint, album_usuario, make_contract
 from . import views
-from .intercambios import IntercambiosView, RepetidasView, ResponderIntercambioView
+from .intercambios import (
+    IntercambiosView, RepetidasView, ResponderIntercambioView, DescartarView,
+)
 
 urlpatterns = [
     path("health/", HealthCheckView.as_view(), name="health"),
@@ -21,6 +23,9 @@ urlpatterns = [
     path('intercambios/', IntercambiosView.as_view(), name='intercambios'),
     path('intercambios/repetidas/<str:username>/', RepetidasView.as_view(), name='repetidas_intercambio'),
     path('intercambios/<int:pk>/', ResponderIntercambioView.as_view(), name='responder_intercambio'),
+
+    # 🎴 Descarte: 4 copias de la misma carta -> 1 sobre raro
+    path('descartar/', DescartarView.as_view(), name='descartar'),
 
     # ⚠️ <str:login>/ DEBE SER LA ÚLTIMA RUTA porque atrapa cualquier texto
     path('<str:login>/', views.login_alumno, name='login_alumno'),
