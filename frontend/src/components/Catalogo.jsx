@@ -75,6 +75,7 @@ export default function Catalogo() {
         setAlbum(
           (datos || []).map((item) => ({
             id: item.id,
+            cardId: item.card?.id,
             cantidad: item.cantidad ?? 1,
             login: item.card?.login || "",
             titulo: item.card?.title || item.card?.login || "",
@@ -149,8 +150,8 @@ export default function Catalogo() {
           <Link to="/home" className="back-btn-link">
             ← Volver al Inicio
           </Link>
-          <Link to="/inventario" className="back-btn-link">
-            🧰 Ir a Inventario
+          <Link to="/tienda-sobre" className="back-btn-link">
+            🎁 Abrir sobres
           </Link>
         </div>
         <div className="logo-section" style={{ marginTop: "1rem" }}>
@@ -218,9 +219,9 @@ export default function Catalogo() {
         ) : album.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon">📂</span>
-            <p>Tu álbum está vacío. Abre sobres en el inventario para conseguir cartas.</p>
-            <Link to="/inventario" className="back-btn-link" style={{ marginTop: "1rem", display: "inline-block" }}>
-              🧰 Ir a abrir sobres
+            <p>Tu álbum está vacío. Abre sobres en la tienda para conseguir cartas.</p>
+            <Link to="/tienda-sobre" className="back-btn-link" style={{ marginTop: "1rem", display: "inline-block" }}>
+              🎁 Ir a abrir sobres
             </Link>
           </div>
         ) : currentCards.length === 0 ? (

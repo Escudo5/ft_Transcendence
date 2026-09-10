@@ -315,11 +315,11 @@ class ResponderIntercambioView(APIView):
 
 
 # =====================================================================
-# 🎴 DESCARTE: 4 copias de la MISMA carta -> 1 sobre raro
+# 🎴 DESCARTE: 4 copias de la MISMA carta -> 1 sobre de su calidad
 #
 # Es distinto del contrato de Pablo, no lo pisa:
 #   Contrato: 4 cartas DISTINTAS de la misma rareza -> 1 carta mejor
-#   Descarte: 4 copias de la MISMA carta            -> 1 sobre raro
+#   Descarte: 4 copias de la MISMA carta            -> 1 sobre de su calidad
 #
 # Resuelve dos cosas de golpe:
 #   - Las cartas de las que tienes 10 copias dejan de ser basura
@@ -331,13 +331,18 @@ class ResponderIntercambioView(APIView):
 # =====================================================================
 
 COPIAS_PARA_DESCARTAR = 4
-SOBRE_DEL_DESCARTE = 'raro'
+SOBRES_POR_TIER = {
+    'comun': {'Junior', 'Blackhole'},
+    'raro': {'Senior'},
+    'epico': {'Alumni', 'Transcender'},
+}
+SOBRE_DEL_DESCARTE = 'raro'  # Compatibilidad con clientes antiguos.
 
 
 class DescartarView(APIView):
     """
     GET  /api/cards/descartar/   -> qué cartas puedes descartar ya
-    POST /api/cards/descartar/   -> hacerlo, con {"carta": <id>}
+    POST /api/cards/descartar/   -> hacerlo, con {"tipo_sobre": "comun", "cartas": [{"carta": <id>, "grupos": 1}]}
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -352,7 +357,9 @@ class DescartarView(APIView):
                  .order_by('-cantidad'))
         return Response({
             'copias_necesarias': COPIAS_PARA_DESCARTAR,
-            'sobre_que_dan': SOBRE_DEL_DESCARTE,
+            'sobres_por_calidad': {
+                tipo: sorted(tiers) for tipo, tiers in SOBRES_POR_TIER.items()
+            },
             'descartables': [
                 {**_carta_json(f.card), 'copias': f.cantidad,
                  'sobres_posibles': f.cantidad // COPIAS_PARA_DESCARTAR}
@@ -363,46 +370,72 @@ class DescartarView(APIView):
     def post(self, request):
         from .models import UserPack   # aquí para no cargarlo si no hace falta
 
-        id_carta = request.data.get('carta')
+        tipo_sobre = request.data.get('tipo_sobre', SOBRE_DEL_DESCARTE)
+        if tipo_sobre not in SOBRES_POR_TIER:
+            return Response({'detail': 'El tipo de sobre no es válido.'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-        # Todo junto o nada: o se quitan las 4 y se da el sobre, o no pasa
-        # nada. El bloqueo de fila evita que un doble clic gaste 8 cartas
-        # y entregue un solo sobre.
+        entradas = request.data.get('cartas')
+        if entradas is None:
+            entradas = [{'carta': request.data.get('carta'), 'grupos': 1}]
+        if not isinstance(entradas, list) or not entradas:
+            return Response({'detail': 'Debes seleccionar al menos una carta.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        grupos_por_carta = {}
+        try:
+            for entrada in entradas:
+                id_carta = int(entrada.get('carta'))
+                grupos = int(entrada.get('grupos', 1))
+                if id_carta < 1 or grupos < 1:
+                    raise ValueError
+                grupos_por_carta[id_carta] = grupos_por_carta.get(id_carta, 0) + grupos
+        except (AttributeError, TypeError, ValueError):
+            return Response({'detail': 'La selección de cartas no es válida.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Todo junto o nada: primero se bloquean y validan todas las filas;
+        # solo después se descuenta y se entregan los sobres.
         with transaction.atomic():
-            fila = (UserCard.objects.select_for_update()
-                    .filter(user=request.user, card_id=id_carta)
-                    .select_related('card').first())
+            filas = list(UserCard.objects.select_for_update()
+                         .filter(user=request.user, card_id__in=grupos_por_carta)
+                         .select_related('card'))
+            filas_por_carta = {fila.card_id: fila for fila in filas}
 
-            if fila is None:
-                return Response({'detail': 'No tienes esa carta.'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            if fila.cantidad < COPIAS_PARA_DESCARTAR:
-                return Response(
-                    {'detail': f'Necesitas {COPIAS_PARA_DESCARTAR} copias de '
-                               f'{fila.card.login} y solo tienes {fila.cantidad}.'},
-                    status=status.HTTP_400_BAD_REQUEST)
+            for id_carta, grupos in grupos_por_carta.items():
+                fila = filas_por_carta.get(id_carta)
+                copias_necesarias = COPIAS_PARA_DESCARTAR * grupos
+                if fila is None:
+                    return Response({'detail': 'No tienes una de las cartas seleccionadas.'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                if fila.cantidad < copias_necesarias:
+                    return Response(
+                        {'detail': f'Necesitas {copias_necesarias} copias de '
+                                   f'{fila.card.login} y solo tienes {fila.cantidad}.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+                if fila.card.tier not in SOBRES_POR_TIER[tipo_sobre]:
+                    return Response(
+                        {'detail': f'La carta {fila.card.login} no pertenece a la calidad '
+                                   f'del sobre {tipo_sobre}.'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
-            fila.cantidad -= COPIAS_PARA_DESCARTAR
-            if fila.cantidad == 0:
-                # Sin copias, la fila sobra: si no, el álbum enseñaría una
-                # carta que ya no tienes
-                carta = fila.card
-                fila.delete()
-                quedan = 0
-            else:
-                fila.save(update_fields=['cantidad'])
-                carta = fila.card
-                quedan = fila.cantidad
+            for fila in filas:
+                fila.cantidad -= COPIAS_PARA_DESCARTAR * grupos_por_carta[fila.card_id]
+                if fila.cantidad == 0:
+                    fila.delete()
+                else:
+                    fila.save(update_fields=['cantidad'])
 
             pack, _ = UserPack.objects.select_for_update().get_or_create(
-                user=request.user, tipo_sobre=SOBRE_DEL_DESCARTE)
-            pack.cantidad += 1
+                user=request.user, tipo_sobre=tipo_sobre)
+            sobres_creados = sum(grupos_por_carta.values())
+            pack.cantidad += sobres_creados
             pack.save(update_fields=['cantidad'])
 
         return Response({
-            'mensaje': f'Has descartado {COPIAS_PARA_DESCARTAR} copias de '
-                       f'{carta.login} y te has llevado un sobre raro.',
-            'carta': carta.login,
-            'copias_restantes': quedan,
-            'sobres_raros': pack.cantidad,
+            'mensaje': f'Has descartado {COPIAS_PARA_DESCARTAR * sobres_creados} copias '
+                       f'y te has llevado {sobres_creados} sobres {tipo_sobre}.',
+            'sobres_creados': sobres_creados,
+            'tipo_sobre': tipo_sobre,
+            'sobres_disponibles': pack.cantidad,
         }, status=status.HTTP_200_OK)
