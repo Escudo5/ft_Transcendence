@@ -413,10 +413,18 @@ class DescartarView(APIView):
                 if fila is None:
                     return Response({'detail': 'No tienes una de las cartas seleccionadas.'},
                                     status=status.HTTP_400_BAD_REQUEST)
-                if fila.cantidad < copias_necesarias:
+                # ⚠️ Nacho, 10/09: antes esto era `< copias_necesarias`, así que
+                # con 4 copias justas podías quemarlas todas y LA CARTA
+                # DESAPARECÍA de tu álbum: perdías sus puntos y te volvía a
+                # faltar. Nadie quiere eso, y menos sin avisar.
+                #
+                # Ahora hace falta una copia más, que es la regla que ya tenía
+                # el contrato de Pablo: entregas sobrantes, nunca la última.
+                if fila.cantidad - copias_necesarias < 1:
                     return Response(
-                        {'detail': f'Necesitas {copias_necesarias} copias de '
-                                   f'{fila.card.login} y solo tienes {fila.cantidad}.'},
+                        {'detail': f'De {fila.card.login} tienes {fila.cantidad} copias '
+                                   f'y harían falta {copias_necesarias + 1}: siempre te '
+                                   f'quedas con una para no perderla del álbum.'},
                         status=status.HTTP_400_BAD_REQUEST)
                 if fila.card.tier not in SOBRES_POR_TIER[tipo_sobre]:
                     return Response(
@@ -427,6 +435,10 @@ class DescartarView(APIView):
             for fila in filas:
                 fila.cantidad -= COPIAS_PARA_DESCARTAR * grupos_por_carta[fila.card_id]
                 if fila.cantidad == 0:
+                    # Con la comprobación de arriba esto ya NO puede pasar:
+                    # siempre queda al menos una copia. Se deja como red de
+                    # seguridad por si alguien cambia la regla y se olvida de
+                    # esto, pero si algún día salta, es que hay un fallo.
                     fila.delete()
                 else:
                     fila.save(update_fields=['cantidad'])
