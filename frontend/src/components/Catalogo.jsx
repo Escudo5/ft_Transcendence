@@ -81,7 +81,7 @@ export default function Catalogo() {
             titulo: item.card?.title || item.card?.login || "",
             coalicion: item.card?.coalition || "Sin coalición",
             foto: item.card?.photo,
-            tier: item.card?.tier || "Junior",
+            tier: item.card?.tier || "Común",
             rareza: TIER_A_RAREZA[item.card?.tier] || "common",
             nivel: item.card?.cursus_lvl ?? 0,
             evaluaciones: item.card?.eval_point ?? 0,

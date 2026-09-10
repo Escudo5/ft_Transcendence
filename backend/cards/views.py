@@ -18,7 +18,7 @@ import json
 from django.db import transaction
 from django.db.models import Case, Count, IntegerField, Sum, Value, When
 from django.db.models.functions import Coalesce
-from .rarezas import PUNTOS
+from .rarezas import CARTAS_POR_SOBRE, PROBABILIDADES_SOBRE, PUNTOS, TODAS
 from django.utils import timezone
 
 class HealthCheckView(APIView):
@@ -83,39 +83,22 @@ def login_alumno(request, login):
 def home(request):
     return render(request,'cards/home.html')
 
+# 🎁 Los sobres. Los números ya no están aquí: viven en cards/rarezas.py,
+# junto a las rarezas, porque estaban escritos a mano y al cambiar las
+# rarezas se quedaron viejos sin que nadie se enterara (el sorteo tiene un
+# "si no hay de esa rareza, coge cualquiera" y se lo tragaba en silencio).
+#
+# Se mantiene la MISMA FORMA de siempre para no tocar nada de lo que la usa.
 CONFIGURACION_SOBRES = {
-    "comun": {
-        "probabilidades": {
-            "Blackhole": 40,
-            "Junior": 35,
-            "Senior": 18,
-            "Alumni": 5,
-            "Transcender": 2
-        },
-        "cartas_por_sobre": 5
-    },
-    "raro": {
-        "probabilidades": {
-            "Blackhole": 15,
-            "Junior": 25,
-            "Senior": 40,
-            "Alumni": 12,
-            "Transcender": 8
-        },
-        "cartas_por_sobre": 5
-    },
-    "epico": {
-        "probabilidades": {
-            "Blackhole": 2,
-            "Junior": 8,
-            "Senior": 25,
-            "Alumni": 30,
-            "Transcender": 35
-        },
-        "cartas_por_sobre": 5
-    }
+    tipo: {"probabilidades": dict(probabilidades),
+           "cartas_por_sobre": CARTAS_POR_SOBRE}
+    for tipo, probabilidades in PROBABILIDADES_SOBRE.items()
 }
-TIER_ORDER = ["Blackhole", "Junior", "Senior", "Alumni", "Transcender"]
+
+# 🤝 El orden de los contratos de Pablo: 4 cartas distintas de la misma
+# rareza -> 1 de la rareza siguiente. De menos a más rara, y sale de
+# rarezas.py para que no se pueda desincronizar otra vez.
+TIER_ORDER = list(TODAS)
 @api_view(['POST'])
 @csrf_exempt  # Permite recibir peticiones POST sin error 403 CSRF durante pruebas
 def make_contract(request):

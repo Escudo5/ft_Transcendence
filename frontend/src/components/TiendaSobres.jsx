@@ -28,10 +28,17 @@ function TiendaSobres() {
 
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
 
+  // ⚠️ Nacho, 10/09: las rarezas de aquí eran las de ayer (Junior, Senior,
+  // Alumni, Blackhole) y yo las cambié el mismo día. Con las viejas, el
+  // servidor rechazaba 44 de las 54 cartas al descartar. Ahora coinciden con
+  // las de backend/cards/rarezas.py, que es donde se decide cuáles hay.
+  //
+  // SERGIO: son 3 sobres y 4 rarezas, así que las dos de arriba comparten el
+  // sobre épico, igual que hacías tú antes con Alumni y Transcender.
   const SOBRES = [
-    { id: 'comun', nombre: 'Sobre común', rarezas: ['Junior', 'Blackhole'], color: 'var(--rarity-common)' },
-    { id: 'raro', nombre: 'Sobre raro', rarezas: ['Senior'], color: 'var(--rarity-rare)' },
-    { id: 'legendario', backendType: 'epico', nombre: 'Sobre legendario', rarezas: ['Alumni', 'Transcender'], color: 'var(--rarity-legendary)' },
+    { id: 'comun', nombre: 'Sobre común', rarezas: ['Común'], color: 'var(--rarity-common)' },
+    { id: 'raro', nombre: 'Sobre raro', rarezas: ['Épica'], color: 'var(--rarity-rare)' },
+    { id: 'legendario', backendType: 'epico', nombre: 'Sobre legendario', rarezas: ['Transcender', 'Legendaria'], color: 'var(--rarity-legendary)' },
   ];
 
   // Las rarezas del backend (tier) no se llaman igual que los estilos de esta
@@ -63,7 +70,7 @@ function TiendaSobres() {
           cardId: item.card?.id,
           cantidad: item.cantidad ?? 1,
           login: item.card?.login || '',
-          tier: item.card?.tier || 'Junior',
+          tier: item.card?.tier || 'Común',
         })));
       } catch (e) {
         console.error('No se pudo cargar el álbum para crear sobres:', e);
