@@ -282,7 +282,6 @@ import Home from './components/Home';
 import Catalogo from './components/Catalogo';
 import CrearCarta from './components/CrearCarta';
 import Game from './components/Game';
-import Inventario from './components/Inventario';
 import Perfil from './components/Perfil';
 import Ranking from './components/Ranking';
 import Legal from './components/Legal';
@@ -310,10 +309,6 @@ const router = createBrowserRouter([
   {
     path: "/game",
     element: <Game />,
-  },
-  {
-    path: "/inventario",
-    element: <Inventario />,
   },
   {
     path: "/chatsocial",
