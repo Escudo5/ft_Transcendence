@@ -101,6 +101,11 @@ def _intercambio_json(i, yo):
         'pide': _carta_json(i.carta_pedida),
         'estado': i.estado,
         'fecha': i.created_at.isoformat(),
+        # Cuándo caduca, ya calculado. Lo pide la pantalla de Konrad para su
+        # cuenta atrás, y lo manda el servidor a propósito: si lo sumara el
+        # front, tendría que saber que son 3 días, y el día que cambiemos
+        # DIAS_PARA_CADUCAR el contador diría una cosa y el servidor otra.
+        'expira_en': (i.created_at + timedelta(days=DIAS_PARA_CADUCAR)).isoformat(),
         # Para que el front sepa qué botones enseñar sin comparar nombres
         'mio': i.de_id == yo.pk,
     }
