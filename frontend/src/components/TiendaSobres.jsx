@@ -9,6 +9,52 @@ import sobreIntacto from '../assets/sobre_verde_0.png';
 import sobreRoto1 from '../assets/sobre_verde_1.png';
 import sobreRoto2 from '../assets/sobre_verde_2.png';
 
+/* 🎁 EL REGALO, DIBUJADO EN VEZ DE PUESTO COMO EMOJI (Nacho, 10/09)
+ *
+ * Antes era el emoji 🎁, y un emoji no se puede pintar de otro color: lo
+ * dibuja el sistema operativo siempre igual, así que el regalo salía naranja
+ * al lado de un recuadro azul o dorado.
+ *
+ * Esto es el mismo regalo pero en SVG, con currentColor: toma el color del
+ * texto de donde esté metido. Como cada recuadro ya lleva el color de su
+ * rareza, el lazo se pinta solo del color que toca, sin pasarle nada. */
+const IconoSobre = ({ size = 22 }) => (
+  <svg
+    width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="1.7"
+    strokeLinecap="round" strokeLinejoin="round"
+    aria-hidden="true" focusable="false"
+    style={{ flexShrink: 0 }}
+  >
+    <polyline points="20 12 20 22 4 22 4 12" />
+    <rect x="2" y="7" width="20" height="5" rx="1" />
+    <line x1="12" y1="22" x2="12" y2="7" />
+    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+  </svg>
+);
+
+/* Tipografía de los títulos de las dos secciones. Solo del TEXTO: los
+ * recuadros se quedan como están. Usa las fuentes del sistema de diseño de
+ * Sergio (styles.css), no una nueva. */
+const tituloSeccion = {
+  fontFamily: 'var(--font-heading)',
+  fontSize: '1.35rem',
+  fontWeight: 800,
+  letterSpacing: '-0.01em',
+  margin: 0,
+  color: 'var(--text-primary)',
+};
+
+const subtituloSeccion = {
+  fontFamily: 'var(--font-heading)',
+  fontSize: '0.82rem',
+  fontWeight: 600,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  color: 'var(--text-secondary)',
+};
+
 function TiendaSobres() {
   const navigate = useNavigate();
 
@@ -570,13 +616,31 @@ function TiendaSobres() {
 
         <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '4rem auto 2rem' }} aria-labelledby="crear-sobres-titulo">
           <div className="grid-meta">
-            <h2 id="crear-sobres-titulo">Crear sobres con repetidas</h2>
-            <span>Selecciona grupos de 4 cartas iguales</span>
+            <h2 id="crear-sobres-titulo" style={tituloSeccion}>Consigue sobres con repetidas</h2>
+            <span style={subtituloSeccion}>Selecciona grupos de 4 cartas iguales</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
             {SOBRES.map((sobre) => (
-              <button key={sobre.id} type="button" onClick={() => abrirSelectorSobre(sobre)} style={{ border: `2px solid ${sobre.color}`, color: sobre.color, padding: '1.25rem', borderRadius: '12px', background: 'rgba(12, 15, 22, 0.72)', cursor: 'pointer', fontWeight: 800 }}>
-                🎁 {sobre.nombre}
+              <button key={sobre.id} type="button" onClick={() => abrirSelectorSobre(sobre)} style={{ border: `2px solid ${sobre.color}`, color: sobre.color, padding: '1.25rem', borderRadius: '12px', background: 'rgba(12, 15, 22, 0.72)', cursor: 'pointer', fontWeight: 800, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                  <IconoSobre /> {sobre.nombre}
+                </span>
+                {/* Qué hay que quemar para llevarse ESTE sobre. Sin esto, el
+                    recuadro dice lo que te dan pero no lo que cuesta, y no hay
+                    forma de saber que 4 Transcender dan un sobre legendario
+                    hasta que abres el modal. */}
+                <span style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.02em',
+                  opacity: 0.85,
+                  textAlign: 'center',
+                  lineHeight: 1.35,
+                }}>
+                  con 4 copias de<br />
+                  {sobre.rarezas.join(' o ')}
+                </span>
               </button>
             ))}
           </div>
@@ -600,7 +664,7 @@ function TiendaSobres() {
                   <div key={card.cardId} className="discard-card-row" style={{ '--discard-color': sobreSeleccionado.color }}>
                     <div className="discard-card-info">
                       <strong>{card.login}</strong>
-                      <span>{card.cantidad} copias disponibles</span>
+                      <span>{card.cantidad} copias</span>
                     </div>
                     <div className="discard-stepper" role="group" aria-label={`Grupos de ${card.login} para quemar`}>
                       <button type="button" onClick={() => cambiarGruposSeleccionados(card.cardId, grupos - 1)} disabled={grupos === 0 || procesandoDescarte} aria-label={`Quitar un grupo de ${card.login}`}>−</button>
@@ -626,15 +690,21 @@ function TiendaSobres() {
 
         <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '2rem auto' }} aria-labelledby="abrir-sobres-titulo">
           <div className="grid-meta">
-            <h2 id="abrir-sobres-titulo">Abrir sobres</h2>
-            <span>Elige la calidad del sobre que quieres abrir</span>
+            <h2 id="abrir-sobres-titulo" style={tituloSeccion}>Sobres disponibles</h2>
+            <span style={subtituloSeccion}>Elige la calidad del sobre que quieres abrir</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
             {SOBRES.map((sobre) => {
               const tipo = sobre.backendType || sobre.id;
+              const cuantos = sobresDisponibles[tipo];
               return (
-                <button key={sobre.id} type="button" onClick={() => seleccionarTipoSobre(tipo)} style={{ border: `2px solid ${sobre.color}`, color: sobre.color, padding: '1.25rem', borderRadius: '12px', background: tipoSobreActivo === tipo ? 'rgba(255, 255, 255, 0.16)' : 'rgba(12, 15, 22, 0.72)', cursor: 'pointer', fontWeight: 800 }}>
-                  🎁 {sobre.nombre} · {sobresDisponibles[tipo] ?? '…'} disponibles
+                <button key={sobre.id} type="button" onClick={() => seleccionarTipoSobre(tipo)} style={{ border: `2px solid ${sobre.color}`, color: sobre.color, padding: '1.25rem', borderRadius: '12px', background: tipoSobreActivo === tipo ? 'rgba(255, 255, 255, 0.16)' : 'rgba(12, 15, 22, 0.72)', cursor: 'pointer', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.55rem' }}>
+                  <IconoSobre /> {sobre.nombre}
+                  {/* Solo el número: la palabra "disponibles" ya la dice el
+                      título de la sección, repetirla en cada recuadro sobra. */}
+                  <span style={{ fontSize: '1.15rem', fontWeight: 900 }}>
+                    {cuantos ?? '…'}
+                  </span>
                 </button>
               );
             })}
