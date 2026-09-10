@@ -617,7 +617,7 @@ function TiendaSobres() {
         <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '4rem auto 2rem' }} aria-labelledby="crear-sobres-titulo">
           <div className="grid-meta">
             <h2 id="crear-sobres-titulo" style={tituloSeccion}>Consigue sobres con repetidas</h2>
-            <span style={subtituloSeccion}>Selecciona grupos de 4 cartas iguales</span>
+            <span style={subtituloSeccion}>Quema 4 repetidas y quédate con una</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
             {SOBRES.map((sobre) => (
@@ -638,7 +638,7 @@ function TiendaSobres() {
                   textAlign: 'center',
                   lineHeight: 1.35,
                 }}>
-                  con 4 copias de<br />
+                  quemando 4 repetidas de<br />
                   {sobre.rarezas.join(' o ')}
                 </span>
               </button>
@@ -655,10 +655,16 @@ function TiendaSobres() {
               </div>
               <button type="button" className="discard-modal-close" onClick={() => setSobreSeleccionado(null)} aria-label="Cerrar selector" disabled={procesandoDescarte}>×</button>
             </div>
-            <p className="discard-modal-intro">Elige grupos de 4 cartas iguales. Las copias que no uses se conservan.</p>
+            <p className="discard-modal-intro">Elige grupos de 4 copias de la misma carta. De cada una te queda siempre una, así que no pierdes ninguna carta del álbum.</p>
             <div className="discard-card-list">
-              {album.filter((card) => sobreSeleccionado.rarezas.includes(card.tier) && card.cantidad >= 4).map((card) => {
-                const maxGrupos = Math.floor(card.cantidad / 4);
+              {/* ⚠️ Nacho, 10/09: era `>= 4`, y con 4 copias justas la pantalla
+                  te dejaba elegirla pero el servidor la rechazaba. Ahora hacen
+                  falta 5, porque quemar 4 te dejaria SIN esa carta en el album
+                  y eso no lo queremos. Mismo criterio que los contratos. */}
+              {album.filter((card) => sobreSeleccionado.rarezas.includes(card.tier) && card.cantidad >= 5).map((card) => {
+                // Las copias que puedes quemar son todas menos una: la ultima
+                // se queda siempre para no perder la carta.
+                const maxGrupos = Math.floor((card.cantidad - 1) / 4);
                 const grupos = seleccionDescarte[card.cardId] || 0;
                 return (
                   <div key={card.cardId} className="discard-card-row" style={{ '--discard-color': sobreSeleccionado.color }}>
@@ -675,8 +681,8 @@ function TiendaSobres() {
                 );
               })}
             </div>
-            {album.filter((card) => sobreSeleccionado.rarezas.includes(card.tier) && card.cantidad >= 4).length === 0 && (
-              <p className="discard-empty">No tienes 4 copias de una carta de esta calidad.</p>
+            {album.filter((card) => sobreSeleccionado.rarezas.includes(card.tier) && card.cantidad >= 5).length === 0 && (
+              <p className="discard-empty">No tienes 5 copias de ninguna carta de esta calidad. Hacen falta 5: se queman 4 y te queda una.</p>
             )}
             {mensajeDescarte && <p role="status">{mensajeDescarte}</p>}
             <div className="discard-modal-actions">
