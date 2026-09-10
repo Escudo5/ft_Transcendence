@@ -23,6 +23,21 @@ const EMOJI_POR_RAREZA = {
   'Legendaria': '👑',
 };
 
+// Las dos columnas de cartas del modal. Alto generoso pero limitado a lo que
+// mide la ventana, para que en un portátil pequeño el modal siga cabiendo y no
+// se salgan los botones de enviar por debajo.
+const estiloLista = {
+  maxHeight: 'min(45vh, 340px)',
+  overflowY: 'auto',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.5rem',
+  // Un hueco a la derecha para que la barra de scroll, cuando aparezca, no se
+  // monte encima del texto de las cartas.
+  paddingRight: '0.3rem',
+};
+
+
 function adaptarCarta(c) {
   return {
     id: c.id,
@@ -192,9 +207,13 @@ export function ModalPropuestaIntercambio({ isOpen, onClose, usuarioDestino, onE
               {/* COLUMNA 1: LO QUE TÚ OFRECES */}
               <div>
                 <label style={{ fontSize: '0.85rem', color: '#8b92b0', display: 'block', marginBottom: '0.5rem' }}>
-                  Ofreces (Tus repetidas):
+                  Ofreces (Tus repetidas): <b style={{ color: '#00ffcc' }}>{misRepetidas.length}</b>
                 </label>
-                <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {/* Nacho, 10/09: la caja medía 200px de alto, que dan para unas
+                    4 cartas. Con 29 repetidas parecía que solo tenías 4, porque
+                    en Mac la barra de scroll está escondida hasta que la mueves.
+                    Ahora entran más y el número de arriba dice cuántas hay. */}
+                <div style={{ ...estiloLista }}>
                   {misRepetidas.length === 0 ? (
                     <span style={{ fontSize: '0.8rem', color: '#ff4d4d' }}>No tienes repetidas.</span>
                   ) : (
@@ -224,9 +243,9 @@ export function ModalPropuestaIntercambio({ isOpen, onClose, usuarioDestino, onE
               {/* COLUMNA 2: LO QUE TÚ PIDES */}
               <div>
                 <label style={{ fontSize: '0.85rem', color: '#8b92b0', display: 'block', marginBottom: '0.5rem' }}>
-                  Pides (Sus repetidas):
+                  Pides (Sus repetidas): <b style={{ color: '#ffaa00' }}>{susRepetidas.length}</b>
                 </label>
-                <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ ...estiloLista }}>
                   {susRepetidas.length === 0 ? (
                     <span style={{ fontSize: '0.8rem', color: '#ff4d4d' }}>El usuario no tiene repetidas.</span>
                   ) : (
