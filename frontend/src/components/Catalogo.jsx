@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Badge, TextField } from "./ui";
+import ModalContratos, { BotonContratos } from "./Contratos";
 
 /**
  * EL ÁLBUM
@@ -54,6 +55,12 @@ export default function Catalogo() {
   const [currentPage, setCurrentPage] = useState(1);
   const cardsPerPage = 8;
 
+  // 🤝 Contratos: 4 cartas repetidas de la misma rareza -> 1 mejor.
+  // 'refrescoAlbum' solo sirve para forzar que se vuelva a pedir el álbum
+  // cuando un contrato lo cambia: al subirlo, el efecto de abajo se dispara.
+  const [contratosAbierto, setContratosAbierto] = useState(false);
+  const [refrescoAlbum, setRefrescoAlbum] = useState(0);
+
   // Pedimos el álbum al entrar
   useEffect(() => {
     async function cargarAlbum() {
@@ -96,7 +103,7 @@ export default function Catalogo() {
       }
     }
     cargarAlbum();
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, refrescoAlbum]);
 
   // Reiniciar a la primera página si cambian los filtros
   useEffect(() => {
@@ -153,6 +160,7 @@ export default function Catalogo() {
           <Link to="/tienda-sobre" className="back-btn-link">
             🎁 Abrir sobres
           </Link>
+          <BotonContratos onClick={() => setContratosAbierto(true)} />
         </div>
         <div className="logo-section" style={{ marginTop: "1rem" }}>
           <span className="logo-icon">✨</span>
@@ -356,6 +364,12 @@ export default function Catalogo() {
           </button>
         </nav>
       )}
+
+      <ModalContratos
+        isOpen={contratosAbierto}
+        onClose={() => setContratosAbierto(false)}
+        alTerminar={() => setRefrescoAlbum((n) => n + 1)}
+      />
     </main>
   );
 }
