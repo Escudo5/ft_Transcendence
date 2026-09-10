@@ -193,20 +193,26 @@ def _estadisticas_coleccion(usuario):
     entre las apps de usuarios y de cartas.
     """
     from cards.models import Card, UserCard
+    from cards.rarezas import TODAS, puntos_de
 
-    ORDEN_TIERS = ['Blackhole', 'Junior', 'Senior', 'Alumni', 'Transcender']
-
+    # El orden de las rarezas ya no se escribe aquí: viene de cards/rarezas.py,
+    # que es donde se decide cuáles hay. Antes estaba copiado a mano y, al
+    # cambiar las rarezas, "tu carta más rara" dejó de reconocer la mitad.
     mis_cartas = UserCard.objects.filter(user=usuario).select_related('card')
     distintas = mis_cartas.count()
     total_catalogo = Card.objects.count()
     con_repetidas = sum(c.cantidad for c in mis_cartas)
 
     mejor = None
+    puntos = 0
     for uc in mis_cartas:
         tier = uc.card.tier
-        if tier not in ORDEN_TIERS:
+        # Solo las distintas suman: el bucle va por UserCard, que tiene una
+        # fila por carta, no una por copia.
+        puntos += puntos_de(tier)
+        if tier not in TODAS:
             continue
-        if mejor is None or ORDEN_TIERS.index(tier) > ORDEN_TIERS.index(mejor['tier']):
+        if mejor is None or TODAS.index(tier) > TODAS.index(mejor['tier']):
             mejor = {'login': uc.card.login, 'tier': tier, 'photo': uc.card.photo}
 
     return {
@@ -216,6 +222,7 @@ def _estadisticas_coleccion(usuario):
         # Porcentaje del álbum completado, redondeado a un decimal
         'porcentaje': round(distintas / total_catalogo * 100, 1) if total_catalogo else 0,
         'carta_mas_rara': mejor,
+        'puntos': puntos,
     }
 
 
@@ -285,6 +292,11 @@ def _perfil_publico(usuario):
         'bio': usuario.bio,
         'profile_image': usuario.foto,
         'tiene_avatar': bool(usuario.avatar),
+        # 🏆 La puntuación del perfil sale de la colección (ver cards/rarezas.py).
+        # El 'elo' se sigue mandando porque el campo existe en la base y puede
+        # haber algo que lo lea, pero ya no lo enseña nadie: era un 1000 fijo
+        # que no movía nada.
+        'puntos': stats['puntos'],
         'elo': usuario.elo,
         'estado': usuario.estado_real,
         'is_alumni': usuario.is_alumni,
