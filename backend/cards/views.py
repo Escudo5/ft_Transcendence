@@ -16,7 +16,7 @@ from .models import Card, UserCard, UserPack
 from django.http import JsonResponse
 import json
 from django.db import transaction
-from django.db.models import Case, Count, IntegerField, Sum, Value, When
+from django.db.models import Case, Count, F, IntegerField, Sum, Value, When
 from django.db.models.functions import Coalesce
 from .rarezas import CARTAS_POR_SOBRE, PROBABILIDADES_SOBRE, PUNTOS, TODAS
 from django.utils import timezone
@@ -382,48 +382,75 @@ def abrir_sobre_endpoint(request, tipo_sobre):
         
     # EL USUARIO CONECTADO SE OBTIENE DIRECTAMENTE CON request.user
     user = request.user
-    
-    # 1. Comprobar si el usuario conectado tiene el sobre en su inventario
+
+    # 🔒 TODO JUNTO O NADA (Nacho, 10/09).
+    #
+    # Antes esto iba suelto: se restaba el sobre, luego se sorteaban las
+    # cartas y luego se guardaban, cada cosa por su lado. Dos problemas
+    # medidos, no supuestos:
+    #
+    #   1. CARTAS QUE SE PERDÍAN. Guardar una carta era leer la fila, sumarle
+    #      uno y volver a guardarla. Con dos peticiones a la vez (un doble
+    #      clic, o dos pestañas), las dos leían 1, las dos guardaban 2, y un
+    #      incremento desaparecía. Probado con 6 peticiones simultáneas y 2
+    #      sobres: en 2 de 3 rondas llegaron 9 y 8 cartas en vez de 10.
+    #
+    #   2. SOBRES QUE SE EVAPORABAN. El sobre se restaba ANTES de guardar las
+    #      cartas y sin transacción: si algo fallaba a mitad, te quedabas sin
+    #      sobre y sin cartas.
+    #
+    # La solución es la misma que ya usan el regalo diario, el intercambio y
+    # el descarte, y por eso conviene que se parezcan: transacción para que
+    # sea todo o nada, y bloqueo de fila para que la segunda petición espere
+    # a que termine la primera en vez de pisarla.
     try:
-        sobre_inventario = UserPack.objects.get(user=user, tipo_sobre=tipo_sobre)
-        if sobre_inventario.cantidad < 1:
-            return Response(
-                {"error": f"No tienes sobres {tipo_sobre} disponibles."}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-    except UserPack.DoesNotExist:
-        return Response(
-            {"error": f"No tienes sobres {tipo_sobre} en tu inventario."}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
-        
-    # 2. Restar el sobre consumido
-    sobre_inventario.cantidad -= 1
-    sobre_inventario.save()
-    
-    # 3. Generar las 5 cartas
-    try:
-        cartas_tocadas = open_pack(tipo_sobre)
+        with transaction.atomic():
+            # select_for_update: la fila queda bloqueada hasta el final de la
+            # transacción. La segunda petición se queda esperando aquí y,
+            # cuando entra, ya ve el inventario descontado.
+            sobre_inventario = (UserPack.objects.select_for_update()
+                                .filter(user=user, tipo_sobre=tipo_sobre).first())
+
+            if sobre_inventario is None:
+                return Response(
+                    {"error": f"No tienes sobres {tipo_sobre} en tu inventario."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if sobre_inventario.cantidad < 1:
+                return Response(
+                    {"error": f"No tienes sobres {tipo_sobre} disponibles."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            sobre_inventario.cantidad -= 1
+            sobre_inventario.save(update_fields=['cantidad'])
+
+            cartas_tocadas = open_pack(tipo_sobre)
+
+            # Se ordenan por id antes de guardar. Parece un detalle tonto y no
+            # lo es: si dos peticiones tocan las mismas dos cartas en orden
+            # distinto, cada una puede quedarse esperando a la fila que tiene
+            # la otra, y PostgreSQL corta una con un error de interbloqueo.
+            # Yendo todas en el mismo orden, eso no puede pasar.
+            for carta in sorted(cartas_tocadas, key=lambda c: c.id):
+                fila, creada = UserCard.objects.get_or_create(
+                    user=user, card=carta, defaults={'cantidad': 1})
+                if not creada:
+                    # F('cantidad') + 1 NO lee el valor aquí: manda a la base
+                    # de datos un "suma uno a lo que haya" en una sola orden.
+                    # Por eso no se puede perder un incremento: no hay ningún
+                    # momento en que tengamos el número viejo en la mano.
+                    UserCard.objects.filter(pk=fila.pk).update(
+                        cantidad=F('cantidad') + 1)
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-    # 4. Registrar o actualizar las cartas en el álbum del usuario conectado
-    try:
-        for carta in cartas_tocadas:
-            user_card, created = UserCard.objects.get_or_create(
-                user=user,
-                card=carta
-            )
-            if not created:
-                user_card.cantidad += 1
-            user_card.save()
-            
-    except Exception as e:
+        # Si salta aquí, la transacción ya ha deshecho TODO: el sobre sigue en
+        # el inventario y no se ha guardado ninguna carta a medias.
         return Response(
-            {"error": f"Fallo al guardar en el álbum: {str(e)}"}, 
+            {"error": f"No se ha podido abrir el sobre: {e}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-        
+
+
     # 5. Formatear la respuesta JSON para React
     datos_cartas = []
     for c in cartas_tocadas:
