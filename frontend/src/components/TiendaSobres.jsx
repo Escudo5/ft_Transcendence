@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion'; // 👈 IMPORTAMOS FRAMER MOTION
 import FondoTiendaSobres from './FondoTiendaSobres';
 import { Alert, Modal } from './ui';
+import { CLASE_RAREZA } from './rarezas';
 
 // 1. IMPORTA LAS 3 IMÁGENES DE TUS SOBRES
 import sobreIntacto from '../assets/sobre_verde_0.png';
@@ -91,12 +92,8 @@ function TiendaSobres() {
   // pantalla, asi que las traducimos. El color sube conforme sube la rareza,
   // que es lo que importa aunque los nombres no coincidan.
   // (El mismo diccionario esta en Catalogo.jsx: si se cambia uno, el otro.)
-  const TIER_A_RAREZA = {
-    Legendaria: 'legendary',
-    Transcender: 'epic',
-    'Épica': 'rare',
-    'Común': 'common',
-  };
+  // El diccionario vive en rarezas.js, en un solo sitio.
+  const TIER_A_RAREZA = CLASE_RAREZA;
 
   // Convierte una carta del backend al formato que pinta esta pantalla
   const adaptarCarta = (c) => ({
