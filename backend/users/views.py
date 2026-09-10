@@ -203,7 +203,28 @@ def _estadisticas_coleccion(usuario):
     total_catalogo = Card.objects.count()
     con_repetidas = sum(c.cantidad for c in mis_cartas)
 
+    # 🏆 TU CARTA MÁS RARA
+    #
+    # Antes solo se comparaba la RAREZA, y con un mayor estricto:
+    #
+    #     if TODAS.index(tier) > TODAS.index(mejor['tier']):
+    #
+    # O sea que la primera Legendaria que encontrara se quedaba, y ninguna otra
+    # Legendaria la podía desbancar, porque ninguna es "más" que otra. Y como
+    # la consulta no lleva orden, la base de datos las devuelve como quiere:
+    # te enseñaba una al azar de entre las de arriba.
+    #
+    # A Nacho, con 5 Legendarias, le salía la de nivel 14,59 y no la de 22,61.
+    #
+    # Ahora se desempata por NIVEL. Tiene sentido porque la rareza ya se
+    # calcula a partir del nivel (ver cards/rarezas.py): es la misma vara de
+    # medir, solo que más fina. Así "tu carta más rara" es de verdad la mejor
+    # que tienes, no una cualquiera.
+    def cuanto_vale(uc):
+        return (TODAS.index(uc.card.tier), uc.card.cursus_lvl or 0)
+
     mejor = None
+    mejor_valor = None
     puntos = 0
     for uc in mis_cartas:
         tier = uc.card.tier
@@ -212,8 +233,17 @@ def _estadisticas_coleccion(usuario):
         puntos += puntos_de(tier)
         if tier not in TODAS:
             continue
-        if mejor is None or TODAS.index(tier) > TODAS.index(mejor['tier']):
-            mejor = {'login': uc.card.login, 'tier': tier, 'photo': uc.card.photo}
+        valor = cuanto_vale(uc)
+        if mejor_valor is None or valor > mejor_valor:
+            mejor_valor = valor
+            mejor = {
+                'login': uc.card.login,
+                'tier': tier,
+                'photo': uc.card.photo,
+                # Va también el nivel: es el dato que explica POR QUÉ esa carta
+                # es la mejor, y sin él el desempate no se entiende al verlo.
+                'nivel': uc.card.cursus_lvl,
+            }
 
     return {
         'cartas_distintas': distintas,

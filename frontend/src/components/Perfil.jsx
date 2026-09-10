@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Alert, Avatar, Button, Card, ProgressBar, SecondaryButton, StatusDot, TextField } from './ui';
+import { COLOR_RAREZA } from './rarezas';
 
 /**
  * PÁGINA DE PERFIL
@@ -798,12 +799,28 @@ export default function Perfil() {
                   />
                 )}
                 <div>
-                  <div style={estilos.datoEtiqueta}>Su carta más rara</div>
+                  <div style={estilos.datoEtiqueta}>
+                    {perfil.es_mi_perfil ? 'Tu carta más rara' : 'Su carta más rara'}
+                  </div>
                   <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
                     {perfil.coleccion.carta_mas_rara.login}
                   </div>
-                  <div style={{ color: 'var(--rarity-legendary)', fontSize: '0.85rem', fontWeight: 700 }}>
+                  <div style={{
+                    // Antes el color estaba fijo en dorado, así que una carta
+                    // Común salía como si fuera Legendaria. Ahora cada rareza
+                    // con el suyo.
+                    color: COLOR_RAREZA[perfil.coleccion.carta_mas_rara.tier] || 'var(--text-secondary)',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                  }}>
                     {perfil.coleccion.carta_mas_rara.tier}
+                    {/* El nivel explica POR QUÉ es esa y no otra: entre varias
+                        de la misma rareza gana la de nivel más alto. */}
+                    {perfil.coleccion.carta_mas_rara.nivel != null && (
+                      <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
+                        {' · nivel '}{perfil.coleccion.carta_mas_rara.nivel}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

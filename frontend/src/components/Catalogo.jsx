@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Badge, TextField } from "./ui";
 import ModalContratos, { BotonContratos } from "./Contratos";
 import BotonAbrirSobres from "./BotonAbrirSobres";
+import { CLASE_RAREZA, RAREZAS } from "./rarezas";
 
 /**
  * EL ÁLBUM
@@ -19,27 +20,17 @@ import BotonAbrirSobres from "./BotonAbrirSobres";
  * no tiene ataque ni defensa: tiene nivel, puntos de evaluación y coalición.
  */
 
-// Las rarezas del backend (tier) no se llaman igual que las clases de estilo
-// 🎴 Las rarezas del backend -> el hueco de color del sistema de diseño.
-//
-// ⚠️ Los nombres NO coinciden, y no es un error. "common/rare/epic/legendary"
-// son los cuatro colores que trae styles.css (gris, azul, morado, dorado) y
-// nuestras rarezas se llaman de otra forma. Lo que importa es que el color
-// suba conforme sube la rareza, y eso sí se cumple: la Épica sale azul y la
-// Transcender morada porque la Transcender es más rara.
-//
-// KONRAD Y SERGIO: si preferís renombrar los colores en styles.css, adelante;
-// solo hay que cambiar este diccionario a la vez.
-const TIER_A_RAREZA = {
-  Legendaria: "legendary",
-  Transcender: "epic",
-  "Épica": "rare",
-  "Común": "common",
-};
+// 🎴 La rareza del backend -> la clase de color del sistema de diseño.
+// El diccionario ya no vive aquí: está en rarezas.js, que es el único sitio
+// donde se escriben los nombres de las rarezas. Esta era la tercera copia
+// del mismo dato, y tener el mismo dato en tres sitios es lo que hizo que
+// medio proyecto se quedara viejo en silencio al cambiar las rarezas.
+const TIER_A_RAREZA = CLASE_RAREZA;
 
-// Los tiers tal cual, para el desplegable de filtrar. El orden es el que
-// usa la ordenación "por rareza": de la más rara a la más común.
-const TIERS = ["Legendaria", "Transcender", "Épica", "Común"];
+// Para el desplegable de filtrar y para la ordenación "por rareza": de la
+// más rara a la más común. RAREZAS va al revés, así que se le da la vuelta
+// a una COPIA, porque reverse() modifica el array original.
+const TIERS = [...RAREZAS].reverse();
 
 export default function Catalogo() {
   const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";

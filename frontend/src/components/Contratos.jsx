@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+import { COLOR_RAREZA } from './rarezas';
+
 const API = import.meta.env.VITE_API_URL || '/api';
 
 /* ===========================================================================
@@ -23,14 +25,7 @@ const API = import.meta.env.VITE_API_URL || '/api';
    nombres de los campos que se mandan al servidor.
    =========================================================================== */
 
-// Los cuatro colores de rareza del sistema de diseño (styles.css). Van por
-// nombre de rareza para que la ficha de cada carta se pinte de lo suyo.
-const COLOR_RAREZA = {
-  'Común': 'var(--rarity-common)',
-  'Épica': 'var(--rarity-rare)',
-  'Transcender': 'var(--rarity-epic)',
-  'Legendaria': 'var(--rarity-legendary)',
-};
+// Los colores salen de rarezas.js, que es el único sitio donde están.
 
 export function BotonContratos({ onClick }) {
   return (
