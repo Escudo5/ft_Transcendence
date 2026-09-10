@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Badge, TextField } from "./ui";
 import ModalContratos, { BotonContratos } from "./Contratos";
+import BotonAbrirSobres from "./BotonAbrirSobres";
 
 /**
  * EL ÁLBUM
@@ -157,9 +158,7 @@ export default function Catalogo() {
           <Link to="/home" className="back-btn-link">
             ← Volver al Inicio
           </Link>
-          <Link to="/tienda-sobre" className="back-btn-link">
-            🎁 Abrir sobres
-          </Link>
+          <BotonAbrirSobres />
           <BotonContratos onClick={() => setContratosAbierto(true)} />
         </div>
         <div className="logo-section" style={{ marginTop: "1rem" }}>
@@ -228,9 +227,11 @@ export default function Catalogo() {
           <div className="empty-state">
             <span className="empty-icon">📂</span>
             <p>Tu álbum está vacío. Abre sobres en la tienda para conseguir cartas.</p>
-            <Link to="/tienda-sobre" className="back-btn-link" style={{ marginTop: "1rem", display: "inline-block" }}>
-              🎁 Ir a abrir sobres
-            </Link>
+            {/* El mismo botón que arriba: si el álbum está vacío, este es
+                justo el sitio donde más apetece que llame la atención. */}
+            <div style={{ marginTop: "1rem" }}>
+              <BotonAbrirSobres>Ir a abrir sobres</BotonAbrirSobres>
+            </div>
           </div>
         ) : currentCards.length === 0 ? (
           <div className="empty-state">
