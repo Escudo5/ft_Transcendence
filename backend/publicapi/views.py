@@ -49,20 +49,41 @@ POR_PAGINA = 50
 POR_PAGINA_MAX = 100
 
 
-class BaseApiPublica(APIView):
-    """De aquí heredan todas. Ver la explicación de arriba."""
+class MezclaApiPublica:
+    """
+    Todo lo que convierte una vista normal en una ventanilla de la API
+    pública, en un sitio y sin nada más dentro.
+
+    Va como "mezcla" (una clase suelta que se añade a otra) en vez de
+    como clase base y ya está, porque así se le puede pegar a las vistas
+    que YA existen en cards/. Ver escritura.py: allí el intercambio de la
+    API pública hereda de la vista del intercambio de siempre y de esta
+    mezcla, y con eso tiene las reglas del juego de una y el portero de
+    la otra. Cero reglas copiadas.
+    """
     authentication_classes = [AutenticacionPorClave, SessionAuthentication]
     permission_classes = [permissions.IsAuthenticated]
-    throttle_classes = [LimiteLectura]
+
+    def get_throttles(self):
+        """
+        El límite lo decide el VERBO, no la vista.
+
+        DRF, de serie, pone un único límite por vista. Pero en la misma
+        dirección conviven un GET (barato: una consulta) y un POST (caro:
+        varias tablas, transacción y bloqueo de filas). Mirando el método
+        se le da a cada uno el suyo sin tener que partir las vistas en dos.
+        """
+        if self.request.method in permissions.SAFE_METHODS:
+            return [LimiteLectura()]
+        return [LimiteEscritura()]
 
     def throttled(self, request, wait):
         """DRF llama aquí al cortar. Cambiamos solo el mensaje."""
         raise DemasiadasPeticiones(wait)
 
 
-class BaseApiPublicaEscritura(BaseApiPublica):
-    """Igual, pero con el límite apretado. La usan los POST/PUT/DELETE."""
-    throttle_classes = [LimiteEscritura]
+class BaseApiPublica(MezclaApiPublica, APIView):
+    """De aquí heredan las ventanillas nuevas."""
 
 
 # ─────────────────────────── AYUDANTES ──────────────────────────────────
