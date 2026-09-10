@@ -50,6 +50,7 @@ from django.contrib.auth import get_user_model
 from social.models import FriendRequest
 
 from .models import Card, Intercambio, UserCard
+from .rarezas import RAREZAS_POR_SOBRE
 
 User = get_user_model()
 
@@ -331,11 +332,15 @@ class ResponderIntercambioView(APIView):
 # =====================================================================
 
 COPIAS_PARA_DESCARTAR = 4
-SOBRES_POR_TIER = {
-    'comun': {'Junior', 'Blackhole'},
-    'raro': {'Senior'},
-    'epico': {'Alumni', 'Transcender'},
-}
+
+# ⚠️ Nacho, 10/09: esto lo escribió Sergio con las rarezas de ayer (Junior,
+# Senior, Alumni, Blackhole) y yo las cambié el mismo día, así que 44 de las
+# 54 cartas daban "no pertenece a la calidad del sobre". Su código está bien;
+# solo se le quedó viejo el diccionario.
+#
+# Ahora sale de cards/rarezas.py, que es donde se decide qué rarezas hay, para
+# que no se pueda volver a desincronizar.
+SOBRES_POR_TIER = RAREZAS_POR_SOBRE
 SOBRE_DEL_DESCARTE = 'raro'  # Compatibilidad con clientes antiguos.
 
 
@@ -433,8 +438,11 @@ class DescartarView(APIView):
             pack.save(update_fields=['cantidad'])
 
         return Response({
+            # Nacho: decía "te has llevado 1 sobres raro". Con un solo sobre
+            # queda raro y se ve en pantalla.
             'mensaje': f'Has descartado {COPIAS_PARA_DESCARTAR * sobres_creados} copias '
-                       f'y te has llevado {sobres_creados} sobres {tipo_sobre}.',
+                       f'y te has llevado {sobres_creados} '
+                       f'sobre{"" if sobres_creados == 1 else "s"} {tipo_sobre}.',
             'sobres_creados': sobres_creados,
             'tipo_sobre': tipo_sobre,
             'sobres_disponibles': pack.cantidad,

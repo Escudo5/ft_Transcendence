@@ -117,6 +117,45 @@ def puntos_de(rareza):
     return PUNTOS.get(rareza, 0)
 
 
+# ══════════════════════════════════════════════════════════════════════
+# 🎁 LOS SOBRES
+# ══════════════════════════════════════════════════════════════════════
+#
+# Esto estaba escrito a mano en cards/views.py, y las rarezas viejas
+# estaban además repetidas en otros SIETE sitios. Al cambiarlas, todos se
+# quedaron viejos a la vez y nadie se enteró: los sobres siguieron
+# funcionando porque el código tiene un "si no hay cartas de esa rareza,
+# coge cualquiera", así que un sobre común empezó a dar 11% de
+# legendarias sin dar ningún error.
+#
+# Por eso viven aquí ahora: para que cambiar una rareza sea cambiar UN
+# fichero, y no acordarse de ocho.
+#
+# ⚠️ ESTOS NÚMEROS SON DE EQUILIBRIO DEL JUEGO, no de programación. Están
+# pensados para que el álbum se pueda completar en algo menos de un año
+# viniendo casi todos los días, contando con que además se intercambia.
+# Se pueden mover sin miedo: solo hay que cambiarlos aquí.
+PROBABILIDADES_SOBRE = {
+    'comun': {COMUN: 55, EPICA: 30, TRANSCENDER: 13, LEGENDARIA: 2},
+    'raro': {COMUN: 35, EPICA: 33, TRANSCENDER: 25, LEGENDARIA: 7},
+    'epico': {COMUN: 20, EPICA: 30, TRANSCENDER: 33, LEGENDARIA: 17},
+}
+
+CARTAS_POR_SOBRE = 5
+
+# Qué rareza de carta hace falta descartar para llevarse cada sobre.
+# Lo usa el descarte de Sergio (cards/intercambios.py): 4 copias de la
+# misma carta te dan un sobre de la calidad que corresponda.
+#
+# Son tres sobres y cuatro rarezas, así que las dos de arriba comparten
+# el sobre épico. Es lo que ya hacía él con las rarezas viejas.
+RAREZAS_POR_SOBRE = {
+    'comun': {COMUN},
+    'raro': {EPICA},
+    'epico': {TRANSCENDER, LEGENDARIA},
+}
+
+
 def rareza_por_nivel(nivel):
     """
     El nivel del cursus -> la rareza de su carta.

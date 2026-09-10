@@ -237,6 +237,7 @@ def _logros(usuario, stats):
     solo un sí o un no.
     """
     from cards.models import UserCard
+    from cards.rarezas import LEGENDARIA, TRANSCENDER
 
     mis_cartas = list(UserCard.objects.filter(user=usuario).select_related('card'))
 
@@ -265,10 +266,20 @@ def _logros(usuario, stats):
               int(stats['porcentaje']), 50),
         logro('completista', 'Completista', 'Completa el álbum entero', '👑',
               distintas, total_catalogo),
-        logro('leyenda', 'Cazador de leyendas', 'Consigue una carta Transcender', '✨',
-              1 if 'Transcender' in tiers else 0, 1),
-        logro('alumni', 'Buscador de Alumni', 'Consigue una carta Alumni', '🎓',
-              1 if 'Alumni' in tiers else 0, 1),
+        # 🎴 CAMBIO (Nacho, 10/09). Estos dos miraban rarezas que ya no
+        # existen: "Buscador de Alumni" se había vuelto IMPOSIBLE de
+        # conseguir, porque ninguna carta es "Alumni" desde que la rareza va
+        # por nivel. Y "Cazador de leyendas" pedía una Transcender, que ahora
+        # es la tercera de cuatro y no la más rara.
+        #
+        # Los nombres de las rarezas salen de cards/rarezas.py, no escritos a
+        # mano, que es justo lo que hizo que esto se rompiera.
+        logro('leyenda', 'Cazador de leyendas',
+              f'Consigue una carta {LEGENDARIA}', '✨',
+              1 if LEGENDARIA in tiers else 0, 1),
+        logro('transcender', 'Más allá del tronco común',
+              f'Consigue una carta {TRANSCENDER}', '🎓',
+              1 if TRANSCENDER in tiers else 0, 1),
         logro('coaliciones', 'Diplomático', 'Ten cartas de las cuatro coaliciones', '🏳️',
               len(coaliciones), 4),
         logro('acumulador', 'Acumulador', 'Ten 5 copias de una misma carta', '🗃️',
