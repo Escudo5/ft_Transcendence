@@ -48,6 +48,20 @@ function AreaChat({
   const finDeLaListaRef = useRef(null);
   const [modalIntercambioAbierto, setModalIntercambioAbierto] = useState(false);
 
+  // ⚠️ Este useState tiene que estar AQUÍ ARRIBA, con los demás, y no abajo
+  // junto a las funciones que lo usan.
+  //
+  // Unas líneas más abajo hay un `if (!chatSeleccionado) return ...`. React
+  // cuenta los hooks por orden en cada pintada, así que un useState puesto
+  // después de ese return se ejecutaría solo cuando hay chat elegido, y la
+  // cuenta cambiaría: "Rendered more hooks than during the previous render".
+  // Es la regla de los hooks: todos arriba, ninguno detrás de un return ni
+  // dentro de un if.
+  //
+  // Guarda lo que ha contestado el servidor del último intercambio: puede ser
+  // una buena noticia o un no con su motivo.
+  const [avisoIntercambio, setAvisoIntercambio] = useState('');
+
   useEffect(() => {
     finDeLaListaRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [mensajes]);
@@ -92,11 +106,10 @@ function AreaChat({
   // /social/intercambio/<id>/responder/) no existían. Las de verdad cuelgan
   // de /api/cards/, con el resto de lo que tiene que ver con cartas.
   //
-  // Y se guarda lo que responde el servidor, porque puede decir que no por
-  // motivos que hay que enseñar: que ya no sois amigos, que él ya no tiene
-  // esa carta repetida, o que la propuesta ha caducado.
-  const [avisoIntercambio, setAvisoIntercambio] = useState('');
-
+  // Y se guarda lo que responde el servidor (en avisoIntercambio, declarado
+  // arriba con el resto de hooks), porque puede decir que no por motivos que
+  // hay que enseñar: que ya no sois amigos, que él ya no tiene esa carta
+  // repetida, o que la propuesta ha caducado.
   const handleEnviarPropuestaIntercambio = async ({ cartaOfrecida, cartaPedida }) => {
     setAvisoIntercambio('');
     try {
