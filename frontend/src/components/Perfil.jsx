@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Alert, Avatar, Button, Card, ProgressBar, SecondaryButton, StatusDot, TextField } from './ui';
+import ClavesApi from './ClavesApi';
 
 /**
  * PÁGINA DE PERFIL
@@ -856,6 +857,9 @@ export default function Perfil() {
               </div>
             </Card>
           )}
+
+          {/* ---------- Claves de API — solo en tu propio perfil ---------- */}
+          {perfil.es_mi_perfil && <ClavesApi />}
 
           {/* ---------- Tus datos (RGPD) — solo en tu propio perfil ---------- */}
           {perfil.es_mi_perfil && (
