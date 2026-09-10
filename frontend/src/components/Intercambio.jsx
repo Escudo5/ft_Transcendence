@@ -3,6 +3,54 @@ import { useState, useEffect } from 'react';
 const API = import.meta.env.VITE_API_URL || '/api';
 
 /* ===========================================================================
+   0. TRADUCIR LAS CARTAS DEL BACKEND AL FORMATO DE ESTA PANTALLA
+   (Nacho, 10/09)
+
+   El backend manda { id, login, titulo, foto, tier, coalicion, copias } y
+   esta pantalla estaba escrita para { id, nombre, imagen, rareza }. En vez
+   de renombrar el JSX de Konrad, se traduce aquí: así lo visual se queda
+   como estaba y esto es lo único que hay que tocar si cambia el servidor.
+
+   ⚠️ KONRAD: 'imagen' es un emoji según la rareza, porque tu pantalla pinta
+   {carta.imagen} como texto. Va también 'foto', que es la foto de verdad del
+   alumno en la Intra: si prefieres enseñar esa, cambia el <div> por un <img
+   src={carta.foto}> y ya está, el dato ya te llega.
+   =========================================================================== */
+const EMOJI_POR_RAREZA = {
+  'Común': '🃏',
+  'Épica': '🎴',
+  'Transcender': '👾',
+  'Legendaria': '👑',
+};
+
+function adaptarCarta(c) {
+  return {
+    id: c.id,
+    nombre: c.titulo || c.login,
+    login: c.login,
+    rareza: c.tier,
+    imagen: EMOJI_POR_RAREZA[c.tier] || '🃏',
+    foto: c.foto,
+    copias: c.copias,
+  };
+}
+
+/* Y lo mismo para una propuesta entera: del formato del servidor al que
+   espera MensajeIntercambio. */
+export function adaptarPropuesta(i) {
+  return {
+    id: i.id,
+    loginDestino: i.para,
+    // El servidor las manda en mayúsculas (PENDIENTE, ACEPTADO...) porque así
+    // están escritas en la base de datos; aquí se esperan en minúsculas.
+    estado: (i.estado || '').toLowerCase(),
+    expiraEn: i.expira_en,
+    cartaOfrecida: adaptarCarta(i.ofrece),
+    cartaPedida: adaptarCarta(i.pide),
+  };
+}
+
+/* ===========================================================================
    1. BOTÓN DE INTERCAMBIO (Icono tipo carta/Uno para poner junto al botón enviar)
    =========================================================================== */
 export function BotonIntercambio({ onClick, disabled }) {
@@ -16,7 +64,10 @@ export function BotonIntercambio({ onClick, disabled }) {
         padding: '0.7rem',
         borderRadius: '50%',
         border: '1px solid #ffaa00',
-        backgroundColor: 'rgba(ff, 170, 0, 0.15)',
+        // Nacho, 10/09: era 'rgba(ff, 170, 0, 0.15)'. Ese "ff" no es un número,
+        // así que el navegador se saltaba la línea entera sin avisar y el botón
+        // salía sin fondo.
+        backgroundColor: 'rgba(255, 170, 0, 0.15)',
         color: '#ffaa00',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
@@ -55,30 +106,37 @@ export function ModalPropuestaIntercambio({ isOpen, onClose, usuarioDestino, onE
     async function cargarCartasParaIntercambio() {
       setCargando(true);
       try {
-        // Peticiones a las APIs de cartas intercambiables
-        const [resMisCartas, resSusCartas] = await Promise.all([
-          fetch(`${API}/cartas/mis-repetidas/`, { credentials: 'include' }),
-          fetch(`${API}/cartas/repetidas/${encodeURIComponent(usuarioDestino.login)}/`, { credentials: 'include' }),
-        ]);
+        // 🔌 CONECTADO AL BACKEND (Nacho, 10/09).
+        //
+        // Antes eran DOS peticiones a /cartas/mis-repetidas/ y
+        // /cartas/repetidas/<login>/. Esas rutas no existen: la de verdad es
+        // UNA sola y trae las dos listas juntas, porque el servidor tiene que
+        // comprobar de todas formas que sois amigos antes de enseñar nada.
+        //
+        //   GET /api/cards/intercambios/repetidas/<login>/
+        //       -> { "mias": [...], "suyas": [...] }
+        //
+        // (Es "cards", en inglés, como el resto de rutas de cartas.)
+        const respuesta = await fetch(
+          `${API}/cards/intercambios/repetidas/${encodeURIComponent(usuarioDestino.login)}/`,
+          { credentials: 'include' },
+        );
 
-        if (resMisCartas.ok && resSusCartas.ok) {
-          const dataMis = await resMisCartas.json();
-          const dataSus = await resSusCartas.json();
-          setMisRepetidas(dataMis);
-          setSusRepetidas(dataSus);
-        } else {
-          // MOCK TEMPORAL DE PRUEBAS FRONTEND
-          setMisRepetidas([
-            { id: 101, nombre: '42 Logo Holo', imagen: '🃏', rareza: 'Épica' },
-            { id: 102, nombre: 'Piscina C', imagen: '🎴', rareza: 'Común' },
-          ]);
-          setSusRepetidas([
-            { id: 201, nombre: 'Norminette', imagen: '👾', rareza: 'Legendaria' },
-            { id: 202, nombre: 'Baguette 42', imagen: '🥖', rareza: 'Común' },
-          ]);
+        if (!respuesta.ok) {
+          // 403 = no sois amigos, 404 = no existe. Listas vacías: la pantalla
+          // ya sabe enseñar "No tienes repetidas".
+          setMisRepetidas([]);
+          setSusRepetidas([]);
+          return;
         }
+
+        const datos = await respuesta.json();
+        setMisRepetidas((datos.mias || []).map(adaptarCarta));
+        setSusRepetidas((datos.suyas || []).map(adaptarCarta));
       } catch (err) {
         console.error('Error al cargar cartas de intercambio:', err);
+        setMisRepetidas([]);
+        setSusRepetidas([]);
       } finally {
         setCargando(false);
       }
