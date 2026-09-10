@@ -58,9 +58,39 @@ const AMIGOS_MOCK_PRUEBAS = [
 
 const MENSAJES_MOCK_PRUEBAS = {
   amigo_normal: [
-    { id: 1, texto: '¡Hola! ¿Cómo vas con el proyecto?', mio: false, fecha: new Date().toISOString() },
-    { id: 2, texto: 'Todo bien, avanzando con el frontend.', mio: true, fecha: new Date().toISOString() },
-  ],
+  { id: 1, texto: '¡Hola! ¿Cómo vas con el proyecto?', mio: false, fecha: new Date().toISOString() },
+  { id: 2, texto: 'Todo bien, cambiando algunas cartas.', mio: true, fecha: new Date().toISOString() },
+  // 🔄 EJEMPLO 1: Propuesta recibida que puedes Aceptar o Rechazar
+  {
+    id: 10,
+    mio: false,
+    esIntercambio: true,
+    fecha: new Date().toISOString(),
+    propuesta: {
+      id: 501,
+      loginDestino: 'amigo_normal',
+      estado: 'pendiente', // 'pendiente', 'aceptado', 'rechazado'
+      expiraEn: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // Expira en 3 días
+      cartaOfrecida: { id: 201, nombre: 'Norminette', imagen: '👾' },
+      cartaPedida: { id: 101, nombre: '42 Logo Holo', imagen: '🃏' },
+    },
+  },
+  // 🔄 EJEMPLO 2: Propuesta enviada por ti (en espera de que el otro responda)
+  {
+    id: 11,
+    mio: true,
+    esIntercambio: true,
+    fecha: new Date().toISOString(),
+    propuesta: {
+      id: 502,
+      loginDestino: 'amigo_normal',
+      estado: 'pendiente',
+      expiraEn: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+      cartaOfrecida: { id: 102, nombre: 'Piscina C', imagen: '🎴' },
+      cartaPedida: { id: 202, nombre: 'Baguette 42', imagen: '🥖' },
+    },
+  },
+],
   amigo_bloqueado_por_mi: [
     { id: 3, texto: 'Mensaje antiguo antes de que lo bloquearas.', mio: false, fecha: new Date(Date.now() - 86400000).toISOString() },
     { id: 4, texto: 'Vale, recibido.', mio: true, fecha: new Date(Date.now() - 86400000).toISOString() },
