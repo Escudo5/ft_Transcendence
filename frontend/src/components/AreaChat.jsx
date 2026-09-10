@@ -1,6 +1,14 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { BotonIntercambio, ModalPropuestaIntercambio, MensajeIntercambio } from './Intercambio';
 
 const LARGO_MAXIMO = 1000;
+const API = import.meta.env.VITE_API_URL || '/api';
+
+async function pedirTokenCSRF() {
+  const respuesta = await fetch(`${API}/users/csrf/`, { credentials: 'include' });
+  const datos = await respuesta.json();
+  return datos.csrfToken;
+}
 
 function obtenerEtiquetaDelDia(fechaMensaje) {
   const fechaObjeto = new Date(fechaMensaje);
@@ -35,6 +43,7 @@ function AreaChat({
   amigos,
 }) {
   const finDeLaListaRef = useRef(null);
+  const [modalIntercambioAbierto, setModalIntercambioAbierto] = useState(false);
 
   useEffect(() => {
     finDeLaListaRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -70,20 +79,50 @@ function AreaChat({
     );
   }
 
-  // Comprobamos los dos estados de bloqueo
   const yoLoHeBloqueado = chatSeleccionado.bloqueado;
   const meHaBloqueadoAEstudiando = chatSeleccionado.meHaBloqueado;
   const hayBloqueoActivo = yoLoHeBloqueado || meHaBloqueadoAEstudiando;
+
+  // Lógica para enviar la propuesta de intercambio al backend
+  const handleEnviarPropuestaIntercambio = async ({ cartaOfrecida, cartaPedida }) => {
+    const fechaExpiracion = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(); // 3 días
+
+    try {
+      const token = await pedirTokenCSRF();
+      await fetch(`${API}/social/intercambio/proponer/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
+        body: JSON.stringify({
+          destino: chatSeleccionado.login,
+          ofrecida_id: cartaOfrecida.id,
+          pedida_id: cartaPedida.id,
+        }),
+      });
+    } catch (err) {
+      console.error('Error al enviar propuesta de intercambio:', err);
+    }
+  };
+
+  // Lógica para Aceptar o Rechazar un intercambio
+  const handleResponderIntercambio = async (idPropuesta, accion) => {
+    try {
+      const token = await pedirTokenCSRF();
+      await fetch(`${API}/social/intercambio/${idPropuesta}/responder/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
+        body: JSON.stringify({ accion }), // 'aceptar' o 'rechazar'
+      });
+    } catch (err) {
+      console.error(`Error al ${accion} el intercambio:`, err);
+    }
+  };
 
   return (
     <div className="chat-area">
       {/* CABECERA DEL CHAT */}
       <div className="chat-header">
-        {/* ⬅️ Botón de volver a la lista. Solo se ve en móvil (lo esconde
-            Chat.css en pantalla grande): allí la conversación ocupa toda la
-            pantalla y sin esto no habría forma de volver a los contactos.
-            Es de Sergio; se recupera aquí porque la conversación se mudó a
-            este fichero después de que él lo hiciera. */}
         <button
           type="button"
           className="mobile-chat-back"
@@ -112,12 +151,12 @@ function AreaChat({
         </div>
       </div>
 
-      {/* HISTORIAL DE MENSAJES (Se muestra SIEMPRE, incluso con bloqueo) */}
+      {/* HISTORIAL DE MENSAJES */}
       <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
         {mensajes.length === 0 ? (
           <div style={{ textAlign: 'center', marginTop: '3rem', color: '#8b92b0' }}>
             <p>Todavía no os habéis escrito nada.</p>
-            <p style={{ fontSize: '0.9rem' }}>Escribe algo abajo para empezar.</p>
+            <p style={{ fontSize: '0.9rem' }}>Escribe algo abajo o propone un intercambio.</p>
           </div>
         ) : (
           mensajes.map((mensajeActual, indice) => {
@@ -152,32 +191,41 @@ function AreaChat({
                     marginBottom: '0.6rem',
                   }}
                 >
-                  <div
-                    style={{
-                      backgroundColor: mensajeActual.mio ? 'rgba(0, 255, 204, 0.15)' : '#1f2433',
-                      border: `1px solid ${mensajeActual.mio ? '#00ffcc' : '#2a2e3d'}`,
-                      padding: '0.6rem 1rem',
-                      borderRadius: '10px',
-                      maxWidth: '70%',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    <div style={{ whiteSpace: 'pre-wrap' }}>{mensajeActual.texto}</div>
+                  {/* SI ES UN INTERCAMBIO MUESTRA LA TARJETA; SI NO, UN GLOBO DE TEXTO */}
+                  {mensajeActual.esIntercambio ? (
+                    <MensajeIntercambio
+                      propuesta={mensajeActual.propuesta}
+                      esMio={mensajeActual.mio}
+                      onResponder={handleResponderIntercambio}
+                    />
+                  ) : (
                     <div
                       style={{
-                        fontSize: '0.7rem',
-                        color: '#8b92b0',
-                        marginTop: '0.25rem',
-                        textAlign: 'right',
+                        backgroundColor: mensajeActual.mio ? 'rgba(0, 255, 204, 0.15)' : '#1f2433',
+                        border: `1px solid ${mensajeActual.mio ? '#00ffcc' : '#2a2e3d'}`,
+                        padding: '0.6rem 1rem',
+                        borderRadius: '10px',
+                        maxWidth: '70%',
+                        wordBreak: 'break-word',
                       }}
-                      title={new Date(mensajeActual.fecha).toLocaleString('es-ES')}
                     >
-                      {new Date(mensajeActual.fecha).toLocaleTimeString('es-ES', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      <div style={{ whiteSpace: 'pre-wrap' }}>{mensajeActual.texto}</div>
+                      <div
+                        style={{
+                          fontSize: '0.7rem',
+                          color: '#8b92b0',
+                          marginTop: '0.25rem',
+                          textAlign: 'right',
+                        }}
+                        title={new Date(mensajeActual.fecha).toLocaleString('es-ES')}
+                      >
+                        {new Date(mensajeActual.fecha).toLocaleTimeString('es-ES', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             );
@@ -186,7 +234,7 @@ function AreaChat({
         <div ref={finDeLaListaRef} />
       </div>
 
-      {/* AVISOS DE BLOQUEO O CAJA DE TEXTO */}
+      {/* AVISOS DE BLOQUEO O CAJA DE TEXTO + BOTÓN INTERCAMBIO */}
       {yoLoHeBloqueado ? (
         <div
           style={{
@@ -225,11 +273,18 @@ function AreaChat({
           onSubmit={enviarMensaje}
           style={{
             display: 'flex',
+            alignItems: 'center',
             gap: '0.6rem',
             padding: '0.8rem 1rem',
             borderTop: '1px solid #2a2e3d',
           }}
         >
+          {/* BOTÓN DE PROPUESTA DE INTERCAMBIO DE CARTAS */}
+          <BotonIntercambio
+            onClick={() => setModalIntercambioAbierto(true)}
+            disabled={enviando}
+          />
+
           <input
             type="text"
             value={borrador}
@@ -264,6 +319,14 @@ function AreaChat({
           </button>
         </form>
       )}
+
+      {/* MODAL DE SELECCIÓN DE CARTAS */}
+      <ModalPropuestaIntercambio
+        isOpen={modalIntercambioAbierto}
+        onClose={() => setModalIntercambioAbierto(false)}
+        usuarioDestino={chatSeleccionado}
+        onEnviarPropuesta={handleEnviarPropuestaIntercambio}
+      />
     </div>
   );
 }
