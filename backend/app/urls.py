@@ -19,6 +19,10 @@ urlpatterns = [
     # 💬 RUTAS DEL CHAT (conversaciones y mensajes)
     path('api/chat/', include('chat.urls')),
 
+    # 🔑 API PÚBLICA: la ventanilla para programas de fuera, que entran
+    # con una clave en vez de con la cookie del navegador.
+    path('api/publica/', include('publicapi.urls')),
+
     # 🖥️ Vistas directas que teníais para pruebas en el navegador
     path('home/', home, name='home'),
     path('crear/', crear_carta, name='crear_carta'),
