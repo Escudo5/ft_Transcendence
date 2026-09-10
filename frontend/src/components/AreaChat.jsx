@@ -41,6 +41,9 @@ function AreaChat({
   cargando,
   error,
   amigos,
+  // Lo pasa ChatSocial: vuelve a pedir las propuestas al momento, en vez de
+  // esperar a la siguiente vuelta del refresco de 3 segundos.
+  recargarIntercambios,
 }) {
   const finDeLaListaRef = useRef(null);
   const [modalIntercambioAbierto, setModalIntercambioAbierto] = useState(false);
@@ -83,39 +86,64 @@ function AreaChat({
   const meHaBloqueadoAEstudiando = chatSeleccionado.meHaBloqueado;
   const hayBloqueoActivo = yoLoHeBloqueado || meHaBloqueadoAEstudiando;
 
-  // Lógica para enviar la propuesta de intercambio al backend
-  const handleEnviarPropuestaIntercambio = async ({ cartaOfrecida, cartaPedida }) => {
-    const fechaExpiracion = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(); // 3 días
+  // 🔌 CONECTADO AL BACKEND (Nacho, 10/09).
+  //
+  // Las dos rutas que había aquí (/social/intercambio/proponer/ y
+  // /social/intercambio/<id>/responder/) no existían. Las de verdad cuelgan
+  // de /api/cards/, con el resto de lo que tiene que ver con cartas.
+  //
+  // Y se guarda lo que responde el servidor, porque puede decir que no por
+  // motivos que hay que enseñar: que ya no sois amigos, que él ya no tiene
+  // esa carta repetida, o que la propuesta ha caducado.
+  const [avisoIntercambio, setAvisoIntercambio] = useState('');
 
+  const handleEnviarPropuestaIntercambio = async ({ cartaOfrecida, cartaPedida }) => {
+    setAvisoIntercambio('');
     try {
       const token = await pedirTokenCSRF();
-      await fetch(`${API}/social/intercambio/proponer/`, {
+      const respuesta = await fetch(`${API}/cards/intercambios/`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
         body: JSON.stringify({
-          destino: chatSeleccionado.login,
-          ofrecida_id: cartaOfrecida.id,
-          pedida_id: cartaPedida.id,
+          para: chatSeleccionado.login,
+          carta_ofrecida: cartaOfrecida.id,
+          carta_pedida: cartaPedida.id,
         }),
       });
+      const datos = await respuesta.json().catch(() => ({}));
+      if (!respuesta.ok) {
+        setAvisoIntercambio(datos.detail || 'No se ha podido enviar la propuesta.');
+        return;
+      }
+      // Para que aparezca ya, sin esperar a la siguiente vuelta de 3 segundos
+      recargarIntercambios?.();
     } catch (err) {
       console.error('Error al enviar propuesta de intercambio:', err);
+      setAvisoIntercambio('No se ha podido enviar la propuesta.');
     }
   };
 
-  // Lógica para Aceptar o Rechazar un intercambio
   const handleResponderIntercambio = async (idPropuesta, accion) => {
+    setAvisoIntercambio('');
     try {
       const token = await pedirTokenCSRF();
-      await fetch(`${API}/social/intercambio/${idPropuesta}/responder/`, {
-        method: 'POST',
+      const respuesta = await fetch(`${API}/cards/intercambios/${idPropuesta}/`, {
+        method: 'PATCH',   // PATCH y no POST: se cambia el estado de algo que ya existe
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
         body: JSON.stringify({ accion }), // 'aceptar' o 'rechazar'
       });
+      const datos = await respuesta.json().catch(() => ({}));
+      if (!respuesta.ok) {
+        setAvisoIntercambio(datos.detail || `No se ha podido ${accion} el intercambio.`);
+        return;
+      }
+      setAvisoIntercambio(datos.detail || '');
+      recargarIntercambios?.();
     } catch (err) {
       console.error(`Error al ${accion} el intercambio:`, err);
+      setAvisoIntercambio(`No se ha podido ${accion} el intercambio.`);
     }
   };
 
@@ -277,8 +305,30 @@ function AreaChat({
             gap: '0.6rem',
             padding: '0.8rem 1rem',
             borderTop: '1px solid #2a2e3d',
+            flexWrap: 'wrap',
           }}
         >
+          {/* Lo que ha dicho el servidor del último intercambio. Puede ser una
+              buena noticia ("¡Hecho! Le has dado X y has recibido Y") o un no
+              con su motivo ("ya no tiene esa carta repetida"). */}
+          {avisoIntercambio && (
+            <div
+              onClick={() => setAvisoIntercambio('')}
+              style={{
+                flexBasis: '100%',
+                backgroundColor: 'rgba(255, 170, 0, 0.12)',
+                border: '1px solid #ffaa00',
+                color: '#ffaa00',
+                borderRadius: '8px',
+                padding: '0.5rem 0.8rem',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+              }}
+            >
+              {avisoIntercambio}
+            </div>
+          )}
+
           {/* BOTÓN DE PROPUESTA DE INTERCAMBIO DE CARTAS */}
           <BotonIntercambio
             onClick={() => setModalIntercambioAbierto(true)}
