@@ -135,16 +135,29 @@ class SinLeerView(APIView):
     """
     GET /api/chat/sin-leer/
 
-    Cuántos mensajes tienes sin leer y de quién. Es el aviso de "tienes
-    mensajes nuevos" que flota por encima de todas las pantallas.
+    Todo lo que te está esperando en el chat: mensajes sin leer y
+    propuestas de intercambio sin responder. Es lo que alimenta el aviso
+    que flota por encima de todas las pantallas.
 
     Va aparte de /conversaciones/ a propósito: esto se pregunta cada pocos
     segundos desde cualquier página, así que tiene que ser barato. Son dos
     consultas de contar, sin traerse ni un mensaje ni una foto.
+
+    ⚠️ POR QUÉ LOS INTERCAMBIOS SE CUENTAN AQUÍ Y NO EN SU PROPIA RUTA:
+    porque las propuestas viven DENTRO del chat, así que el aviso te tiene
+    que llevar al mismo sitio. Metiéndolas aquí no hace falta ni una
+    petición más (esta ya se hace cada 10 segundos), ni un segundo globo
+    flotante peleándose con el primero por el mismo rincón de la pantalla.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        # Se importa aquí dentro y no arriba para no atar la app del chat a
+        # la de las cartas: el chat funciona igual aunque no hubiera
+        # intercambios, y así no se crea una dependencia circular entre las
+        # dos apps.
+        from cards.intercambios import Intercambio, _vivas
+
         pendientes = (
             Message.objects
             .filter(receiver=request.user, leido=False)
@@ -152,9 +165,26 @@ class SinLeerView(APIView):
             .annotate(n=Count('id'))
         )
         por_persona = {p['sender__username']: p['n'] for p in pendientes}
+
+        # Solo las que TE han propuesto a ti y siguen vivas: las que ya
+        # respondiste y las de más de 3 días no cuentan. _vivas() es la misma
+        # función que usa el propio intercambio, para que el aviso no diga
+        # que tienes algo pendiente que la otra pantalla ya no te enseña.
+        propuestas = (
+            _vivas(Intercambio.objects.filter(para=request.user))
+            .values('de__username')
+            .annotate(n=Count('id'))
+        )
+        intercambios_por_persona = {p['de__username']: p['n'] for p in propuestas}
+
         return Response({
             'total': sum(por_persona.values()),
             'por_persona': por_persona,
+            # Se mandan aparte y no sumados a 'total' para que el aviso pueda
+            # decir "2 mensajes y 1 intercambio" en vez de un "3" que no
+            # explica nada.
+            'intercambios': sum(intercambios_por_persona.values()),
+            'intercambios_por_persona': intercambios_por_persona,
         }, status=status.HTTP_200_OK)
 
 
