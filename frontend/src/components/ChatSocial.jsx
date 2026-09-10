@@ -6,6 +6,7 @@ import ListaChats from './ListaChats';
 import BuscarAmigos from './BuscarAmigos';
 import SolicitudesRecibidas from './SolicitudesRecibidas';
 import AreaChat from './AreaChat';
+import { adaptarPropuesta } from './Intercambio';
 import './Chat.css';
 
 const API = import.meta.env.VITE_API_URL || '/api';
@@ -275,17 +276,32 @@ function ChatSocial() {
   const [enviando, setEnviando] = useState(false);
   const ultimoMensajeIdRef = useRef(null);
 
+  // 🔄 Las propuestas de intercambio de esta conversación (Nacho, 10/09).
+  //
+  // Van en un estado APARTE de los mensajes, y no mezcladas en la misma
+  // petición, porque son dos cosas distintas: los mensajes solo crecen (se
+  // piden los nuevos con ?desde=<id> y se añaden al final), pero una
+  // propuesta CAMBIA: pasa de pendiente a aceptada, o caduca a los 3 días.
+  // Si viviera dentro de la lista de mensajes habría que ir buscándola para
+  // actualizarla. Así se vuelve a pedir la lista entera cada vez y ya está.
+  const [propuestas, setPropuestas] = useState([]);
+  // Un contador que solo sirve para forzar que se vuelvan a pedir: al subirlo,
+  // el efecto de abajo se dispara otra vez.
+  const [refrescoIntercambios, setRefrescoIntercambios] = useState(0);
+
   const loginUsuarioSeleccionado = chatSeleccionado?.login || null;
 
   useEffect(() => {
     if (!loginUsuarioSeleccionado) {
       setMensajes([]);
+      setPropuestas([]);
       return undefined;
     }
 
     let estaMontado = true;
     ultimoMensajeIdRef.current = null;
     setMensajes([]);
+    setPropuestas([]);
 
     setAmigos((prevAmigos) =>
       prevAmigos.map((amigo) =>
@@ -344,6 +360,70 @@ function ChatSocial() {
       clearInterval(intervaloChat);
     };
   }, [loginUsuarioSeleccionado]);
+
+  // 🔄 LAS PROPUESTAS DE INTERCAMBIO DE ESTA CONVERSACIÓN (Nacho, 10/09)
+  //
+  // Ciclo aparte del de los mensajes, y no por capricho: al refrescar las
+  // propuestas (por ejemplo justo después de aceptar una) no queremos vaciar
+  // y volver a pedir la conversación entera, que es lo que hace el otro
+  // efecto cada vez que se dispara.
+  //
+  // Aquí se pide la lista COMPLETA cada vez, sin el ?desde=<id> de los
+  // mensajes. Es a propósito: un mensaje solo se añade, pero una propuesta
+  // cambia de estado (pendiente -> aceptada) o caduca a los 3 días, así que
+  // hay que volver a mirarlas todas. Son como mucho un puñado.
+  useEffect(() => {
+    if (!loginUsuarioSeleccionado) {
+      setPropuestas([]);
+      return undefined;
+    }
+
+    let estaMontado = true;
+
+    async function obtenerPropuestas() {
+      try {
+        const respuesta = await fetch(`${API}/cards/intercambios/`, { credentials: 'include' });
+        if (!estaMontado || !respuesta.ok) return;
+
+        const datos = await respuesta.json();
+        // El servidor manda TODAS mis propuestas vivas, con cualquiera; aquí
+        // nos quedamos con las de esta conversación. Las aceptadas, las
+        // rechazadas y las de más de 3 días ya no vienen.
+        const suyas = [...(datos.recibidos || []), ...(datos.enviados || [])]
+          .filter((i) => i.de === loginUsuarioSeleccionado || i.para === loginUsuarioSeleccionado)
+          .map((i) => ({
+            // 'int-' delante porque AreaChat usa el id como clave de React, y
+            // mensajes e intercambios son tablas distintas: un mensaje con id
+            // 7 y un intercambio con id 7 chocarían.
+            id: `int-${i.id}`,
+            mio: i.mio,
+            fecha: i.fecha,
+            esIntercambio: true,
+            propuesta: adaptarPropuesta(i),
+          }));
+        if (estaMontado) setPropuestas(suyas);
+      } catch (err) {
+        console.error('Error al cargar los intercambios:', err);
+      }
+    }
+
+    obtenerPropuestas();
+    const intervalo = setInterval(obtenerPropuestas, 3000);
+
+    return () => {
+      estaMontado = false;
+      clearInterval(intervalo);
+    };
+  }, [loginUsuarioSeleccionado, refrescoIntercambios]);
+
+  // Lo llama AreaChat justo después de proponer, aceptar o rechazar, para que
+  // se vea al momento y no haya que esperar a la siguiente vuelta de 3s.
+  const recargarIntercambios = () => setRefrescoIntercambios((n) => n + 1);
+
+  // Mensajes y propuestas, juntos y por orden de fecha, para que cada
+  // propuesta salga en el punto de la conversación en el que se hizo.
+  const mensajesConIntercambios = [...mensajes, ...propuestas]
+    .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
   const enviarMensaje = async (e) => {
     e.preventDefault();
@@ -537,7 +617,8 @@ function ChatSocial() {
       <AreaChat
         chatSeleccionado={chatSeleccionado}
         setChatSeleccionado={setChatSeleccionado}
-        mensajes={mensajes}
+        mensajes={mensajesConIntercambios}
+        recargarIntercambios={recargarIntercambios}
         borrador={borrador}
         setBorrador={setBorrador}
         enviando={enviando}
