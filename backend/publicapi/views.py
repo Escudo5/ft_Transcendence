@@ -148,14 +148,10 @@ def paginar(consulta, request, convertir):
 
 class CatalogoView(BaseApiPublica):
     """
-    GET /api/publica/catalogo/
+    Todas las cartas que existen, las tengas o no.
 
-    Todas las cartas que existen, las tengas o no. Filtros opcionales:
-
-        ?buscar=konrad      por login, título o coalición
-        ?rareza=Bronce      solo de esa rareza
-        ?coalicion=...      solo de esa coalición
-        ?pagina=2&por_pagina=20
+    Filtros opcionales: ?buscar=konrad (por login, título o coalición),
+    ?rareza=Bronce, ?coalicion=Ignisaria, ?pagina=2&por_pagina=20
     """
 
     def get(self, request):
@@ -183,17 +179,15 @@ class CatalogoView(BaseApiPublica):
 
 class MiAlbumView(BaseApiPublica):
     """
-    GET /api/publica/mi-album/
-
     Tus cartas, con cuántas copias tienes de cada una, y un resumen de
-    cómo va el álbum.
+    cómo llevas el álbum.
 
-    Fíjate en que NO lleva ningún login en la dirección: siempre devuelve
-    las cartas de quien manda la clave. Así es imposible pedir el álbum
-    de otro por error o a propósito.
+    No lleva ningún login en la dirección, a propósito: siempre devuelve
+    las cartas de quien manda la clave, así que es imposible pedir el
+    álbum de otro.
 
     Filtros: ?repetidas=1 (solo las que tienes más de una vez),
-             ?buscar=..., ?pagina=..., ?por_pagina=...
+    ?buscar=..., ?pagina=..., ?por_pagina=...
     """
 
     def get(self, request):
@@ -235,14 +229,12 @@ class MiAlbumView(BaseApiPublica):
 
 class AlumnoView(BaseApiPublica):
     """
-    GET /api/publica/alumnos/<login>/
-
     La ficha de un alumno: sus datos públicos, su carta si la tiene y
-    cómo lleva el álbum.
+    cuánto lleva del álbum.
 
-    ⚠️ Del álbum de otro se dice CUÁNTAS lleva, no CUÁLES. Saber que
-    alguien va por 300 es parte del juego (es lo que sale en el ranking);
-    ver su colección carta a carta no aporta nada y son datos suyos.
+    ⚠️ De otro se dice CUÁNTAS cartas lleva, no CUÁLES, y nunca su
+    correo. Saber que alguien va por 300 es parte del juego (ya sale en
+    el ranking); su colección carta a carta es cosa suya.
     """
 
     def get(self, request, login):
