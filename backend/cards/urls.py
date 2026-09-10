@@ -4,6 +4,7 @@ from . import views
 from .intercambios import (
     IntercambiosView, RepetidasView, ResponderIntercambioView, DescartarView,
 )
+from .contratos import ContratosView
 
 urlpatterns = [
     path("health/", HealthCheckView.as_view(), name="health"),
@@ -15,7 +16,13 @@ urlpatterns = [
     path("album/", views.album_usuario, name='album_usuario'),
 
     # ✅ CORRECTO: Sin 'cards/' delante y colocado ANTES de <str:login>/
+    # ⚠️ La de Pablo. Se queda tal cual, no se toca. Ojo: desde un navegador
+    # con sesión da 500 (lee request.body dos veces). La que usa la pantalla
+    # es la de abajo.
     path('contract/', views.make_contract, name='make_contract'),
+
+    # 🤝 CONTRATOS (nuestra version, cards/contratos.py)
+    path('contratos/', ContratosView.as_view(), name='contratos'),
 
     # 🔄 INTERCAMBIO DE CARTAS ENTRE ALUMNOS
     # Las tres van ANTES de <str:login>/, que atrapa cualquier texto: si se
