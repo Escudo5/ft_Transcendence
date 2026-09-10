@@ -30,7 +30,8 @@ INSTALLED_APPS = [
     "cards",
     "users",
     "social",
-    "chat"
+    "chat",
+    "publicapi"
 ]
 
 MIDDLEWARE = [
@@ -112,6 +113,24 @@ AVATAR_MAX_BYTES = 2 * 1024 * 1024   # 2 MB
 AVATAR_LADO_MAX = 512                # se reduce a 512x512 como mucho
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# 🚦 CUÁNTAS PETICIONES POR MINUTO ADMITE LA API PÚBLICA
+#
+# ⚠️ OJO A LO QUE **NO** HAY AQUÍ: no se tocan las clases de
+# autenticación ni las de permisos por defecto. Si las pusiéramos aquí,
+# el cambio afectaría a TODAS las vistas del proyecto (cartas, chat,
+# amigos, sobres...) y cualquier despiste rompería algo que ya funciona.
+#
+# Estos números, en cambio, son inofensivos: solo los mira una vista que
+# pida expresamente uno de estos dos límites. Mientras nadie los pida, es
+# como si no existieran. Por eso la API pública se enchufa vista a vista,
+# en publicapi/, y no toca ni una línea del resto del backend.
+REST_FRAMEWORK = {
+    "DEFAULT_THROTTLE_RATES": {
+        "api_lectura": "60/min",     # consultar: 1 por segundo de media
+        "api_escritura": "20/min",   # crear o borrar: cuesta más, se aprieta
+    },
+}
 
 cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173")
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
