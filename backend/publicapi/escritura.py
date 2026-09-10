@@ -43,17 +43,26 @@ MAX_CLAVES = 5
 
 class IntercambiosApiView(MezclaApiPublica, IntercambiosView):
     """
-    GET  /api/publica/intercambios/   -> mis propuestas
-    POST /api/publica/intercambios/   -> proponer un cambio
-        {"para": "<login>", "carta_ofrecida": <id>, "carta_pedida": <id>}
+    Tus propuestas de intercambio, y proponer una nueva.
+
+    Solo entre amigos, y los DOS tenéis que tener repetida la carta que
+    dais. Proponer no retiene nada: las cartas solo se mueven al aceptar.
+    A los 3 días sin respuesta, la propuesta caduca.
     """
+    # Lo lee la portada para montar el ejemplo de curl. Está aquí, junto a
+    # la vista, para que quien cambie lo que se recibe vea el ejemplo al
+    # lado y lo cambie también.
+    ejemplo_cuerpo = {'para': '<login>', 'carta_ofrecida': 12, 'carta_pedida': 34}
 
 
 class IntercambioApiView(MezclaApiPublica, ResponderIntercambioView):
     """
-    PUT    /api/publica/intercambios/<id>/  {"accion": "aceptar"|"rechazar"}
-    DELETE /api/publica/intercambios/<id>/  -> retirar la que enviaste yo
+    Responder a una propuesta (PUT) o retirar la tuya (DELETE).
+
+    Aceptar mueve las dos cartas a la vez o ninguna, y vuelve a
+    comprobarlo todo: desde que se propuso pueden haber pasado días.
     """
+    ejemplo_cuerpo = {'accion': 'aceptar'}
 
     def put(self, request, pk):
         """
@@ -70,9 +79,11 @@ class IntercambioApiView(MezclaApiPublica, ResponderIntercambioView):
 
 class DescartarApiView(MezclaApiPublica, DescartarView):
     """
-    GET  /api/publica/descartar/   -> qué cartas tienes repetidas 4 veces
-    POST /api/publica/descartar/   -> canjearlas, con {"carta": <id>}
+    Cambiar 4 copias de la MISMA carta por un sobre raro.
+
+    El GET dice de cuáles puedes ya; el POST lo hace.
     """
+    ejemplo_cuerpo = {'carta': 12}
 
 
 # ══════════════════════════ LAS CLAVES ══════════════════════════════════
@@ -96,14 +107,14 @@ def clave_json(c):
 
 class ClavesView(BaseApiPublica):
     """
-    GET  /api/publica/claves/   -> mis claves
-    POST /api/publica/claves/   -> crear una, con {"nombre": "..."}
+    Tus claves de API: verlas (GET) y crear una nueva (POST).
 
-    ⚠️ El POST es el ÚNICO sitio de todo el proyecto donde una clave
-    viaja en claro, y solo esa vez. Quien la pide tiene que copiarla en
-    ese momento: no hay forma de volver a verla, ni para él ni para
-    nosotros. Si la pierde, borra esa y crea otra.
+    ⚠️ El POST es el ÚNICO sitio donde una clave viaja en claro, y solo
+    esa vez. Cópiala en ese momento: no hay forma de volver a verla, ni
+    para ti ni para nosotros. Si la pierdes, borra esa y crea otra.
+    Máximo 5 claves por alumno.
     """
+    ejemplo_cuerpo = {'nombre': 'Bot de Discord'}
 
     def get(self, request):
         claves = ClaveApi.objects.filter(usuario=request.user)
@@ -139,8 +150,7 @@ class ClavesView(BaseApiPublica):
 
 class ClaveView(BaseApiPublica):
     """
-    PUT    /api/publica/claves/<id>/  {"activa": false} y/o {"nombre": "..."}
-    DELETE /api/publica/claves/<id>/  -> borrarla del todo
+    Renombrar o encender/apagar una clave tuya (PUT), o borrarla (DELETE).
 
     POR QUÉ HAY LAS DOS COSAS, DESACTIVAR Y BORRAR:
       Desactivar es reversible: si sospechas que se te ha escapado la
@@ -149,6 +159,7 @@ class ClaveView(BaseApiPublica):
       Ante una sospecha, lo que hay que poder hacer rápido es lo
       reversible; si no, la gente duda y tarda.
     """
+    ejemplo_cuerpo = {'nombre': 'Otro nombre', 'activa': False}
 
     def _mia(self, request, pk):
         """

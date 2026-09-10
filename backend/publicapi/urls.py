@@ -2,9 +2,12 @@
 
 from django.urls import path
 
-from . import escritura, views
+from . import documentacion, escritura, views
 
 urlpatterns = [
+    # --- La documentación, y la única ruta que no pide clave ---
+    path('', documentacion.PortadaView.as_view(), name='api-portada'),
+
     # --- Consultar ---
     path('catalogo/', views.CatalogoView.as_view(), name='api-catalogo'),
     path('mi-album/', views.MiAlbumView.as_view(), name='api-mi-album'),
