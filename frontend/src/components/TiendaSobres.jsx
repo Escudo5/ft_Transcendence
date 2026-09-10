@@ -23,13 +23,14 @@ function TiendaSobres() {
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
 
   // Las rarezas del backend (tier) no se llaman igual que los estilos de esta
-  // pantalla, asi que las traducimos.
+  // pantalla, asi que las traducimos. El color sube conforme sube la rareza,
+  // que es lo que importa aunque los nombres no coincidan.
+  // (El mismo diccionario esta en Catalogo.jsx: si se cambia uno, el otro.)
   const TIER_A_RAREZA = {
-    Transcender: 'legendary',
-    Alumni: 'epic',
-    Senior: 'rare',
-    Junior: 'common',
-    Blackhole: 'common',
+    Legendaria: 'legendary',
+    Transcender: 'epic',
+    'Épica': 'rare',
+    'Común': 'common',
   };
 
   // Convierte una carta del backend al formato que pinta esta pantalla

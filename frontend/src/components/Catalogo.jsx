@@ -18,16 +18,26 @@ import { Badge, TextField } from "./ui";
  */
 
 // Las rarezas del backend (tier) no se llaman igual que las clases de estilo
+// 🎴 Las rarezas del backend -> el hueco de color del sistema de diseño.
+//
+// ⚠️ Los nombres NO coinciden, y no es un error. "common/rare/epic/legendary"
+// son los cuatro colores que trae styles.css (gris, azul, morado, dorado) y
+// nuestras rarezas se llaman de otra forma. Lo que importa es que el color
+// suba conforme sube la rareza, y eso sí se cumple: la Épica sale azul y la
+// Transcender morada porque la Transcender es más rara.
+//
+// KONRAD Y SERGIO: si preferís renombrar los colores en styles.css, adelante;
+// solo hay que cambiar este diccionario a la vez.
 const TIER_A_RAREZA = {
-  Transcender: "legendary",
-  Alumni: "epic",
-  Senior: "rare",
-  Junior: "common",
-  Blackhole: "common",
+  Legendaria: "legendary",
+  Transcender: "epic",
+  "Épica": "rare",
+  "Común": "common",
 };
 
-// Los tiers tal cual, para el desplegable de filtrar
-const TIERS = ["Transcender", "Alumni", "Senior", "Junior", "Blackhole"];
+// Los tiers tal cual, para el desplegable de filtrar. El orden es el que
+// usa la ordenación "por rareza": de la más rara a la más común.
+const TIERS = ["Legendaria", "Transcender", "Épica", "Común"];
 
 export default function Catalogo() {
   const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
