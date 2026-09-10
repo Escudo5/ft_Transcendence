@@ -139,6 +139,35 @@ function ChatSocial() {
     recargarDatosSociales();
   }, []);
 
+  // 🔔 ABRIR DIRECTAMENTE LA CONVERSACIÓN DE QUIEN NOS ESPERA (Nacho, 10/09)
+  //
+  // El aviso flotante manda aquí con ?con=<login>. Sin esto te dejaba en la
+  // lista de chats y tenías que adivinar quién te habia escrito o propuesto
+  // un cambio, que es justo lo que el aviso venía a evitar.
+  //
+  // Espera a que estén cargados los amigos, porque el chat necesita el objeto
+  // entero del amigo (nombre, foto, si está bloqueado), no solo su login.
+  // Se hace una sola vez: si luego eliges otra conversación a mano, no te la
+  // cambia de debajo.
+  const yaAbiertoDeLaUrl = useRef(false);
+  useEffect(() => {
+    if (yaAbiertoDeLaUrl.current || !amigos.length) return;
+
+    const quien = new URLSearchParams(window.location.search).get('con');
+    if (!quien) return;
+
+    const amigo = amigos.find(
+      (a) => a.login.toLowerCase() === quien.toLowerCase()
+    );
+    if (amigo) {
+      setChatSeleccionado(amigo);
+      yaAbiertoDeLaUrl.current = true;
+      // Se limpia el ?con= de la barra de direcciones para que al recargar no
+      // vuelva a forzar esa conversación. replaceState no recarga la página.
+      window.history.replaceState({}, '', '/chatsocial');
+    }
+  }, [amigos]);
+
   useEffect(() => {
     let estaMontado = true;
     const intervaloSinLeer = setInterval(async () => {

@@ -109,7 +109,17 @@ export default function AvisoMensajes() {
 
   return (
     <button
-      onClick={() => { window.location.href = '/chatsocial'; }}
+      onClick={() => {
+        // Se va a la conversación de quien nos espera, no a la lista pelada.
+        // Sin esto llegabas al chat y tenías que adivinar quién, que es justo
+        // lo que el aviso venía a evitar. Y si ya estabas en /chatsocial,
+        // mandarte a la MISMA dirección no hacía nada visible.
+        // Si te esperan varios, se abre el primero: mejor entrar en una
+        // conversación que quedarte mirando la lista. Los demás siguen
+        // marcados con su bolita en la columna de la izquierda.
+        window.location.href = '/chatsocial'
+          + (deQuien.length ? `?con=${encodeURIComponent(deQuien[0])}` : '');
+      }}
       title={
         `Tienes ${trozos.join(' y ')} sin responder`
         + (deQuien.length ? ` de ${deQuien.join(', ')}` : '')
