@@ -19,91 +19,6 @@ const TEXTO_ESTADO = {
 
 const LARGO_MAXIMO = 1000;
 
-/* ===========================================================================
-   [MOCK TEMPORAL FRONTEND - INICIO]
-   Borrar este bloque entero al conectar completamente con el backend.
-   Servirá para previsualizar los chats y probar bloqueos sin depender de BD.
-   =========================================================================== */
-const AMIGOS_MOCK_PRUEBAS = [
-  {
-    id: 991,
-    login: 'amigo_normal',
-    nombre: 'Carlos López',
-    avatar: <div style={{ background: '#00ffcc', width: '100%', height: '100%', borderRadius: '50%' }} />,
-    estado: 'En línea',
-    bloqueado: false,
-    meHaBloqueado: false,
-    sinLeer: 0,
-  },
-  {
-    id: 992,
-    login: 'amigo_bloqueado_por_mi',
-    nombre: 'Ana Gómez',
-    avatar: <div style={{ background: '#ff4d4d', width: '100%', height: '100%', borderRadius: '50%' }} />,
-    estado: 'Desconectado',
-    bloqueado: true,
-    meHaBloqueado: false,
-    sinLeer: 0,
-  },
-  {
-    id: 993,
-    login: 'amigo_que_me_bloqueo',
-    nombre: 'Marcos Ruiz',
-    avatar: <div style={{ background: '#ffaa00', width: '100%', height: '100%', borderRadius: '50%' }} />,
-    estado: 'Jugando',
-    bloqueado: false,
-    meHaBloqueado: true,
-    sinLeer: 0,
-  },
-];
-
-const MENSAJES_MOCK_PRUEBAS = {
-  amigo_normal: [
-  { id: 1, texto: '¡Hola! ¿Cómo vas con el proyecto?', mio: false, fecha: new Date().toISOString() },
-  { id: 2, texto: 'Todo bien, cambiando algunas cartas.', mio: true, fecha: new Date().toISOString() },
-  // 🔄 EJEMPLO 1: Propuesta recibida que puedes Aceptar o Rechazar
-  {
-    id: 10,
-    mio: false,
-    esIntercambio: true,
-    fecha: new Date().toISOString(),
-    propuesta: {
-      id: 501,
-      loginDestino: 'amigo_normal',
-      estado: 'pendiente', // 'pendiente', 'aceptado', 'rechazado'
-      expiraEn: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // Expira en 3 días
-      cartaOfrecida: { id: 201, nombre: 'Norminette', imagen: '👾' },
-      cartaPedida: { id: 101, nombre: '42 Logo Holo', imagen: '🃏' },
-    },
-  },
-  // 🔄 EJEMPLO 2: Propuesta enviada por ti (en espera de que el otro responda)
-  {
-    id: 11,
-    mio: true,
-    esIntercambio: true,
-    fecha: new Date().toISOString(),
-    propuesta: {
-      id: 502,
-      loginDestino: 'amigo_normal',
-      estado: 'pendiente',
-      expiraEn: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-      cartaOfrecida: { id: 102, nombre: 'Piscina C', imagen: '🎴' },
-      cartaPedida: { id: 202, nombre: 'Baguette 42', imagen: '🥖' },
-    },
-  },
-],
-  amigo_bloqueado_por_mi: [
-    { id: 3, texto: 'Mensaje antiguo antes de que lo bloquearas.', mio: false, fecha: new Date(Date.now() - 86400000).toISOString() },
-    { id: 4, texto: 'Vale, recibido.', mio: true, fecha: new Date(Date.now() - 86400000).toISOString() },
-  ],
-  amigo_que_me_bloqueo: [
-    { id: 5, texto: 'Hola, ¿hablamos luego?', mio: true, fecha: new Date(Date.now() - 172800000).toISOString() },
-    { id: 6, texto: 'Historial previo intacto.', mio: false, fecha: new Date(Date.now() - 172800000).toISOString() },
-  ],
-};
-/* ===========================================================================
-   [MOCK TEMPORAL FRONTEND - FIN]
-   =========================================================================== */
 
 function obtenerFotoPerfil(usuario) {
   return (
@@ -179,17 +94,12 @@ function ChatSocial() {
       }
 
       if (!resAmigos.ok) {
-        /* ===========================================================================
-           [MOCK TEMPORAL FRONTEND - INICIO]
-           Si falla la petición al Backend, cargamos los datos mock de prueba.
-           =========================================================================== */
-        console.warn('Backend no disponible/sin datos. Usando MOCK temporal.');
-        setAmigos(AMIGOS_MOCK_PRUEBAS);
-        setError('');
+        // Nacho, 10/09: aquí se cargaban amigos inventados cuando el servidor
+        // fallaba. Se quita, como dejó dicho Konrad al escribirlo: si algo va
+        // mal hay que verlo, no taparlo con datos falsos. En una evaluación,
+        // una pantalla que finge funcionar es peor que una que da error.
+        setError('No se han podido cargar tus amigos. Inténtalo en un momento.');
         return;
-        /* ===========================================================================
-           [MOCK TEMPORAL FRONTEND - FIN]
-           =========================================================================== */
       }
 
       setError('');
@@ -202,25 +112,15 @@ function ChatSocial() {
 
       const listaAmigosServidor = await resAmigos.json();
       
-      /* ===========================================================================
-         [MOCK TEMPORAL FRONTEND - INICIO]
-         Si la lista de la API real está vacía, rellenamos con el mock para pruebas visuales.
-         =========================================================================== */
-      if (listaAmigosServidor.length === 0) {
-        setAmigos(AMIGOS_MOCK_PRUEBAS);
-      } else {
-        setAmigos(
-          listaAmigosServidor.map((usuario) => ({
-            ...adaptarAmigo(usuario),
-            sinLeer: mapaMensajesSinLeer[usuario.username] || 0,
-          }))
-        );
-      }
-      /* ===========================================================================
-         [MOCK TEMPORAL FRONTEND - FIN]
-         Remplazar el bloque anterior por:
-         setAmigos(listaAmigosServidor.map((usuario) => ({ ...adaptarAmigo(usuario), sinLeer: mapaMensajesSinLeer[usuario.username] || 0 })));
-         =========================================================================== */
+      // Exactamente lo que Konrad dejó escrito que había que poner aquí al
+      // juntarlo con el backend. Si no tienes amigos, la lista sale vacía y la
+      // pantalla ya sabe decir "todavía no tienes amigos".
+      setAmigos(
+        listaAmigosServidor.map((usuario) => ({
+          ...adaptarAmigo(usuario),
+          sinLeer: mapaMensajesSinLeer[usuario.username] || 0,
+        }))
+      );
 
       if (resSolicitudes.ok) {
         const datosSolicitudes = await resSolicitudes.json();
@@ -228,15 +128,8 @@ function ChatSocial() {
       }
     } catch (err) {
       console.error('Error al cargar amigos y solicitudes:', err);
-      /* ===========================================================================
-         [MOCK TEMPORAL FRONTEND - INICIO]
-         =========================================================================== */
-      setAmigos(AMIGOS_MOCK_PRUEBAS);
-      setError('');
-      /* ===========================================================================
-         [MOCK TEMPORAL FRONTEND - FIN]
-         Al juntar con el backend, descomentar: setError('No se ha podido conectar con el servidor.');
-         =========================================================================== */
+      // Lo que Konrad dejó dicho que había que descomentar al juntarlo.
+      setError('No se ha podido conectar con el servidor.');
     } finally {
       setCargando(false);
     }
@@ -317,18 +210,16 @@ function ChatSocial() {
           (idUltimo ? `?desde=${idUltimo}` : '');
 
         const respuesta = await fetch(urlPeticion, { credentials: 'include' });
-        if (!estaMontado || !respuesta.ok) {
-          /* ===========================================================================
-             [MOCK TEMPORAL FRONTEND - INICIO]
-             =========================================================================== */
-          if (MENSAJES_MOCK_PRUEBAS[loginUsuarioSeleccionado]) {
-            setMensajes(MENSAJES_MOCK_PRUEBAS[loginUsuarioSeleccionado]);
-          }
-          /* ===========================================================================
-             [MOCK TEMPORAL FRONTEND - FIN]
-             =========================================================================== */
+        if (!estaMontado) return;
+        if (!respuesta.ok) {
+          // Nacho, 10/09: aquí se enseñaba una conversación inventada cuando
+          // el servidor fallaba. Fuera. Se deja lo que hubiera y se avisa: la
+          // conversación se sigue pidiendo cada 3 segundos, así que si el
+          // servidor vuelve, se arregla solo.
+          setError('No se han podido cargar los mensajes.');
           return;
         }
+        setError('');
 
         const datosRespuesta = await respuesta.json();
         const nuevosMensajes = datosRespuesta.mensajes || [];
@@ -340,15 +231,7 @@ function ChatSocial() {
         );
       } catch (err) {
         console.error('Error al cargar la conversación:', err);
-        /* ===========================================================================
-           [MOCK TEMPORAL FRONTEND - INICIO]
-           =========================================================================== */
-        if (MENSAJES_MOCK_PRUEBAS[loginUsuarioSeleccionado]) {
-          setMensajes(MENSAJES_MOCK_PRUEBAS[loginUsuarioSeleccionado]);
-        }
-        /* ===========================================================================
-           [MOCK TEMPORAL FRONTEND - FIN]
-           =========================================================================== */
+        setError('No se ha podido conectar con el servidor.');
       }
     }
 
@@ -447,26 +330,19 @@ function ChatSocial() {
       const datosRespuesta = await respuesta.json().catch(() => ({}));
 
       if (!respuesta.ok) {
-        /* ===========================================================================
-           [MOCK TEMPORAL FRONTEND - INICIO]
-           =========================================================================== */
-        const nuevoMsgMock = {
-          id: Date.now(),
-          texto: textoLimpio,
-          mio: true,
-          fecha: new Date().toISOString(),
-        };
-        setMensajes((prev) => [...prev, nuevoMsgMock]);
-        if (MENSAJES_MOCK_PRUEBAS[loginUsuarioSeleccionado]) {
-          MENSAJES_MOCK_PRUEBAS[loginUsuarioSeleccionado].push(nuevoMsgMock);
-        }
-        setBorrador('');
-        setEnviando(false);
+        // ⚠️ Nacho, 10/09: ESTE ERA EL PEOR DE LOS TRES.
+        //
+        // Cuando el servidor rechazaba el mensaje, se pintaba igual en la
+        // pantalla y se borraba el cuadro de texto. O sea que veías tu mensaje
+        // enviado y el otro no lo recibía nunca, sin ningún aviso. Y el
+        // servidor rechaza mensajes por motivos de verdad: si os habéis
+        // bloqueado, si ya no sois amigos, o si pasa de 1000 caracteres.
+        //
+        // Ahora se enseña el motivo que dé el servidor y NO se borra lo
+        // escrito, para que no haya que teclearlo otra vez.
+        setError(datosRespuesta.detail || datosRespuesta.error
+                 || 'No se ha podido enviar el mensaje.');
         return;
-        /* ===========================================================================
-           [MOCK TEMPORAL FRONTEND - FIN]
-           Al juntar con backend, borrar este bloque del if(!respuesta.ok) superior
-           =========================================================================== */
       }
 
       setMensajes((prevMensajes) => [...prevMensajes, datosRespuesta]);
@@ -474,20 +350,9 @@ function ChatSocial() {
       setBorrador('');
     } catch (err) {
       console.error('Error al enviar el mensaje:', err);
-      /* ===========================================================================
-         [MOCK TEMPORAL FRONTEND - INICIO]
-         =========================================================================== */
-      const nuevoMsgMock = {
-        id: Date.now(),
-        texto: textoLimpio,
-        mio: true,
-        fecha: new Date().toISOString(),
-      };
-      setMensajes((prev) => [...prev, nuevoMsgMock]);
-      setBorrador('');
-      /* ===========================================================================
-         [MOCK TEMPORAL FRONTEND - FIN]
-         =========================================================================== */
+      // Igual que arriba: no se finge que se ha enviado, y el texto se queda
+      // escrito para poder reintentarlo.
+      setError('No se ha podido enviar el mensaje. Revisa la conexión.');
     } finally {
       setEnviando(false);
     }
