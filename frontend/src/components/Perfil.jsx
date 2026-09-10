@@ -777,8 +777,13 @@ export default function Perfil() {
                 <div style={estilos.datoEtiqueta}>Con repetidas</div>
               </div>
 
+              {/* 🏆 Puntos por rareza de la colección. Antes esta caja
+                  enseñaba el 'elo', que era un 1000 fijo en todos los
+                  perfiles porque no había nada que lo moviera. */}
               <div style={estilos.dato}>
-                <div style={estilos.datoValor}>{perfil.elo}</div>
+                <div style={estilos.datoValor}>
+                  {(perfil.puntos ?? 0).toLocaleString('es-ES')}
+                </div>
                 <div style={estilos.datoEtiqueta}>Puntuación</div>
               </div>
             </div>

@@ -72,6 +72,51 @@ CORTES = (
 )
 
 
+# ══════════════════════════════════════════════════════════════════════
+# 🏆 LO QUE VALE CADA CARTA
+# ══════════════════════════════════════════════════════════════════════
+#
+# Antes, la "puntuación" del perfil era el ELO: un 1000 fijo que no movía
+# nada, puesto pensando en un juego de cartas que no existe. Un evaluador
+# lo ve igual en todos los perfiles y pregunta, y la respuesta era "no
+# hace nada". Ahora ese hueco enseña puntos de verdad.
+#
+# Y resuelve algo más de fondo: hasta hoy, en el ranking una carta
+# Legendaria contaba lo mismo que una Común, así que la rareza solo
+# servía para el color y la animación del sobre. Con esto, elegir qué
+# cambias y qué descartas pasa a tener consecuencias.
+#
+# LOS NÚMEROS, Y POR QUÉ ESTOS:
+#
+#   Común        10  x285 =  2.850
+#   Épica        30  x214 =  6.420
+#   Transcender  80  x170 = 13.600
+#   Legendaria  250  x 50 = 12.500
+#                    ────────────
+#   Álbum entero        =  35.370
+#
+# Una legendaria vale 25 comunes, que es más o menos lo que cuesta
+# encontrarla (son el 7% del catálogo). Pero fíjate en que los totales por
+# rareza quedan parecidos: quien colecciona a lo ancho y quien caza rarezas
+# acaban en sitios parecidos. No hay una sola forma buena de jugar.
+#
+# ⚠️ SOLO CUENTAN LAS CARTAS DISTINTAS. Tener 10 copias de la misma no da
+# más puntos que tener una, a propósito: si no, acumular sin intercambiar
+# sería una estrategia, y lo que queremos premiar es completar el álbum.
+# Las repetidas valen para cambiarlas, y al cambiarlas sí suben los puntos.
+PUNTOS = {
+    COMUN: 10,
+    EPICA: 30,
+    TRANSCENDER: 80,
+    LEGENDARIA: 250,
+}
+
+
+def puntos_de(rareza):
+    """Lo que vale una carta de esa rareza. Lo que no conozcamos, 0."""
+    return PUNTOS.get(rareza, 0)
+
+
 def rareza_por_nivel(nivel):
     """
     El nivel del cursus -> la rareza de su carta.

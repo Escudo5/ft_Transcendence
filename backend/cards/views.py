@@ -16,8 +16,9 @@ from .models import Card, UserCard, UserPack
 from django.http import JsonResponse
 import json
 from django.db import transaction
-from django.db.models import Count, Sum
+from django.db.models import Case, Count, IntegerField, Sum, Value, When
 from django.db.models.functions import Coalesce
+from .rarezas import PUNTOS
 from django.utils import timezone
 
 class HealthCheckView(APIView):
@@ -296,26 +297,51 @@ def reclamar_regalo_diario(request):
 @permission_classes([IsAuthenticated])
 def ranking(request):
     """
-    Clasificación de coleccionistas: quién tiene más cartas distintas.
+    Clasificación de coleccionistas.
 
-    Se ordena por colección y no por el elo porque el elo todavía es 1000 para
-    todo el mundo (no hay juego que lo mueva), así que un ranking por elo sería
-    una lista plana sin sentido. Cuando haya partidas se puede añadir otra
-    pestaña ordenada por elo.
+    Dos formas de mirarla, y las dos dicen algo distinto:
 
-    Una sola consulta con anotaciones, para no acabar preguntando a la base de
-    datos una vez por usuario.
+      ?orden=coleccion  (por defecto)  quién lleva más cartas distintas
+      ?orden=puntos                    quién tiene las cartas más raras
+
+    Se pueden ir muy lejos la una de la otra, y esa es la gracia: alguien con
+    200 comunes va por delante en colección, y alguien con 30 legendarias por
+    delante en puntos. Lo que valen las cartas está en cards/rarezas.py.
+
+    Antes había un campo 'elo' que no ordenaba nada porque era 1000 para todo
+    el mundo. Ya no se usa aquí.
+
+    ⚠️ TODO en UNA consulta, con anotaciones. Calcular los puntos en Python
+    obligaría a recorrer el álbum de cada usuario: 50 consultas en vez de una.
     """
     total_catalogo = Card.objects.count() or 1
+    orden = request.query_params.get('orden', 'coleccion')
+
+    # Traduce la rareza de cada carta a sus puntos DENTRO de la consulta, para
+    # que sume la base de datos y no nosotros. Los pares salen del diccionario
+    # de rarezas, así que añadir una rareza nueva no obliga a tocar esto.
+    puntos_de_la_carta = Case(
+        *[When(album__card__tier=rareza, then=Value(valor))
+          for rareza, valor in PUNTOS.items()],
+        default=Value(0),
+        output_field=IntegerField(),
+    )
 
     usuarios = (
         CustomUser.objects
         .annotate(
             distintas=Count('album', distinct=True),
             copias=Coalesce(Sum('album__cantidad'), 0),
+            # Suma sobre las filas de UserCard, que hay una por carta distinta:
+            # tener 10 copias de la misma no suma diez veces.
+            puntos=Coalesce(Sum(puntos_de_la_carta), 0),
         )
-        .order_by('-distintas', '-copias', 'username')[:50]
     )
+
+    if orden == 'puntos':
+        usuarios = usuarios.order_by('-puntos', '-distintas', 'username')[:50]
+    else:
+        usuarios = usuarios.order_by('-distintas', '-copias', 'username')[:50]
 
     clasificacion = []
     for posicion, u in enumerate(usuarios, start=1):
@@ -329,12 +355,14 @@ def ranking(request):
             'cartas_distintas': u.distintas,
             'cartas_con_repetidas': u.copias,
             'porcentaje': round(u.distintas / total_catalogo * 100, 1),
+            'puntos': u.puntos,
             'elo': u.elo,
             'soy_yo': u.pk == request.user.pk,
         })
 
     return Response({
         'cartas_en_catalogo': total_catalogo,
+        'orden': orden,
         'clasificacion': clasificacion,
     })
 
