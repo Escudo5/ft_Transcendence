@@ -331,7 +331,16 @@ class ResponderIntercambioView(APIView):
 # aleatoria), y juntar 4 copias de la MISMA carta es raro de por sí.
 # =====================================================================
 
-COPIAS_PARA_DESCARTAR = 4
+COPIAS_PARA_DESCARTAR = 4   # las que se queman por cada grupo
+
+# Las que hay que TENER para poder quemar un grupo. No son las mismas: de cada
+# carta te queda siempre una, así que para quemar 4 hacen falta 5.
+#
+# ⚠️ Nacho, 11/09: esto existe porque ayer cambié la regla y actualicé el POST
+# y la pantalla de Sergio, pero me dejé este GET diciendo que con 4 valía. No
+# reventaba nada (hoy nadie llama al GET), pero la misma ruta afirmaba una cosa
+# y hacía otra. Ahora las dos miran la misma constante.
+COPIAS_MINIMAS_PARA_DESCARTAR = COPIAS_PARA_DESCARTAR + 1
 
 # ⚠️ Nacho, 10/09: esto lo escribió Sergio con las rarezas de ayer (Junior,
 # Senior, Alumni, Blackhole) y yo las cambié el mismo día, así que 44 de las
@@ -353,21 +362,28 @@ class DescartarView(APIView):
 
     def get(self, request):
         """
-        Las cartas de las que tienes 4 copias o más. Existe para que el
-        álbum pueda enseñar el botón solo donde se puede pulsar.
+        Las cartas que puedes quemar YA: de las que tienes 5 copias o más.
+
+        Existe para que el álbum enseñe el botón solo donde se puede pulsar,
+        así que tiene que decir exactamente lo mismo que acepta el POST de
+        aquí abajo. Si alguna vez dejan de coincidir, la pantalla ofrecerá
+        cartas que el servidor va a rechazar.
         """
         filas = (UserCard.objects
-                 .filter(user=request.user, cantidad__gte=COPIAS_PARA_DESCARTAR)
+                 .filter(user=request.user,
+                         cantidad__gte=COPIAS_MINIMAS_PARA_DESCARTAR)
                  .select_related('card')
                  .order_by('-cantidad'))
         return Response({
-            'copias_necesarias': COPIAS_PARA_DESCARTAR,
+            'copias_necesarias': COPIAS_MINIMAS_PARA_DESCARTAR,
+            'copias_que_se_queman': COPIAS_PARA_DESCARTAR,
             'sobres_por_calidad': {
                 tipo: sorted(tiers) for tipo, tiers in SOBRES_POR_TIER.items()
             },
             'descartables': [
+                # Todas menos una: la última no se puede quemar nunca.
                 {**_carta_json(f.card), 'copias': f.cantidad,
-                 'sobres_posibles': f.cantidad // COPIAS_PARA_DESCARTAR}
+                 'sobres_posibles': (f.cantidad - 1) // COPIAS_PARA_DESCARTAR}
                 for f in filas
             ],
         }, status=status.HTTP_200_OK)
