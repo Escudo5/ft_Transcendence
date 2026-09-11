@@ -193,21 +193,57 @@ def _estadisticas_coleccion(usuario):
     entre las apps de usuarios y de cartas.
     """
     from cards.models import Card, UserCard
+    from cards.rarezas import TODAS, puntos_de
 
-    ORDEN_TIERS = ['Blackhole', 'Junior', 'Senior', 'Alumni', 'Transcender']
-
+    # El orden de las rarezas ya no se escribe aquí: viene de cards/rarezas.py,
+    # que es donde se decide cuáles hay. Antes estaba copiado a mano y, al
+    # cambiar las rarezas, "tu carta más rara" dejó de reconocer la mitad.
     mis_cartas = UserCard.objects.filter(user=usuario).select_related('card')
     distintas = mis_cartas.count()
     total_catalogo = Card.objects.count()
     con_repetidas = sum(c.cantidad for c in mis_cartas)
 
+    # 🏆 TU CARTA MÁS RARA
+    #
+    # Antes solo se comparaba la RAREZA, y con un mayor estricto:
+    #
+    #     if TODAS.index(tier) > TODAS.index(mejor['tier']):
+    #
+    # O sea que la primera Legendaria que encontrara se quedaba, y ninguna otra
+    # Legendaria la podía desbancar, porque ninguna es "más" que otra. Y como
+    # la consulta no lleva orden, la base de datos las devuelve como quiere:
+    # te enseñaba una al azar de entre las de arriba.
+    #
+    # A Nacho, con 5 Legendarias, le salía la de nivel 14,59 y no la de 22,61.
+    #
+    # Ahora se desempata por NIVEL. Tiene sentido porque la rareza ya se
+    # calcula a partir del nivel (ver cards/rarezas.py): es la misma vara de
+    # medir, solo que más fina. Así "tu carta más rara" es de verdad la mejor
+    # que tienes, no una cualquiera.
+    def cuanto_vale(uc):
+        return (TODAS.index(uc.card.tier), uc.card.cursus_lvl or 0)
+
     mejor = None
+    mejor_valor = None
+    puntos = 0
     for uc in mis_cartas:
         tier = uc.card.tier
-        if tier not in ORDEN_TIERS:
+        # Solo las distintas suman: el bucle va por UserCard, que tiene una
+        # fila por carta, no una por copia.
+        puntos += puntos_de(tier)
+        if tier not in TODAS:
             continue
-        if mejor is None or ORDEN_TIERS.index(tier) > ORDEN_TIERS.index(mejor['tier']):
-            mejor = {'login': uc.card.login, 'tier': tier, 'photo': uc.card.photo}
+        valor = cuanto_vale(uc)
+        if mejor_valor is None or valor > mejor_valor:
+            mejor_valor = valor
+            mejor = {
+                'login': uc.card.login,
+                'tier': tier,
+                'photo': uc.card.photo,
+                # Va también el nivel: es el dato que explica POR QUÉ esa carta
+                # es la mejor, y sin él el desempate no se entiende al verlo.
+                'nivel': uc.card.cursus_lvl,
+            }
 
     return {
         'cartas_distintas': distintas,
@@ -216,6 +252,7 @@ def _estadisticas_coleccion(usuario):
         # Porcentaje del álbum completado, redondeado a un decimal
         'porcentaje': round(distintas / total_catalogo * 100, 1) if total_catalogo else 0,
         'carta_mas_rara': mejor,
+        'puntos': puntos,
     }
 
 
@@ -230,6 +267,7 @@ def _logros(usuario, stats):
     solo un sí o un no.
     """
     from cards.models import UserCard
+    from cards.rarezas import LEGENDARIA, TRANSCENDER
 
     mis_cartas = list(UserCard.objects.filter(user=usuario).select_related('card'))
 
@@ -258,10 +296,20 @@ def _logros(usuario, stats):
               int(stats['porcentaje']), 50),
         logro('completista', 'Completista', 'Completa el álbum entero', '👑',
               distintas, total_catalogo),
-        logro('leyenda', 'Cazador de leyendas', 'Consigue una carta Transcender', '✨',
-              1 if 'Transcender' in tiers else 0, 1),
-        logro('alumni', 'Buscador de Alumni', 'Consigue una carta Alumni', '🎓',
-              1 if 'Alumni' in tiers else 0, 1),
+        # 🎴 CAMBIO (Nacho, 10/09). Estos dos miraban rarezas que ya no
+        # existen: "Buscador de Alumni" se había vuelto IMPOSIBLE de
+        # conseguir, porque ninguna carta es "Alumni" desde que la rareza va
+        # por nivel. Y "Cazador de leyendas" pedía una Transcender, que ahora
+        # es la tercera de cuatro y no la más rara.
+        #
+        # Los nombres de las rarezas salen de cards/rarezas.py, no escritos a
+        # mano, que es justo lo que hizo que esto se rompiera.
+        logro('leyenda', 'Cazador de leyendas',
+              f'Consigue una carta {LEGENDARIA}', '✨',
+              1 if LEGENDARIA in tiers else 0, 1),
+        logro('transcender', 'Más allá del tronco común',
+              f'Consigue una carta {TRANSCENDER}', '🎓',
+              1 if TRANSCENDER in tiers else 0, 1),
         logro('coaliciones', 'Diplomático', 'Ten cartas de las cuatro coaliciones', '🏳️',
               len(coaliciones), 4),
         logro('acumulador', 'Acumulador', 'Ten 5 copias de una misma carta', '🗃️',
@@ -285,6 +333,11 @@ def _perfil_publico(usuario):
         'bio': usuario.bio,
         'profile_image': usuario.foto,
         'tiene_avatar': bool(usuario.avatar),
+        # 🏆 La puntuación del perfil sale de la colección (ver cards/rarezas.py).
+        # El 'elo' se sigue mandando porque el campo existe en la base y puede
+        # haber algo que lo lea, pero ya no lo enseña nadie: era un 1000 fijo
+        # que no movía nada.
+        'puntos': stats['puntos'],
         'elo': usuario.elo,
         'estado': usuario.estado_real,
         'is_alumni': usuario.is_alumni,

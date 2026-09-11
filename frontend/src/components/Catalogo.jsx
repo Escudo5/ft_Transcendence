@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Badge, TextField } from "./ui";
+import ModalContratos, { BotonContratos } from "./Contratos";
+import BotonAbrirSobres from "./BotonAbrirSobres";
+import { CLASE_RAREZA, RAREZAS } from "./rarezas";
 
 /**
  * EL ÁLBUM
@@ -17,17 +20,17 @@ import { Badge, TextField } from "./ui";
  * no tiene ataque ni defensa: tiene nivel, puntos de evaluación y coalición.
  */
 
-// Las rarezas del backend (tier) no se llaman igual que las clases de estilo
-const TIER_A_RAREZA = {
-  Transcender: "legendary",
-  Alumni: "epic",
-  Senior: "rare",
-  Junior: "common",
-  Blackhole: "common",
-};
+// 🎴 La rareza del backend -> la clase de color del sistema de diseño.
+// El diccionario ya no vive aquí: está en rarezas.js, que es el único sitio
+// donde se escriben los nombres de las rarezas. Esta era la tercera copia
+// del mismo dato, y tener el mismo dato en tres sitios es lo que hizo que
+// medio proyecto se quedara viejo en silencio al cambiar las rarezas.
+const TIER_A_RAREZA = CLASE_RAREZA;
 
-// Los tiers tal cual, para el desplegable de filtrar
-const TIERS = ["Transcender", "Alumni", "Senior", "Junior", "Blackhole"];
+// Para el desplegable de filtrar y para la ordenación "por rareza": de la
+// más rara a la más común. RAREZAS va al revés, así que se le da la vuelta
+// a una COPIA, porque reverse() modifica el array original.
+const TIERS = [...RAREZAS].reverse();
 
 export default function Catalogo() {
   const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
@@ -43,6 +46,12 @@ export default function Catalogo() {
   const [sortBy, setSortBy] = useState("login");
   const [currentPage, setCurrentPage] = useState(1);
   const cardsPerPage = 8;
+
+  // 🤝 Contratos: 4 cartas repetidas de la misma rareza -> 1 mejor.
+  // 'refrescoAlbum' solo sirve para forzar que se vuelva a pedir el álbum
+  // cuando un contrato lo cambia: al subirlo, el efecto de abajo se dispara.
+  const [contratosAbierto, setContratosAbierto] = useState(false);
+  const [refrescoAlbum, setRefrescoAlbum] = useState(0);
 
   // Pedimos el álbum al entrar
   useEffect(() => {
@@ -65,12 +74,13 @@ export default function Catalogo() {
         setAlbum(
           (datos || []).map((item) => ({
             id: item.id,
+            cardId: item.card?.id,
             cantidad: item.cantidad ?? 1,
             login: item.card?.login || "",
             titulo: item.card?.title || item.card?.login || "",
             coalicion: item.card?.coalition || "Sin coalición",
             foto: item.card?.photo,
-            tier: item.card?.tier || "Junior",
+            tier: item.card?.tier || "Común",
             rareza: TIER_A_RAREZA[item.card?.tier] || "common",
             nivel: item.card?.cursus_lvl ?? 0,
             evaluaciones: item.card?.eval_point ?? 0,
@@ -85,7 +95,7 @@ export default function Catalogo() {
       }
     }
     cargarAlbum();
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, refrescoAlbum]);
 
   // Reiniciar a la primera página si cambian los filtros
   useEffect(() => {
@@ -139,9 +149,8 @@ export default function Catalogo() {
           <Link to="/home" className="back-btn-link">
             ← Volver al Inicio
           </Link>
-          <Link to="/inventario" className="back-btn-link">
-            🧰 Ir a Inventario
-          </Link>
+          <BotonAbrirSobres />
+          <BotonContratos onClick={() => setContratosAbierto(true)} />
         </div>
         <div className="logo-section" style={{ marginTop: "1rem" }}>
           <span className="logo-icon">✨</span>
@@ -208,10 +217,12 @@ export default function Catalogo() {
         ) : album.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon">📂</span>
-            <p>Tu álbum está vacío. Abre sobres en el inventario para conseguir cartas.</p>
-            <Link to="/inventario" className="back-btn-link" style={{ marginTop: "1rem", display: "inline-block" }}>
-              🧰 Ir a abrir sobres
-            </Link>
+            <p>Tu álbum está vacío. Abre sobres en la tienda para conseguir cartas.</p>
+            {/* El mismo botón que arriba: si el álbum está vacío, este es
+                justo el sitio donde más apetece que llame la atención. */}
+            <div style={{ marginTop: "1rem" }}>
+              <BotonAbrirSobres>Ir a abrir sobres</BotonAbrirSobres>
+            </div>
           </div>
         ) : currentCards.length === 0 ? (
           <div className="empty-state">
@@ -345,6 +356,12 @@ export default function Catalogo() {
           </button>
         </nav>
       )}
+
+      <ModalContratos
+        isOpen={contratosAbierto}
+        onClose={() => setContratosAbierto(false)}
+        alTerminar={() => setRefrescoAlbum((n) => n + 1)}
+      />
     </main>
   );
 }

@@ -2,7 +2,8 @@ import os
 import time
 import requests
 from django.core.management.base import BaseCommand
-from cards.models import Card  
+from cards.models import Card
+from cards.rarezas import rareza_por_nivel   # 🎴 Nacho, 10/09
 
     # =========================================================================
     # 🛠️ FUNCIONES AUXILIARES COMPARTIDAS (Misma lógica, cero redundancia)
@@ -138,12 +139,15 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"   ⏩ Saltando a {login} (Inactivo/Blackhole anterior a la fecha límite)"))
                 continue
 
-            # Lógica de asignación de Tiers
-            grade = perfil.get("grade", "")
-            if grade == "Cadet":
-                tier = "Junior" if nivel_cursus < 5 else "Senior"
-            else:
-                tier = "Transcender"
+            # 🎴 CAMBIO (Nacho, 10/09): la rareza sale del NIVEL, no del grade.
+            # El porqué, con los datos reales de la Intra, está en
+            # cards/rarezas.py. Resumen: Alumni no es mejor que Transcender,
+            # es alguien que se quedó parado al final del tronco común.
+            #
+            # Aquí NO se filtra a nadie: estos cinco somos los del equipo y
+            # nuestras cartas tienen que existir siempre, pase lo que pase con
+            # nuestro cursus. Sin ellas la portada da errores 404.
+            tier = rareza_por_nivel(nivel_cursus)
 
             # Parseo de Título (Reutilizado)
             titulo = self._parsear_titulo_usuario(perfil, login)
@@ -187,28 +191,32 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(f"   ⏩ Saltando a {login_alumno} (Es miembro del Staff)"))
             return
         
-        # Parseo de datos del Cursus 21 (Nivel, BH, Alumni)
-        fecha_bh = registro.get("end_at")
-        blackhole = fecha_bh is not None
+        # 🎴 CAMBIO (Nacho, 10/09). Dos cosas, y las dos con datos reales de la
+        # Intra detrás (el detalle está en cards/rarezas.py):
+        #
+        #   1. El FILTRO. Antes solo se saltaba a quien había caído ANTES de
+        #      junio de 2023, así que quien cayó en 2024 o 2025 entraba igual.
+        #      Ahora se salta a cualquiera cuyo cursus se haya acabado.
+        #
+        #      Se mira `end_at` y no `blackholed_at`: blackholed_at es la fecha
+        #      límite que tiene TODO alumno vivo del tronco común, así que no
+        #      dice nada sobre si sigue o no. end_at solo se rellena cuando el
+        #      cursus se acabó de verdad.
+        #
+        #   2. La RAREZA sale del nivel, no del grade.
+        fin_del_cursus = registro.get("end_at")
         nivel_cursus = round(registro.get("level", 0.0), 2)
-        grade = registro.get("grade", "")
-        tier = ""
-        if grade == "Cadet":
-            tier = "Junior" if nivel_cursus < 5 else "Senior"
-        if grade == "Transcender":
-            tier = "Transcender"
-        if grade == "Alumni":
-            tier = "Alumni"
-        if blackhole == True:
-            tier = "Blackhole"
+
+        if fin_del_cursus:
+            self.stdout.write(self.style.WARNING(
+                f"   ⏩ Saltando a {login_alumno} (su cursus terminó el {fin_del_cursus[:10]})"))
+            return
+
+        tier = rareza_por_nivel(nivel_cursus)
+
         url_foto = registro.get("user",{}).get("image",{}).get("versions",{}).get("medium")
         puntos_eval = registro.get("user",{}).get("correction_point")
         wallets = registro.get("user",{}).get("wallet")
-
-        # Filtro Blackhole histórico
-        if blackhole and fecha_bh and fecha_bh < "2023-06-17":
-            self.stdout.write(self.style.WARNING(f"   ⏩ Saltando a {login_alumno} (Inactivo/Blackhole desde {fecha_bh[:10]})"))
-            return
         perfil_completo = self._consultar_perfil_extendido(id_alumno, login_alumno, headers)
         if not perfil_completo:
             return
@@ -218,7 +226,10 @@ class Command(BaseCommand):
         self._guardar_o_actualizar_carta(
             login=login_alumno, photo=url_foto, coalition=coalition, title=titulo,
             altarians=wallets, cursus_lvl=nivel_cursus, eval_point=puntos_eval,
-            is_blackhole=blackhole, tier=tier
+            # Siempre False: aquí solo se llega si el cursus NO ha terminado.
+            # (El parámetro no se guarda en ninguna parte: el modelo Card no
+            #  tiene ese campo. Se deja para no cambiarle la firma a Pablo.)
+            is_blackhole=False, tier=tier
         )
         time.sleep(0.5)
 

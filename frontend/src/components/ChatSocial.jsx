@@ -6,6 +6,7 @@ import ListaChats from './ListaChats';
 import BuscarAmigos from './BuscarAmigos';
 import SolicitudesRecibidas from './SolicitudesRecibidas';
 import AreaChat from './AreaChat';
+import { adaptarPropuesta } from './Intercambio';
 import './Chat.css';
 
 const API = import.meta.env.VITE_API_URL || '/api';
@@ -18,61 +19,6 @@ const TEXTO_ESTADO = {
 
 const LARGO_MAXIMO = 1000;
 
-/* ===========================================================================
-   [MOCK TEMPORAL FRONTEND - INICIO]
-   Borrar este bloque entero al conectar completamente con el backend.
-   Servirá para previsualizar los chats y probar bloqueos sin depender de BD.
-   =========================================================================== */
-const AMIGOS_MOCK_PRUEBAS = [
-  {
-    id: 991,
-    login: 'amigo_normal',
-    nombre: 'Carlos López',
-    avatar: <div style={{ background: '#00ffcc', width: '100%', height: '100%', borderRadius: '50%' }} />,
-    estado: 'En línea',
-    bloqueado: false,
-    meHaBloqueado: false,
-    sinLeer: 0,
-  },
-  {
-    id: 992,
-    login: 'amigo_bloqueado_por_mi',
-    nombre: 'Ana Gómez',
-    avatar: <div style={{ background: '#ff4d4d', width: '100%', height: '100%', borderRadius: '50%' }} />,
-    estado: 'Desconectado',
-    bloqueado: true,
-    meHaBloqueado: false,
-    sinLeer: 0,
-  },
-  {
-    id: 993,
-    login: 'amigo_que_me_bloqueo',
-    nombre: 'Marcos Ruiz',
-    avatar: <div style={{ background: '#ffaa00', width: '100%', height: '100%', borderRadius: '50%' }} />,
-    estado: 'Jugando',
-    bloqueado: false,
-    meHaBloqueado: true,
-    sinLeer: 0,
-  },
-];
-
-const MENSAJES_MOCK_PRUEBAS = {
-  amigo_normal: [
-    { id: 1, texto: '¡Hola! ¿Cómo vas con el proyecto?', mio: false, fecha: new Date().toISOString() },
-    { id: 2, texto: 'Todo bien, avanzando con el frontend.', mio: true, fecha: new Date().toISOString() },
-  ],
-  amigo_bloqueado_por_mi: [
-    { id: 3, texto: 'Mensaje antiguo antes de que lo bloquearas.', mio: false, fecha: new Date(Date.now() - 86400000).toISOString() },
-    { id: 4, texto: 'Vale, recibido.', mio: true, fecha: new Date(Date.now() - 86400000).toISOString() },
-  ],
-  amigo_que_me_bloqueo: [
-    { id: 5, texto: 'Hola, ¿hablamos luego?', mio: true, fecha: new Date(Date.now() - 172800000).toISOString() },
-    { id: 6, texto: 'Historial previo intacto.', mio: false, fecha: new Date(Date.now() - 172800000).toISOString() },
-  ],
-};
-/* ===========================================================================
-   [MOCK TEMPORAL FRONTEND - FIN]
-   =========================================================================== */
 
 function obtenerFotoPerfil(usuario) {
   return (
@@ -148,17 +94,12 @@ function ChatSocial() {
       }
 
       if (!resAmigos.ok) {
-        /* ===========================================================================
-           [MOCK TEMPORAL FRONTEND - INICIO]
-           Si falla la petición al Backend, cargamos los datos mock de prueba.
-           =========================================================================== */
-        console.warn('Backend no disponible/sin datos. Usando MOCK temporal.');
-        setAmigos(AMIGOS_MOCK_PRUEBAS);
-        setError('');
+        // Nacho, 10/09: aquí se cargaban amigos inventados cuando el servidor
+        // fallaba. Se quita, como dejó dicho Konrad al escribirlo: si algo va
+        // mal hay que verlo, no taparlo con datos falsos. En una evaluación,
+        // una pantalla que finge funcionar es peor que una que da error.
+        setError('No se han podido cargar tus amigos. Inténtalo en un momento.');
         return;
-        /* ===========================================================================
-           [MOCK TEMPORAL FRONTEND - FIN]
-           =========================================================================== */
       }
 
       setError('');
@@ -171,25 +112,15 @@ function ChatSocial() {
 
       const listaAmigosServidor = await resAmigos.json();
       
-      /* ===========================================================================
-         [MOCK TEMPORAL FRONTEND - INICIO]
-         Si la lista de la API real está vacía, rellenamos con el mock para pruebas visuales.
-         =========================================================================== */
-      if (listaAmigosServidor.length === 0) {
-        setAmigos(AMIGOS_MOCK_PRUEBAS);
-      } else {
-        setAmigos(
-          listaAmigosServidor.map((usuario) => ({
-            ...adaptarAmigo(usuario),
-            sinLeer: mapaMensajesSinLeer[usuario.username] || 0,
-          }))
-        );
-      }
-      /* ===========================================================================
-         [MOCK TEMPORAL FRONTEND - FIN]
-         Remplazar el bloque anterior por:
-         setAmigos(listaAmigosServidor.map((usuario) => ({ ...adaptarAmigo(usuario), sinLeer: mapaMensajesSinLeer[usuario.username] || 0 })));
-         =========================================================================== */
+      // Exactamente lo que Konrad dejó escrito que había que poner aquí al
+      // juntarlo con el backend. Si no tienes amigos, la lista sale vacía y la
+      // pantalla ya sabe decir "todavía no tienes amigos".
+      setAmigos(
+        listaAmigosServidor.map((usuario) => ({
+          ...adaptarAmigo(usuario),
+          sinLeer: mapaMensajesSinLeer[usuario.username] || 0,
+        }))
+      );
 
       if (resSolicitudes.ok) {
         const datosSolicitudes = await resSolicitudes.json();
@@ -197,15 +128,8 @@ function ChatSocial() {
       }
     } catch (err) {
       console.error('Error al cargar amigos y solicitudes:', err);
-      /* ===========================================================================
-         [MOCK TEMPORAL FRONTEND - INICIO]
-         =========================================================================== */
-      setAmigos(AMIGOS_MOCK_PRUEBAS);
-      setError('');
-      /* ===========================================================================
-         [MOCK TEMPORAL FRONTEND - FIN]
-         Al juntar con el backend, descomentar: setError('No se ha podido conectar con el servidor.');
-         =========================================================================== */
+      // Lo que Konrad dejó dicho que había que descomentar al juntarlo.
+      setError('No se ha podido conectar con el servidor.');
     } finally {
       setCargando(false);
     }
@@ -214,6 +138,35 @@ function ChatSocial() {
   useEffect(() => {
     recargarDatosSociales();
   }, []);
+
+  // 🔔 ABRIR DIRECTAMENTE LA CONVERSACIÓN DE QUIEN NOS ESPERA (Nacho, 10/09)
+  //
+  // El aviso flotante manda aquí con ?con=<login>. Sin esto te dejaba en la
+  // lista de chats y tenías que adivinar quién te habia escrito o propuesto
+  // un cambio, que es justo lo que el aviso venía a evitar.
+  //
+  // Espera a que estén cargados los amigos, porque el chat necesita el objeto
+  // entero del amigo (nombre, foto, si está bloqueado), no solo su login.
+  // Se hace una sola vez: si luego eliges otra conversación a mano, no te la
+  // cambia de debajo.
+  const yaAbiertoDeLaUrl = useRef(false);
+  useEffect(() => {
+    if (yaAbiertoDeLaUrl.current || !amigos.length) return;
+
+    const quien = new URLSearchParams(window.location.search).get('con');
+    if (!quien) return;
+
+    const amigo = amigos.find(
+      (a) => a.login.toLowerCase() === quien.toLowerCase()
+    );
+    if (amigo) {
+      setChatSeleccionado(amigo);
+      yaAbiertoDeLaUrl.current = true;
+      // Se limpia el ?con= de la barra de direcciones para que al recargar no
+      // vuelva a forzar esa conversación. replaceState no recarga la página.
+      window.history.replaceState({}, '', '/chatsocial');
+    }
+  }, [amigos]);
 
   useEffect(() => {
     let estaMontado = true;
@@ -245,17 +198,32 @@ function ChatSocial() {
   const [enviando, setEnviando] = useState(false);
   const ultimoMensajeIdRef = useRef(null);
 
+  // 🔄 Las propuestas de intercambio de esta conversación (Nacho, 10/09).
+  //
+  // Van en un estado APARTE de los mensajes, y no mezcladas en la misma
+  // petición, porque son dos cosas distintas: los mensajes solo crecen (se
+  // piden los nuevos con ?desde=<id> y se añaden al final), pero una
+  // propuesta CAMBIA: pasa de pendiente a aceptada, o caduca a los 3 días.
+  // Si viviera dentro de la lista de mensajes habría que ir buscándola para
+  // actualizarla. Así se vuelve a pedir la lista entera cada vez y ya está.
+  const [propuestas, setPropuestas] = useState([]);
+  // Un contador que solo sirve para forzar que se vuelvan a pedir: al subirlo,
+  // el efecto de abajo se dispara otra vez.
+  const [refrescoIntercambios, setRefrescoIntercambios] = useState(0);
+
   const loginUsuarioSeleccionado = chatSeleccionado?.login || null;
 
   useEffect(() => {
     if (!loginUsuarioSeleccionado) {
       setMensajes([]);
+      setPropuestas([]);
       return undefined;
     }
 
     let estaMontado = true;
     ultimoMensajeIdRef.current = null;
     setMensajes([]);
+    setPropuestas([]);
 
     setAmigos((prevAmigos) =>
       prevAmigos.map((amigo) =>
@@ -271,18 +239,16 @@ function ChatSocial() {
           (idUltimo ? `?desde=${idUltimo}` : '');
 
         const respuesta = await fetch(urlPeticion, { credentials: 'include' });
-        if (!estaMontado || !respuesta.ok) {
-          /* ===========================================================================
-             [MOCK TEMPORAL FRONTEND - INICIO]
-             =========================================================================== */
-          if (MENSAJES_MOCK_PRUEBAS[loginUsuarioSeleccionado]) {
-            setMensajes(MENSAJES_MOCK_PRUEBAS[loginUsuarioSeleccionado]);
-          }
-          /* ===========================================================================
-             [MOCK TEMPORAL FRONTEND - FIN]
-             =========================================================================== */
+        if (!estaMontado) return;
+        if (!respuesta.ok) {
+          // Nacho, 10/09: aquí se enseñaba una conversación inventada cuando
+          // el servidor fallaba. Fuera. Se deja lo que hubiera y se avisa: la
+          // conversación se sigue pidiendo cada 3 segundos, así que si el
+          // servidor vuelve, se arregla solo.
+          setError('No se han podido cargar los mensajes.');
           return;
         }
+        setError('');
 
         const datosRespuesta = await respuesta.json();
         const nuevosMensajes = datosRespuesta.mensajes || [];
@@ -294,15 +260,7 @@ function ChatSocial() {
         );
       } catch (err) {
         console.error('Error al cargar la conversación:', err);
-        /* ===========================================================================
-           [MOCK TEMPORAL FRONTEND - INICIO]
-           =========================================================================== */
-        if (MENSAJES_MOCK_PRUEBAS[loginUsuarioSeleccionado]) {
-          setMensajes(MENSAJES_MOCK_PRUEBAS[loginUsuarioSeleccionado]);
-        }
-        /* ===========================================================================
-           [MOCK TEMPORAL FRONTEND - FIN]
-           =========================================================================== */
+        setError('No se ha podido conectar con el servidor.');
       }
     }
 
@@ -314,6 +272,70 @@ function ChatSocial() {
       clearInterval(intervaloChat);
     };
   }, [loginUsuarioSeleccionado]);
+
+  // 🔄 LAS PROPUESTAS DE INTERCAMBIO DE ESTA CONVERSACIÓN (Nacho, 10/09)
+  //
+  // Ciclo aparte del de los mensajes, y no por capricho: al refrescar las
+  // propuestas (por ejemplo justo después de aceptar una) no queremos vaciar
+  // y volver a pedir la conversación entera, que es lo que hace el otro
+  // efecto cada vez que se dispara.
+  //
+  // Aquí se pide la lista COMPLETA cada vez, sin el ?desde=<id> de los
+  // mensajes. Es a propósito: un mensaje solo se añade, pero una propuesta
+  // cambia de estado (pendiente -> aceptada) o caduca a los 3 días, así que
+  // hay que volver a mirarlas todas. Son como mucho un puñado.
+  useEffect(() => {
+    if (!loginUsuarioSeleccionado) {
+      setPropuestas([]);
+      return undefined;
+    }
+
+    let estaMontado = true;
+
+    async function obtenerPropuestas() {
+      try {
+        const respuesta = await fetch(`${API}/cards/intercambios/`, { credentials: 'include' });
+        if (!estaMontado || !respuesta.ok) return;
+
+        const datos = await respuesta.json();
+        // El servidor manda TODAS mis propuestas vivas, con cualquiera; aquí
+        // nos quedamos con las de esta conversación. Las aceptadas, las
+        // rechazadas y las de más de 3 días ya no vienen.
+        const suyas = [...(datos.recibidos || []), ...(datos.enviados || [])]
+          .filter((i) => i.de === loginUsuarioSeleccionado || i.para === loginUsuarioSeleccionado)
+          .map((i) => ({
+            // 'int-' delante porque AreaChat usa el id como clave de React, y
+            // mensajes e intercambios son tablas distintas: un mensaje con id
+            // 7 y un intercambio con id 7 chocarían.
+            id: `int-${i.id}`,
+            mio: i.mio,
+            fecha: i.fecha,
+            esIntercambio: true,
+            propuesta: adaptarPropuesta(i),
+          }));
+        if (estaMontado) setPropuestas(suyas);
+      } catch (err) {
+        console.error('Error al cargar los intercambios:', err);
+      }
+    }
+
+    obtenerPropuestas();
+    const intervalo = setInterval(obtenerPropuestas, 3000);
+
+    return () => {
+      estaMontado = false;
+      clearInterval(intervalo);
+    };
+  }, [loginUsuarioSeleccionado, refrescoIntercambios]);
+
+  // Lo llama AreaChat justo después de proponer, aceptar o rechazar, para que
+  // se vea al momento y no haya que esperar a la siguiente vuelta de 3s.
+  const recargarIntercambios = () => setRefrescoIntercambios((n) => n + 1);
+
+  // Mensajes y propuestas, juntos y por orden de fecha, para que cada
+  // propuesta salga en el punto de la conversación en el que se hizo.
+  const mensajesConIntercambios = [...mensajes, ...propuestas]
+    .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
   const enviarMensaje = async (e) => {
     e.preventDefault();
@@ -337,26 +359,19 @@ function ChatSocial() {
       const datosRespuesta = await respuesta.json().catch(() => ({}));
 
       if (!respuesta.ok) {
-        /* ===========================================================================
-           [MOCK TEMPORAL FRONTEND - INICIO]
-           =========================================================================== */
-        const nuevoMsgMock = {
-          id: Date.now(),
-          texto: textoLimpio,
-          mio: true,
-          fecha: new Date().toISOString(),
-        };
-        setMensajes((prev) => [...prev, nuevoMsgMock]);
-        if (MENSAJES_MOCK_PRUEBAS[loginUsuarioSeleccionado]) {
-          MENSAJES_MOCK_PRUEBAS[loginUsuarioSeleccionado].push(nuevoMsgMock);
-        }
-        setBorrador('');
-        setEnviando(false);
+        // ⚠️ Nacho, 10/09: ESTE ERA EL PEOR DE LOS TRES.
+        //
+        // Cuando el servidor rechazaba el mensaje, se pintaba igual en la
+        // pantalla y se borraba el cuadro de texto. O sea que veías tu mensaje
+        // enviado y el otro no lo recibía nunca, sin ningún aviso. Y el
+        // servidor rechaza mensajes por motivos de verdad: si os habéis
+        // bloqueado, si ya no sois amigos, o si pasa de 1000 caracteres.
+        //
+        // Ahora se enseña el motivo que dé el servidor y NO se borra lo
+        // escrito, para que no haya que teclearlo otra vez.
+        setError(datosRespuesta.detail || datosRespuesta.error
+                 || 'No se ha podido enviar el mensaje.');
         return;
-        /* ===========================================================================
-           [MOCK TEMPORAL FRONTEND - FIN]
-           Al juntar con backend, borrar este bloque del if(!respuesta.ok) superior
-           =========================================================================== */
       }
 
       setMensajes((prevMensajes) => [...prevMensajes, datosRespuesta]);
@@ -364,20 +379,9 @@ function ChatSocial() {
       setBorrador('');
     } catch (err) {
       console.error('Error al enviar el mensaje:', err);
-      /* ===========================================================================
-         [MOCK TEMPORAL FRONTEND - INICIO]
-         =========================================================================== */
-      const nuevoMsgMock = {
-        id: Date.now(),
-        texto: textoLimpio,
-        mio: true,
-        fecha: new Date().toISOString(),
-      };
-      setMensajes((prev) => [...prev, nuevoMsgMock]);
-      setBorrador('');
-      /* ===========================================================================
-         [MOCK TEMPORAL FRONTEND - FIN]
-         =========================================================================== */
+      // Igual que arriba: no se finge que se ha enviado, y el texto se queda
+      // escrito para poder reintentarlo.
+      setError('No se ha podido enviar el mensaje. Revisa la conexión.');
     } finally {
       setEnviando(false);
     }
@@ -507,7 +511,8 @@ function ChatSocial() {
       <AreaChat
         chatSeleccionado={chatSeleccionado}
         setChatSeleccionado={setChatSeleccionado}
-        mensajes={mensajes}
+        mensajes={mensajesConIntercambios}
+        recargarIntercambios={recargarIntercambios}
         borrador={borrador}
         setBorrador={setBorrador}
         enviando={enviando}

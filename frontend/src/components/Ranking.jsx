@@ -173,6 +173,12 @@ export default function Ranking() {
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <div style={estilos.cifra}>{u.cartas_distintas}</div>
                 <div style={estilos.cifraEtiqueta}>cartas</div>
+                {/* 🏆 Los puntos por rareza. Dos personas con las mismas
+                    cartas pueden tener puntos muy distintos: una legendaria
+                    vale 25 comunes. */}
+                <div style={{ ...estilos.cifraEtiqueta, marginTop: '0.35rem' }}>
+                  {(u.puntos ?? 0).toLocaleString('es-ES')} pts
+                </div>
               </div>
             </Link>
           ))

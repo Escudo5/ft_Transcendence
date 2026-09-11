@@ -16,8 +16,9 @@ from .models import Card, UserCard, UserPack
 from django.http import JsonResponse
 import json
 from django.db import transaction
-from django.db.models import Count, Sum
+from django.db.models import Case, Count, F, IntegerField, Sum, Value, When
 from django.db.models.functions import Coalesce
+from .rarezas import CARTAS_POR_SOBRE, PROBABILIDADES_SOBRE, PUNTOS, TODAS
 from django.utils import timezone
 
 class HealthCheckView(APIView):
@@ -82,39 +83,22 @@ def login_alumno(request, login):
 def home(request):
     return render(request,'cards/home.html')
 
+# 🎁 Los sobres. Los números ya no están aquí: viven en cards/rarezas.py,
+# junto a las rarezas, porque estaban escritos a mano y al cambiar las
+# rarezas se quedaron viejos sin que nadie se enterara (el sorteo tiene un
+# "si no hay de esa rareza, coge cualquiera" y se lo tragaba en silencio).
+#
+# Se mantiene la MISMA FORMA de siempre para no tocar nada de lo que la usa.
 CONFIGURACION_SOBRES = {
-    "comun": {
-        "probabilidades": {
-            "Blackhole": 40,
-            "Junior": 35,
-            "Senior": 18,
-            "Alumni": 5,
-            "Transcender": 2
-        },
-        "cartas_por_sobre": 5
-    },
-    "raro": {
-        "probabilidades": {
-            "Blackhole": 15,
-            "Junior": 25,
-            "Senior": 40,
-            "Alumni": 12,
-            "Transcender": 8
-        },
-        "cartas_por_sobre": 5
-    },
-    "epico": {
-        "probabilidades": {
-            "Blackhole": 2,
-            "Junior": 8,
-            "Senior": 25,
-            "Alumni": 30,
-            "Transcender": 35
-        },
-        "cartas_por_sobre": 5
-    }
+    tipo: {"probabilidades": dict(probabilidades),
+           "cartas_por_sobre": CARTAS_POR_SOBRE}
+    for tipo, probabilidades in PROBABILIDADES_SOBRE.items()
 }
-TIER_ORDER = ["Blackhole", "Junior", "Senior", "Alumni", "Transcender"]
+
+# 🤝 El orden de los contratos de Pablo: 4 cartas distintas de la misma
+# rareza -> 1 de la rareza siguiente. De menos a más rara, y sale de
+# rarezas.py para que no se pueda desincronizar otra vez.
+TIER_ORDER = list(TODAS)
 @api_view(['POST'])
 @csrf_exempt  # Permite recibir peticiones POST sin error 403 CSRF durante pruebas
 def make_contract(request):
@@ -296,26 +280,51 @@ def reclamar_regalo_diario(request):
 @permission_classes([IsAuthenticated])
 def ranking(request):
     """
-    Clasificación de coleccionistas: quién tiene más cartas distintas.
+    Clasificación de coleccionistas.
 
-    Se ordena por colección y no por el elo porque el elo todavía es 1000 para
-    todo el mundo (no hay juego que lo mueva), así que un ranking por elo sería
-    una lista plana sin sentido. Cuando haya partidas se puede añadir otra
-    pestaña ordenada por elo.
+    Dos formas de mirarla, y las dos dicen algo distinto:
 
-    Una sola consulta con anotaciones, para no acabar preguntando a la base de
-    datos una vez por usuario.
+      ?orden=coleccion  (por defecto)  quién lleva más cartas distintas
+      ?orden=puntos                    quién tiene las cartas más raras
+
+    Se pueden ir muy lejos la una de la otra, y esa es la gracia: alguien con
+    200 comunes va por delante en colección, y alguien con 30 legendarias por
+    delante en puntos. Lo que valen las cartas está en cards/rarezas.py.
+
+    Antes había un campo 'elo' que no ordenaba nada porque era 1000 para todo
+    el mundo. Ya no se usa aquí.
+
+    ⚠️ TODO en UNA consulta, con anotaciones. Calcular los puntos en Python
+    obligaría a recorrer el álbum de cada usuario: 50 consultas en vez de una.
     """
     total_catalogo = Card.objects.count() or 1
+    orden = request.query_params.get('orden', 'coleccion')
+
+    # Traduce la rareza de cada carta a sus puntos DENTRO de la consulta, para
+    # que sume la base de datos y no nosotros. Los pares salen del diccionario
+    # de rarezas, así que añadir una rareza nueva no obliga a tocar esto.
+    puntos_de_la_carta = Case(
+        *[When(album__card__tier=rareza, then=Value(valor))
+          for rareza, valor in PUNTOS.items()],
+        default=Value(0),
+        output_field=IntegerField(),
+    )
 
     usuarios = (
         CustomUser.objects
         .annotate(
             distintas=Count('album', distinct=True),
             copias=Coalesce(Sum('album__cantidad'), 0),
+            # Suma sobre las filas de UserCard, que hay una por carta distinta:
+            # tener 10 copias de la misma no suma diez veces.
+            puntos=Coalesce(Sum(puntos_de_la_carta), 0),
         )
-        .order_by('-distintas', '-copias', 'username')[:50]
     )
+
+    if orden == 'puntos':
+        usuarios = usuarios.order_by('-puntos', '-distintas', 'username')[:50]
+    else:
+        usuarios = usuarios.order_by('-distintas', '-copias', 'username')[:50]
 
     clasificacion = []
     for posicion, u in enumerate(usuarios, start=1):
@@ -329,12 +338,14 @@ def ranking(request):
             'cartas_distintas': u.distintas,
             'cartas_con_repetidas': u.copias,
             'porcentaje': round(u.distintas / total_catalogo * 100, 1),
+            'puntos': u.puntos,
             'elo': u.elo,
             'soy_yo': u.pk == request.user.pk,
         })
 
     return Response({
         'cartas_en_catalogo': total_catalogo,
+        'orden': orden,
         'clasificacion': clasificacion,
     })
 
@@ -371,48 +382,75 @@ def abrir_sobre_endpoint(request, tipo_sobre):
         
     # EL USUARIO CONECTADO SE OBTIENE DIRECTAMENTE CON request.user
     user = request.user
-    
-    # 1. Comprobar si el usuario conectado tiene el sobre en su inventario
+
+    # 🔒 TODO JUNTO O NADA (Nacho, 10/09).
+    #
+    # Antes esto iba suelto: se restaba el sobre, luego se sorteaban las
+    # cartas y luego se guardaban, cada cosa por su lado. Dos problemas
+    # medidos, no supuestos:
+    #
+    #   1. CARTAS QUE SE PERDÍAN. Guardar una carta era leer la fila, sumarle
+    #      uno y volver a guardarla. Con dos peticiones a la vez (un doble
+    #      clic, o dos pestañas), las dos leían 1, las dos guardaban 2, y un
+    #      incremento desaparecía. Probado con 6 peticiones simultáneas y 2
+    #      sobres: en 2 de 3 rondas llegaron 9 y 8 cartas en vez de 10.
+    #
+    #   2. SOBRES QUE SE EVAPORABAN. El sobre se restaba ANTES de guardar las
+    #      cartas y sin transacción: si algo fallaba a mitad, te quedabas sin
+    #      sobre y sin cartas.
+    #
+    # La solución es la misma que ya usan el regalo diario, el intercambio y
+    # el descarte, y por eso conviene que se parezcan: transacción para que
+    # sea todo o nada, y bloqueo de fila para que la segunda petición espere
+    # a que termine la primera en vez de pisarla.
     try:
-        sobre_inventario = UserPack.objects.get(user=user, tipo_sobre=tipo_sobre)
-        if sobre_inventario.cantidad < 1:
-            return Response(
-                {"error": f"No tienes sobres {tipo_sobre} disponibles."}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-    except UserPack.DoesNotExist:
-        return Response(
-            {"error": f"No tienes sobres {tipo_sobre} en tu inventario."}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
-        
-    # 2. Restar el sobre consumido
-    sobre_inventario.cantidad -= 1
-    sobre_inventario.save()
-    
-    # 3. Generar las 5 cartas
-    try:
-        cartas_tocadas = open_pack(tipo_sobre)
+        with transaction.atomic():
+            # select_for_update: la fila queda bloqueada hasta el final de la
+            # transacción. La segunda petición se queda esperando aquí y,
+            # cuando entra, ya ve el inventario descontado.
+            sobre_inventario = (UserPack.objects.select_for_update()
+                                .filter(user=user, tipo_sobre=tipo_sobre).first())
+
+            if sobre_inventario is None:
+                return Response(
+                    {"error": f"No tienes sobres {tipo_sobre} en tu inventario."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if sobre_inventario.cantidad < 1:
+                return Response(
+                    {"error": f"No tienes sobres {tipo_sobre} disponibles."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            sobre_inventario.cantidad -= 1
+            sobre_inventario.save(update_fields=['cantidad'])
+
+            cartas_tocadas = open_pack(tipo_sobre)
+
+            # Se ordenan por id antes de guardar. Parece un detalle tonto y no
+            # lo es: si dos peticiones tocan las mismas dos cartas en orden
+            # distinto, cada una puede quedarse esperando a la fila que tiene
+            # la otra, y PostgreSQL corta una con un error de interbloqueo.
+            # Yendo todas en el mismo orden, eso no puede pasar.
+            for carta in sorted(cartas_tocadas, key=lambda c: c.id):
+                fila, creada = UserCard.objects.get_or_create(
+                    user=user, card=carta, defaults={'cantidad': 1})
+                if not creada:
+                    # F('cantidad') + 1 NO lee el valor aquí: manda a la base
+                    # de datos un "suma uno a lo que haya" en una sola orden.
+                    # Por eso no se puede perder un incremento: no hay ningún
+                    # momento en que tengamos el número viejo en la mano.
+                    UserCard.objects.filter(pk=fila.pk).update(
+                        cantidad=F('cantidad') + 1)
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-    # 4. Registrar o actualizar las cartas en el álbum del usuario conectado
-    try:
-        for carta in cartas_tocadas:
-            user_card, created = UserCard.objects.get_or_create(
-                user=user,
-                card=carta
-            )
-            if not created:
-                user_card.cantidad += 1
-            user_card.save()
-            
-    except Exception as e:
+        # Si salta aquí, la transacción ya ha deshecho TODO: el sobre sigue en
+        # el inventario y no se ha guardado ninguna carta a medias.
         return Response(
-            {"error": f"Fallo al guardar en el álbum: {str(e)}"}, 
+            {"error": f"No se ha podido abrir el sobre: {e}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-        
+
+
     # 5. Formatear la respuesta JSON para React
     datos_cartas = []
     for c in cartas_tocadas:
