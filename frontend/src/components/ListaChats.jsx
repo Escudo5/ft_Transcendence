@@ -8,26 +8,28 @@ function ListaChats({
   visitarPerfil,
   alternarBloqueoUsuario,
   abrirModalAmigos,
-  abrirModalSolicitudes, // 👈 Nueva prop para abrir la ventana de solicitudes
-  numSolicitudesPendientes = 0 // 👈 Opcional: Contador para mostrar una bolita si hay peticiones
+  abrirModalSolicitudes,
+  numSolicitudesPendientes = 0,
 }) {
-  const [busqueda, setBusqueda] = useState('');
-  const [menuAbiertoLogin, setMenuAbiertoLogin] = useState(null);
+  const [textoBusqueda, setTextoBusqueda] = useState('');
+  const [loginMenuDesplegado, setLoginMenuDesplegado] = useState(null);
 
-  const toggleMenuAmigo = (e, login) => {
-    e.stopPropagation();
-    if (menuAbiertoLogin === login) {
-      setMenuAbiertoLogin(null);
+  const alternarMenuOpcionesAmigo = (eventoDeClic, loginUsuario) => {
+    // Detiene la propagación del clic para que no se abra el chat al hacer clic en los tres puntos
+    eventoDeClic.stopPropagation();
+
+    if (loginMenuDesplegado === loginUsuario) {
+      setLoginMenuDesplegado(null);
     } else {
-      setMenuAbiertoLogin(login);
+      setLoginMenuDesplegado(loginUsuario);
     }
   };
 
-  const amigosFiltrados = amigos.filter((amigo) => {
-    const texto = busqueda.toLowerCase();
+  const listaAmigosFiltrados = amigos.filter((amigoActual) => {
+    const busquedaEnMinusculas = textoBusqueda.toLowerCase();
     return (
-      amigo.nombre.toLowerCase().includes(texto) ||
-      amigo.login.toLowerCase().includes(texto)
+      amigoActual.nombre.toLowerCase().includes(busquedaEnMinusculas) ||
+      amigoActual.login.toLowerCase().includes(busquedaEnMinusculas)
     );
   });
 
@@ -40,38 +42,40 @@ function ListaChats({
         </button>
 
         <div style={{ display: 'flex', gap: '0.4rem' }}>
-          <button 
-            onClick={abrirModalAmigos} 
-            className="btn-volver" 
+          <button
+            onClick={abrirModalAmigos}
+            className="btn-volver"
             style={{ borderColor: '#00bfff', color: '#00bfff', padding: '0.4rem 0.7rem', fontSize: '0.8rem' }}
           >
             + Amigos
           </button>
 
-          <button 
-            onClick={abrirModalSolicitudes} 
-            className="btn-volver" 
-            style={{ 
-              borderColor: '#ff007f', 
-              color: '#ff007f', 
-              padding: '0.4rem 0.7rem', 
+          <button
+            onClick={abrirModalSolicitudes}
+            className="btn-volver"
+            style={{
+              borderColor: '#ff007f',
+              color: '#ff007f',
+              padding: '0.4rem 0.7rem',
               fontSize: '0.8rem',
-              position: 'relative'
+              position: 'relative',
             }}
           >
             Solicitudes
             {numSolicitudesPendientes > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '-5px',
-                right: '-5px',
-                backgroundColor: '#ff007f',
-                color: '#fff',
-                borderRadius: '50%',
-                padding: '2px 6px',
-                fontSize: '0.65rem',
-                fontWeight: 'bold'
-              }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-5px',
+                  right: '-5px',
+                  backgroundColor: '#ff007f',
+                  color: '#fff',
+                  borderRadius: '50%',
+                  padding: '2px 6px',
+                  fontSize: '0.65rem',
+                  fontWeight: 'bold',
+                }}
+              >
                 {numSolicitudesPendientes}
               </span>
             )}
@@ -84,8 +88,8 @@ function ListaChats({
         <input
           type="text"
           placeholder="🔍 Buscar o empezar un chat..."
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          value={textoBusqueda}
+          onChange={(eventoDeClic) => setTextoBusqueda(eventoDeClic.target.value)}
           style={{
             width: '100%',
             padding: '0.6rem 1rem',
@@ -94,97 +98,105 @@ function ListaChats({
             backgroundColor: '#0d1017',
             color: '#fff',
             outline: 'none',
-            fontSize: '0.85rem'
+            fontSize: '0.85rem',
           }}
         />
       </div>
 
       {/* LISTA DE AMIGOS */}
       <div style={{ padding: '0 0.8rem 0.8rem 0.8rem', overflowY: 'auto', flex: 1 }}>
-        {amigosFiltrados.length === 0 ? (
+        {listaAmigosFiltrados.length === 0 ? (
           <p style={{ color: '#6c728f', textAlign: 'center', marginTop: '1rem', fontSize: '0.85rem' }}>
             No se encontraron contactos
           </p>
         ) : (
-          amigosFiltrados.map((amigo) => {
-            const estaSeleccionado = chatSeleccionado?.login === amigo.login;
+          listaAmigosFiltrados.map((amigoActual) => {
+            const estaSeleccionado = chatSeleccionado?.login === amigoActual.login;
 
             return (
               <div
-                key={amigo.login}
+                key={amigoActual.login}
                 className="item-amigo-sidebar"
                 style={{
                   backgroundColor: estaSeleccionado ? '#282e40' : '#202533',
-                  borderColor: estaSeleccionado ? '#00ffcc' : '#2a2e3d'
+                  borderColor: estaSeleccionado ? '#00ffcc' : '#2a2e3d',
                 }}
               >
                 <div
                   className="info-amigo-click"
                   onClick={() => {
-                    setChatSeleccionado(amigo);
-                    setMenuAbiertoLogin(null);
+                    setChatSeleccionado(amigoActual);
+                    setLoginMenuDesplegado(null);
                   }}
                 >
-                  {/* La foto lleva encima la bolita de mensajes sin leer,
-                      con el mismo estilo que la del botón de Solicitudes */}
                   <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <div className="avatar-header">{amigo.avatar}</div>
-                    {amigo.sinLeer > 0 && (
-                      <span style={{
-                        position: 'absolute',
-                        top: '-5px',
-                        right: '-5px',
-                        backgroundColor: '#ff007f',
-                        color: '#fff',
-                        borderRadius: '50%',
-                        padding: '2px 6px',
-                        fontSize: '0.65rem',
-                        fontWeight: 'bold'
-                      }}>
-                        {amigo.sinLeer > 9 ? '9+' : amigo.sinLeer}
+                    <div className="avatar-header">{amigoActual.avatar}</div>
+                    
+                    {/* INDICADOR DE MENSAJES SIN LEER */}
+                    {amigoActual.sinLeer > 0 && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '-5px',
+                          right: '-5px',
+                          backgroundColor: '#ff007f',
+                          color: '#fff',
+                          borderRadius: '50%',
+                          padding: '2px 6px',
+                          fontSize: '0.65rem',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        {amigoActual.sinLeer > 9 ? '9+' : amigoActual.sinLeer}
                       </span>
                     )}
                   </div>
+
                   <div style={{ textAlign: 'left' }}>
-                    {/* Con mensajes sin leer el nombre va más marcado, como
-                        en cualquier chat: se localiza de un vistazo */}
-                    <strong style={{ color: amigo.sinLeer > 0 ? '#fff' : undefined }}>
-                      {amigo.nombre} ({amigo.login})
+                    <strong style={{ color: amigoActual.sinLeer > 0 ? '#fff' : undefined }}>
+                      {amigoActual.nombre} ({amigoActual.login})
                     </strong>
-                    <div style={{ fontSize: '0.75rem', color: amigo.bloqueado ? '#ff4d4d' : '#00ffcc' }}>
-                      {amigo.bloqueado ? '🚫 [Bloqueado]' : amigo.estado}
+                    <div
+                      style={{
+                        fontSize: '0.75rem',
+                        color: amigoActual.bloqueado ? '#ff4d4d' : '#00ffcc',
+                      }}
+                    >
+                      {amigoActual.bloqueado ? '🚫 [Bloqueado]' : amigoActual.estado}
                     </div>
                   </div>
                 </div>
 
                 <button
                   className="btn-opciones-sidebar"
-                  onClick={(e) => toggleMenuAmigo(e, amigo.login)}
+                  onClick={(eventoDeClic) => alternarMenuOpcionesAmigo(eventoDeClic, amigoActual.login)}
                   title="Opciones del amigo"
                 >
                   ⋮
                 </button>
 
-                {menuAbiertoLogin === amigo.login && (
+                {loginMenuDesplegado === amigoActual.login && (
                   <div className="menu-desplegable-sidebar">
                     <button
                       className="opcion-item"
                       onClick={() => {
-                        visitarPerfil(amigo.login);
-                        setMenuAbiertoLogin(null);
+                        visitarPerfil(amigoActual.login);
+                        setLoginMenuDesplegado(null);
                       }}
                     >
                       👤 Visitar Perfil
                     </button>
 
                     <button
-                      className={`opcion-item ${amigo.bloqueado ? 'opcion-desbloquear' : 'opcion-bloquear'}`}
+                      className={`opcion-item ${
+                        amigoActual.bloqueado ? 'opcion-desbloquear' : 'opcion-bloquear'
+                      }`}
                       onClick={() => {
-                        alternarBloqueoUsuario(amigo.login);
-                        setMenuAbiertoLogin(null);
+                        alternarBloqueoUsuario(amigoActual.login);
+                        setLoginMenuDesplegado(null);
                       }}
                     >
-                      {amigo.bloqueado ? '✅ Desbloquear' : '🚫 Bloquear'}
+                      {amigoActual.bloqueado ? '✅ Desbloquear' : '🚫 Bloquear'}
                     </button>
                   </div>
                 )}

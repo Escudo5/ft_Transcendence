@@ -4,6 +4,7 @@ import requests
 from django.core.management.base import BaseCommand
 from cards.models import Card
 from cards.management.commands.fill_db import _obtener_headers_auth
+from cards.rarezas import rareza_por_nivel   # 🎴 Nacho, 10/09
 import json
 
 class Command(BaseCommand):
@@ -59,17 +60,15 @@ class Command(BaseCommand):
                 grade = it.get("grade")
                 break # Encontrado, salimos del bucle
 
-        # Calcular Tier según el grado
-        if grade == "Cadet":
-            tier = "Junior" if lvl < 5 else "Senior"
-        elif grade == "Transcender":
-            tier = "Transcender"
-        elif grade == "Alumni":
-            tier = "Alumni"
-        else:
-            self.stdout.write(self.style.WARNING(f"⚠️ Advertencia: Grado '{grade}' desconocido o no pertenece a 42cursus para {login}."))
-        if blackhole == True:
-            tier = "Blackhole"
+        # 🎴 CAMBIO (Nacho, 10/09): la rareza sale del NIVEL, no del grade.
+        # Mismo cambio que en fill_db.py, y por lo mismo: en 42, "Alumni" no
+        # es alguien que haya terminado, es alguien que se quedó parado al
+        # final del tronco común. El porqué entero, con los datos de la Intra,
+        # está en cards/rarezas.py.
+        tier = rareza_por_nivel(lvl)
+        if grade not in ("Cadet", "Transcender", "Alumni"):
+            self.stdout.write(self.style.WARNING(
+                f"⚠️ Advertencia: Grado '{grade}' desconocido o no pertenece a 42cursus para {login}."))
 
         # Gestión de Títulos
         title = login
