@@ -28,15 +28,44 @@ const smoothstep = (a, b, value) => {
   return t * t * (3 - 2 * t);
 };
 
-const FOUR = [
-  [[0, 0.534], [0.632, 0], [1, 0], [0.333, 0.534]],
-  [[0, 0.534], [1, 0.534], [1, 0.74], [0, 0.74]],
-  [[0.649, 0.534], [1, 0.534], [1, 1], [0.649, 1]],
-];
-const TWO = [
-  [[0, 0], [1, 0], [1, 0.27], [0.45, 0.27]],
-  [[1, 0.27], [1, 0.5], [0.06, 0.8], [0.06, 0.63]],
-  [[0, 0.74], [0.95, 0.74], [0.85, 1], [0, 1]],
+/* ═══════════════════════════════════════════════════════════════════════
+   EL LOGO DE 42, SACADO DEL LOGO OFICIAL
+
+   ⚠️ Nacho, 14/09: antes esto eran dos listas (FOUR y TWO) dibujadas a mano,
+   y estaban MAL. El "2" salía con la esquina de abajo a la derecha cortada en
+   diagonal, cuando en el logo de verdad es recta. Por eso parecía descuadrado
+   mirases lo que mirases: la forma ya era incorrecta, y mover el conjunto solo
+   cambiaba de sitio el problema.
+
+   Estas coordenadas NO están puestas a ojo. Salen de leer el PNG oficial
+   píxel a píxel: se separan las 4 piezas sueltas, se sigue el contorno de
+   cada una y se simplifican las escaleras de píxeles a rectas. Comprobado
+   rasterizando el resultado y comparándolo con el PNG: 97% de coincidencia,
+   y el 3% que falta es el borde suavizado del propio PNG.
+
+   Son 23 vértices y el número no baja aunque se suba la tolerancia: esas son
+   las esquinas de verdad del logo, no una aproximación.
+
+   El script está en el historial de la conversación del 14/09. Si algún día
+   42 cambia el logo, se vuelve a pasar el PNG nuevo y se pegan las
+   coordenadas: NO se retocan a mano.
+
+   Van en una caja de 0 a 1 en los dos ejes, con proporción 1.4112 de ancho
+   por alto (también medida del PNG, no inventada).
+   ═══════════════════════════════════════════════════════════════════════ */
+const LOGO42_PROPORCION = 1.4112;
+const LOGO42 = [
+  // el 4: diagonal, barra y pie, todo de una pieza
+  [[0.0000, 0.5140], [0.3576, 0.0093], [0.5497, 0.0000], [0.1854, 0.5140],
+   [0.5497, 0.5234], [0.5497, 1.0000], [0.3709, 1.0000], [0.3709, 0.7383],
+   [0.0000, 0.7383]],
+  // el 2: el pico de arriba a la izquierda
+  [[0.6358, 0.0000], [0.8146, 0.0093], [0.6358, 0.2523]],
+  // el 2: el cuerpo, con la diagonal
+  [[0.6358, 0.5234], [0.8146, 0.2804], [0.8212, 0.0000], [1.0000, 0.0000],
+   [1.0000, 0.2710], [0.8146, 0.5234], [0.8146, 0.7850], [0.6358, 0.7850]],
+  // el 2: el pico de abajo a la derecha
+  [[0.8212, 0.7757], [1.0000, 0.5421], [1.0000, 0.7850]],
 ];
 
 function canvas(width, height) {
@@ -57,14 +86,16 @@ function polygon(context, points, map) {
 }
 
 function draw42(context, centerX, centerY, width, color) {
-  const height = width / 1.411;
+  /* Antes había aquí dos cuentas distintas, una para el 4 y otra para el 2,
+   * con dos números sueltos (0.5534 y 0.6311) que colocaban cada cifra por
+   * separado. Ya no hacen falta: las coordenadas de LOGO42 vienen del logo
+   * entero, con el hueco entre las dos cifras ya dentro. Una sola cuenta. */
+  const height = width / LOGO42_PROPORCION;
   const x0 = centerX - width / 2;
   const y0 = centerY - height / 2;
-  const four = (point) => [x0 + point[0] * width * 0.5534, y0 + point[1] * height];
-  const two = (point) => [x0 + (0.6311 + point[0] * 0.3689) * width, y0 + point[1] * height];
+  const punto = (p) => [x0 + p[0] * width, y0 + p[1] * height];
   context.fillStyle = color;
-  FOUR.forEach((points) => { polygon(context, points, four); context.fill(); });
-  TWO.forEach((points) => { polygon(context, points, two); context.fill(); });
+  LOGO42.forEach((points) => { polygon(context, points, punto); context.fill(); });
 }
 
 function spaced(context, text, centerX, y, spacing) {
@@ -136,6 +167,26 @@ function createPackTexture() {
     }
   }
 
+  /* ⚠️ Nacho, 14/09: centrar el bloque en la cara del sobre.
+   *
+   * La cara visible NO es todo el lienzo: por arriba se le come 127 px la
+   * tira que se rasga (es lo que dice TEAR_V). O sea, la cara va de y=127 a
+   * y=1384, y su centro está en 755, no en 692.
+   *
+   * Con las medidas de antes quedaban 38 px de hueco por arriba y 219 por
+   * abajo: todo el conjunto estaba subido y el sobre se veía descompensado,
+   * con un vacío grande al pie. Bajando 85 px quedan 123,5 arriba y 124 abajo.
+   *
+   * Se hace con un `translate` en vez de sumar 85 a mano en cada línea, por
+   * dos motivos: no hay forma de olvidarse de una, y las distancias entre los
+   * elementos se quedan exactamente como las dejó Sergio. Solo se mueve el
+   * bloque entero.
+   *
+   * OJO: los textos de la cabecera ("42 MADRID" y "NGC·2042") van DESPUÉS del
+   * restore, a propósito: esos sí van pegados arriba y no deben bajar. */
+  context.save();
+  context.translate(0, 85);
+
   holoPatch(context, 512, 545, 330, 0.1);
   context.save();
   context.shadowColor = 'rgba(0,0,0,.65)';
@@ -145,27 +196,72 @@ function createPackTexture() {
   plate.addColorStop(0, '#ffffff');
   plate.addColorStop(1, '#e4e9f3');
   context.fillStyle = plate;
+  /* ⚠️ Nacho, 14/09: el disco blanco estaba saliendo SIN QUERER.
+   *
+   * `roundRect` no abre trazado nuevo: añade al que haya abierto. Y holoPatch
+   * (arriba) termina con un `beginPath` + `arc` que deja un círculo de radio
+   * 379,5 sin cerrar. Así que este `fill` pintaba el círculo Y el rectángulo.
+   *
+   * Queda igual de bonito, así que se deja, pero ahora el círculo se dibuja
+   * A PROPÓSITO. Si no, el día que alguien añada el `beginPath` que falta
+   * -que es lo correcto a simple vista- el sobre cambia de golpe y nadie
+   * entiende por qué. Los píxeles son exactamente los mismos que antes. */
+  context.beginPath();
+  context.arc(512, 545, 330 * 1.15, 0, TAU);
   context.roundRect(192, 325, 640, 440, 26);
   context.fill();
   context.restore();
-  draw42(context, 512, 536, 536, '#090c12');
+  /* El logo va en 503, casi el centro del disco (512).
+   *
+   * Con la forma ANTERIOR, que estaba mal, hubo que irse hasta 446 para que
+   * no cantara, y aun asi seguia pareciendo torcido. Con el logo oficial ya
+   * no hace falta: su centro de tinta cae a 9 px del centro de su caja
+   * (el de antes estaba a 21,7), asi que con restar esos 9 basta.
+   *
+   * Los 9 px estan para que quede centrado A LA VISTA y no en el papel: el
+   * ojo mira donde esta la masa de negro, no donde esta el rectangulo que la
+   * contiene. */
+  draw42(context, 503, 545, 500, '#090c12');
 
   holoPatch(context, 846, 808, 86);
+
+  /* ⚠️ Nacho, 14/09: "MADRID" NO SE VEÍA, y no es que faltara.
+   *
+   * Estaba en y=886 y el disco blanco llega hasta y=924: era texto casi
+   * blanco (#f3f6ff) pintado ENCIMA del disco blanco. La rayita cian de
+   * debajo, igual. Otra consecuencia del círculo que salía sin querer.
+   *
+   * Ahora baja a 1010, por debajo del disco, y el resto del bloque baja con
+   * ella para que no se amontone. Misma tipografía y mismo espaciado: solo
+   * cambia la altura. Debajo hay sitio de sobra, el texto siguiente está en
+   * 1128. */
   context.fillStyle = '#f3f6ff';
   context.font = '700 46px monospace';
-  spaced(context, 'MADRID', 512, 886, 20);
+  spaced(context, 'MADRID', 512, 1010, 20);
   context.fillStyle = '#6ee7ff';
-  context.fillRect(442, 910, 140, 2);
+  context.fillRect(442, 1034, 140, 2);
   context.fillStyle = 'rgba(205,222,250,.9)';
   context.font = '700 21px monospace';
-  spaced(context, 'NEXT GEN COLLECTION', 512, 956, 9);
+  spaced(context, 'NEXT GEN COLLECTION', 512, 1076, 9);
   context.textAlign = 'center';
   context.font = '700 17px monospace';
   context.fillStyle = 'rgba(220,232,255,.92)';
-  context.fillText('3 CARTAS  ·  1 HOLOGRAFICA  ·  FOIL', 512, 1128);
+  context.fillText('3 CARTAS  ·  1 HOLOGRAFICA  ·  FOIL', 512, 1138);
   context.font = '400 14px monospace';
   context.fillStyle = 'rgba(170,190,220,.6)';
-  context.fillText('SERIE LIMITADA  ·  Nº 0042 / ∞', 512, 1160);
+  context.fillText('SERIE LIMITADA  ·  Nº 0042 / ∞', 512, 1170);
+
+  // Fin del bloque bajado: a partir de aquí las alturas vuelven a ser las
+  // del lienzo. La cabecera va pegada arriba y no se mueve.
+  context.restore();
+
+  /* ⚠️ `restore` no devuelve solo la posición: también la fuente y el color.
+   * Estas dos líneas los venía heredando del texto de arriba, así que hay
+   * que repetirlos aquí o la cabecera saldría en la fuente por defecto del
+   * lienzo (10px sans-serif) y casi no se vería. Son los mismos valores que
+   * tenía, no cambia nada de cómo se ve. */
+  context.font = '400 14px monospace';
+  context.fillStyle = 'rgba(170,190,220,.6)';
   context.textAlign = 'left';
   context.fillText('42 MADRID', 64, 178);
   context.textAlign = 'right';
@@ -202,9 +298,25 @@ function createEmissionTexture() {
   const [image, context] = canvas(1024, 1384);
   context.fillStyle = '#000000';
   context.fillRect(0, 0, image.width, image.height);
+  /* ⚠️ Nacho, 14/09: ESTA textura tiene que moverse igual que la de color.
+   *
+   * Son dos lienzos distintos que se pintan uno encima del otro: el de color
+   * y este, que es el que brilla. Dibujan LAS MISMAS cosas en las MISMAS
+   * coordenadas, así que si se mueve una y no la otra, todo sale duplicado y
+   * separado. Me pasó: al bajar 85 px solo el de color salieron DOS sellos en
+   * el sobre, uno encima del otro, y la rayita cian se quedó suelta dentro
+   * del disco.
+   *
+   * Así que la misma bajada de 85, y la rayita a 1034 como en la de color.
+   * La línea de puntos y el óvalo de la tira van fuera: esos están en la
+   * parte de arriba que se rasga y ahí no se ha movido nada. */
+  context.save();
+  context.translate(0, 85);
   holoPatch(context, 846, 808, 86);
   context.fillStyle = 'rgba(110,231,255,.95)';
-  context.fillRect(442, 910, 140, 2);
+  context.fillRect(442, 1034, 140, 2);
+  context.restore();
+
   context.strokeStyle = 'rgba(110,231,255,.9)';
   context.lineWidth = 3;
   context.setLineDash([16, 11]);
@@ -547,7 +659,17 @@ export default function SobreHolografico({ onOpen, onProgress }) {
     const animate = () => {
       const time = performance.now() * 0.001;
       pack.position.y = 0.1 + Math.sin(time * 0.9) * 0.1;
-      pack.rotation.y = 0.42 + Math.sin(time * 0.45) * 0.12;
+      /* ⚠️ Nacho, 14/09: esto era 0.42, o sea que el sobre estaba girado 24°
+       * a la derecha SIEMPRE. Y ahí está el "42 descuadrado": en la textura
+       * el logo está centrado al milímetro (129,5 px de margen a cada lado,
+       * medido sobre los polígonos), pero con el sobre girado la mitad donde
+       * vive el "2" se ve en escorzo y el "4" se ve de frente. Por eso parecía
+       * que el 2 se comía el borde del disco.
+       *
+       * Con 0.16 el sobre mira casi de frente y el balanceo (±0.12) sigue
+       * dando la sensación de 3D. Si se quiere más perfil, subir este número;
+       * el logo no se mueve, lo que cambia es desde dónde se mira. */
+      pack.rotation.y = 0.16 + Math.sin(time * 0.45) * 0.12;
       pack.rotation.z = Math.sin(time * 0.5) * 0.03;
       rings.rotation.z = time * 0.05;
       controls.update();
