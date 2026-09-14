@@ -33,6 +33,7 @@ class Command(BaseCommand):
             res_user.raise_for_status() # Lanza error para otros códigos (500, 403, etc.)
             
             user = res_user.json()
+            ##print(json.dumps(user, indent=4, ensure_ascii=False))
         except requests.exceptions.RequestException as e:
             self.stdout.write(self.style.ERROR(f"❌ Error de conexión al consultar el usuario: {e}"))
             return
