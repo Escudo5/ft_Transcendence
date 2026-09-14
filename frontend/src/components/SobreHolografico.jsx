@@ -1,7 +1,21 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ¿Puede este navegador dibujar en 3D?
+ *
+ * Se pregunta con un lienzo de mentira y se tira, que es barato y no deja
+ * nada montado. Si aquí sale que no, ni se intenta crear la escena. */
+function hayWebGL() {
+  try {
+    const lienzo = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext
+      && (lienzo.getContext('webgl2') || lienzo.getContext('webgl')));
+  } catch {
+    return false;
+  }
+}
 
 const TAU = Math.PI * 2;
 const PACK_WIDTH = 3.3;
@@ -312,16 +326,46 @@ export default function SobreHolografico({ onOpen, onProgress }) {
   const mountRef = useRef(null);
   const callbacksRef = useRef({ onOpen, onProgress });
   callbacksRef.current = { onOpen, onProgress };
+  const [sinWebGL, setSinWebGL] = useState(false);
 
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return undefined;
+
+    /* ⚠️ Nacho, 14/09: red de seguridad, no tocamos nada del sobre.
+     *
+     * Si el navegador no puede con WebGL, `new THREE.WebGLRenderer()` lanza
+     * una excepción DENTRO de este efecto y React desmonta el árbol entero:
+     * la tienda de sobres se queda EN BLANCO. Y como arrastrar la tira es
+     * ahora la única forma de abrir un sobre, se cae el bucle central del
+     * juego sin decir por qué.
+     *
+     * En un Mac del campus con Chrome no va a pasar. Pero pasa con la
+     * aceleración por hardware desactivada, en una máquina virtual o en un
+     * navegador viejo, y no queremos descubrirlo el día de la evaluación.
+     * Si no hay 3D, más abajo se enseña un botón normal y se abre igual. */
+    if (!hayWebGL()) {
+      setSinWebGL(true);
+      return undefined;
+    }
+
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x04050b);
     scene.fog = new THREE.Fog(0x04050b, 9, 18);
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 60);
     camera.position.set(0.8, 0.45, 8.8);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    // Segunda red: hay navegadores que dicen que sí y luego fallan al crear
+    // el contexto de verdad (sin memoria de vídeo, drivers, muchas pestañas
+    // con 3D abiertas). Aquí todavía no se ha creado nada en la tarjeta
+    // gráfica, solo objetos de JavaScript, así que se puede salir sin liberar.
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    } catch (fallo) {
+      console.warn('No se ha podido crear el sobre en 3D, se abrirá con botón:', fallo);
+      setSinWebGL(true);
+      return undefined;
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
@@ -539,6 +583,44 @@ export default function SobreHolografico({ onOpen, onProgress }) {
       renderer.domElement.remove();
     };
   }, []);
+
+  /* Sin 3D, pero el sobre TIENE que poder abrirse igual.
+   *
+   * Ojo: este return va DESPUÉS de todos los hooks, nunca antes. Un `return`
+   * por delante de un hook fue lo que tiró el chat entero el 10/09.
+   *
+   * Los estilos van aquí dentro a propósito, para no tocar el styles.css de
+   * Sergio por un caso que casi nunca se va a dar. */
+  if (sinWebGL) {
+    return (
+      <div
+        className="holo-pack"
+        style={{
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: '1.4rem', textAlign: 'center', cursor: 'auto',
+        }}
+      >
+        <p style={{ maxWidth: '32ch', lineHeight: 1.5, opacity: 0.75 }}>
+          Tu navegador no puede dibujar el sobre en 3D, pero puedes abrirlo
+          igualmente.
+        </p>
+        <button
+          type="button"
+          onClick={() => callbacksRef.current.onOpen?.()}
+          style={{
+            padding: '0.9rem 2.2rem', fontSize: '1.15rem', cursor: 'pointer',
+            borderRadius: '50px', color: '#fff',
+            backgroundColor: 'var(--surface-raised)',
+            border: '2px solid #6ee7ff',
+            boxShadow: '0 0 14px rgba(110,231,255,0.35)',
+          }}
+        >
+          Abrir sobre
+        </button>
+      </div>
+    );
+  }
 
   return <div ref={mountRef} className="holo-pack" aria-label="Sobre holográfico. Arrastra la tira superior para abrirlo." />;
 }
