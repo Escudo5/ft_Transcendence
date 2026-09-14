@@ -2,13 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion'; // 👈 IMPORTAMOS FRAMER MOTION
 import FondoTiendaSobres from './FondoTiendaSobres';
+import SobreHolografico from './SobreHolografico';
 import { Alert, Modal } from './ui';
 import { CLASE_RAREZA } from './rarezas';
 
 // 1. IMPORTA LAS 3 IMÁGENES DE TUS SOBRES
-import sobreIntacto from '../assets/sobre_verde_0.png';
-import sobreRoto1 from '../assets/sobre_verde_1.png';
-import sobreRoto2 from '../assets/sobre_verde_2.png';
 
 /* 🎁 EL REGALO, DIBUJADO EN VEZ DE PUESTO COMO EMOJI (Nacho, 10/09)
  *
@@ -60,7 +58,6 @@ function TiendaSobres() {
   const navigate = useNavigate();
 
   const [fase, setFase] = useState('SELECCION');
-  const [toquesSobre, setToquesSobre] = useState(0);
 
   const [cartasCargadas, setCartasCargadas] = useState([]);
   const [error, setError] = useState('');
@@ -200,7 +197,6 @@ function TiendaSobres() {
     }
     setTipoSobreActivo(tipo);
     setFase('PRE_APERTURA');
-    setToquesSobre(0);
     setCartasCargadas([]);
     setError('');
   };
@@ -257,7 +253,7 @@ function TiendaSobres() {
     navigate('/catalogo');
   };
 
-  // Manejador al tocar el sobre (Efecto de rotura progresiva)
+  // La escena 3D llama a esta función cuando la tira termina de rasgarse.
   const tocarSobre = async () => {
     if (abriendo) return; // evita abrir dos veces si se hace doble clic
 
@@ -265,26 +261,16 @@ function TiendaSobres() {
     // regalo para encontrarlo vacio.
     if (sobresDisponibles[tipoSobreActivo] !== null && sobresDisponibles[tipoSobreActivo] < 1) {
       setError(`No te quedan sobres ${tipoSobreActivo}.`);
-      setToquesSobre(0);
       return;
     }
 
-    if (toquesSobre < 2) {
-      setToquesSobre(prev => prev + 1);
-    } else {
-      // Al tercer toque pedimos al backend que abra el sobre de verdad.
-      const haIdoBien = await abrirSobreEnBackend();
-      if (!haIdoBien) {
-        // Si no ha podido abrirse (por ejemplo, no te quedan sobres), dejamos
-        // el sobre otra vez entero. Si se quedara roto pareceria que la pantalla
-        // se ha colgado.
-        setToquesSobre(0);
-        return;
-      }
-
-      setCartasVolteadas([false, false, false, false, false]); // todas bocabajo
-      setFase('REVELADO');
+    const haIdoBien = await abrirSobreEnBackend();
+    if (!haIdoBien) {
+      return;
     }
+
+    setCartasVolteadas([false, false, false, false, false]); // todas bocabajo
+    setFase('REVELADO');
   };
 
   // Aqui volteamos la carta si no esta volteada ya
@@ -303,7 +289,6 @@ function TiendaSobres() {
 
   const resetearFases = () => {
     setFase('SELECCION');
-    setToquesSobre(0);
     setCartasCargadas([]);
   };
 
@@ -314,12 +299,6 @@ function TiendaSobres() {
       case 'rare': return { color: 'var(--rarity-rare)', border: '3px solid var(--rarity-rare)', shadow: '0 0 20px rgba(2, 132, 199, 0.5)' };
       default: return { color: '#ffffff', border: '2px solid #ffffff', shadow: '0 4px 15px rgba(255, 255, 255, 0.2)' };
     }
-  };
-
-  const obtenerImagenSobre = () => {
-    if (toquesSobre === 0) return sobreIntacto;
-    if (toquesSobre === 1) return sobreRoto1;
-    return sobreRoto2;
   };
 
   const renderBotonVolver = () => {
@@ -349,19 +328,7 @@ function TiendaSobres() {
 
   const Sobrepreeapertura = () => {
     return (
-      <div
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '1.5rem',
-          zIndex: 5
-        }}
-      >
+      <div className="apertura-stage">
         {/* ⚠️ El aviso va ARRIBA del sobre: el sobre mide 800px y cualquier cosa
             que se ponga debajo se queda fuera de la pantalla y no se ve. */}
         {error && (
@@ -383,33 +350,10 @@ function TiendaSobres() {
           </Alert>
         )}
 
-        <motion.img
-          key={toquesSobre}
-          src={obtenerImagenSobre()}
-          alt="Sobre 42"
-          onClick={tocarSobre}
-          initial={{ scale: 0.9, rotate: -2 }}
-          animate={{ scale: 1, rotate: [0, -3, 3, 0] }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          style={{
-            width: '560px',
-            height: '800px',
-            objectFit: 'contain',
-            cursor: 'pointer',
-            filter: `
-              drop-shadow(0 0 25px rgba(20, 184, 166, 0.5)) 
-              drop-shadow(0 0 50px rgba(168, 85, 247, 0.6))
-            `
-          }}
+        <SobreHolografico
+          onOpen={tocarSobre}
+          onProgress={() => {}}
         />
-
-        <p style={{ color: '#fff', fontSize: '1.3rem', fontWeight: 'bold', textShadow: '0 0 10px #000' }}>
-          {abriendo && "Abriendo el sobre…"}
-          {!abriendo && toquesSobre === 0 && "¡Haz clic en el sobre para abrirlo!"}
-          {!abriendo && toquesSobre === 1 && "¡Toca 2 veces más!"}
-          {!abriendo && toquesSobre === 2 && "¡Un último toque!"}
-        </p>
 
       </div>
     );
@@ -585,8 +529,8 @@ function TiendaSobres() {
 
   const PaginaTiendaSobres = () => {
     return (
-      <main className="app-container" style={{ position: 'relative', minHeight: '100vh', padding: '2rem', overflowX: 'hidden' }}>
-        <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}>
+      <main className={`app-container tienda-sobres-app ${fase !== 'SELECCION' ? 'modo-apertura' : ''}`} style={{ position: 'relative', minHeight: '100vh', padding: fase === 'SELECCION' ? '2rem' : 0, overflowX: 'hidden' }}>
+        {fase === 'SELECCION' && <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}>
           <FondoTiendaSobres
             topColor="#5227FF"
             bottomColor="#FF9FFC"
@@ -601,9 +545,9 @@ function TiendaSobres() {
             mixBlendMode="screen"
             quality="high"
           />
-        </div>
+        </div>}
 
-        {renderBotonVolver()}
+        {fase === 'SELECCION' && renderBotonVolver()}
 
         {fase === 'SELECCION' && error && (
           <Alert tone="error" style={{ position: 'relative', zIndex: 3, maxWidth: '620px', margin: '1rem auto' }}>
@@ -611,7 +555,7 @@ function TiendaSobres() {
           </Alert>
         )}
 
-        <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '4rem auto 2rem' }} aria-labelledby="crear-sobres-titulo">
+        {fase === 'SELECCION' && <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '4rem auto 2rem' }} aria-labelledby="crear-sobres-titulo">
           <div className="grid-meta">
             <h2 id="crear-sobres-titulo" style={tituloSeccion}>Consigue sobres con repetidas</h2>
             <span style={subtituloSeccion}>Quema 4 repetidas y quédate con una</span>
@@ -641,7 +585,7 @@ function TiendaSobres() {
               </button>
             ))}
           </div>
-        </section>
+        </section>}
 
         {sobreSeleccionado && (
           <Modal onClose={() => !procesandoDescarte && setSobreSeleccionado(null)} labelledBy="selector-sobre-titulo" className="discard-modal">
@@ -691,7 +635,7 @@ function TiendaSobres() {
           </Modal>
         )}
 
-        <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '2rem auto' }} aria-labelledby="abrir-sobres-titulo">
+        {fase === 'SELECCION' && <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '2rem auto' }} aria-labelledby="abrir-sobres-titulo">
           <div className="grid-meta">
             <h2 id="abrir-sobres-titulo" style={tituloSeccion}>Sobres disponibles</h2>
             <span style={subtituloSeccion}>Elige la calidad del sobre que quieres abrir</span>
@@ -712,7 +656,7 @@ function TiendaSobres() {
               );
             })}
           </div>
-        </section>
+        </section>}
 
         {fase === 'PRE_APERTURA' && Sobrepreeapertura()}
         {fase === 'REVELADO' && PantallaCincoCartas()}
