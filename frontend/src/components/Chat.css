@@ -1,4 +1,15 @@
-/* Contenedor principal estilo WhatsApp Web */
+/* CONTENEDOR PRINCIPAL Y ESTRUCTURA GENERAL */
+
+/* 
+Contenedor padre de la pantalla del chat (Estilo WhatsApp Web)
+
+display: flex distribuye los elementos hijos en una sola línea horizontal por defecto, colocando la lista a la izquierda y el chat a la derecha. Sí se pueden usar alternativas como 'display: grid' (definiendo columnas con grid-template-columns) o el método antiguo de 'float' e 'inline-block', pero 'flex' es la opción estándar actual porque ajusta el espacio automáticamente sin romper el diseño.
+width se define en % porque toma como referencia el ancho disponible del elemento padre donde esté metido el chat. height se define en vh (Viewport Height) y dvh (Dynamic Viewport Height) porque la altura depende del tamaño de la ventana del navegador. El % en la altura suele fallar si los padres no tienen una altura fija definida, mientras que '100vh' le dice exactamente que ocupe el 100% de la pantalla visible. La propiedad '100dvh' ajusta esa altura dinámicamente en teléfonos cuando la barra del navegador se oculta o aparece al hacer scroll.
+background-color define el fondo general de la aplicación. Si se cambia a #000000 se vuelve negro puro.
+color establece el tono del texto por defecto (blanco #ffffff). Si más adelante un selector interno especifica su propio 'color' (por ejemplo, verde para un estado), el valor interno sobrescribe a este global por reglas de cascada de CSS.
+font-family aplica la tipografía Arial o cualquier letra sin serifas limpia.
+overflow: hidden controla lo que pasa si el contenido interno se sale de los bordes del contenedor. En este caso corta cualquier elemento que sobresalga y elimina las barras de desplazamiento feos en la ventana global de la pantalla. Si no se pusiera o se usara 'overflow: visible', al tener muchos chats aparecería una doble barra de scroll en toda la página web. Si usas 'overflow: scroll' la barra aparecería siempre fija, y con 'overflow: auto' solo se muestra cuando el contenido realmente no cabe.
+*/
 .chat-main-container {
   display: flex;
   width: 100%;
@@ -10,7 +21,18 @@
   overflow: hidden;
 }
 
-/* Columna Izquierda: Lista de Amigos */
+/* COLUMNA IZQUIERDA: LISTA DE CONTACTOS / AMIGOS */
+
+/* 
+Panel lateral izquierdo que contiene la lista de amigos
+
+width define que esta columna ocupe exactamente el 30% del ancho del contenedor principal.
+min-width: 0 es un ajuste de seguridad para Flexbox. Evita que la columna se expanda por error si un amigo tiene un nombre de usuario extremadamente largo sin espacios.
+flex: 0 1 30% es un atajo para tres propiedades: flex-grow (0: no crece más del 30%), flex-shrink (1: se puede encoger si falta espacio) y flex-basis (30%: su ancho base inicial).
+background-color aplica un tono oscuro grisáceo (#151821) exclusivo para la columna de contactos.
+border-right dibuja una línea divisoria vertical de 1px con estilo continuo (solid) y color #2a2e3d a la derecha para separar la lista del panel del chat.
+display: flex junto a flex-direction: column cambia la orientación de los elementos internos: en lugar de ponerse a los lados, se apilan verticalmente de arriba a abajo (cabecera, buscador y la lista).
+*/
 .chat-sidebar {
   width: 30%;
   min-width: 0;
@@ -21,7 +43,14 @@
   flex-direction: column;
 }
 
-/* Cabecera de la columna izquierda (Con botón Volver) */
+/* 
+Cabecera superior de la columna izquierda
+
+padding: 1rem le da un margen interno de 16px por todos los lados para que los botones internos no peguen contra las esquinas.
+background-color es el fondo de la barra superior (#1a1e2b), un poco más claro que la lista para marcar jerarquía.
+border-bottom crea la línea de separación horizontal inferior.
+display: flex con align-items: center centra los elementos verticalmente. justify-content: space-between empuja el botón de volver al extremo izquierdo y los botones de gestión al extremo derecho dejando espacio libre en el centro.
+*/
 .sidebar-header {
   padding: 1rem;
   background-color: #1a1e2b;
@@ -31,6 +60,17 @@
   justify-content: space-between;
 }
 
+/* 
+Botones de acción de la cabecera (+ Amigos, Solicitudes, Volver)
+
+background-color define el fondo del botón (#202533) y color le asigna el verde neón (#00ffcc) al texto.
+border dibuja un contorno fino del mismo color neón. Si cambias la propiedad a 'none' el botón pierde su borde definido.
+padding: 0.5rem 1rem le asigna relleno (8px arriba/abajo, 16px izquierda/derecha).
+border-radius: 20px le da el redondeo a las esquinas para crear el formato de píldora. Si pones '0px' se vuelve un rectángulo perfecto con esquinas en punta.
+cursor: pointer transforma el puntero del ratón en la mano de selección para que el usuario sepa que puede pulsar.
+font-weight: bold pone el texto en negrita.
+transition: all 0.2s hace que cualquier cambio (como el color en el hover) se anime de forma suave durante 0.2 segundos en lugar de cambiar de golpe.
+*/
 .btn-volver {
   background-color: #202533;
   color: #00ffcc;
@@ -42,13 +82,30 @@
   transition: all 0.2s;
 }
 
+/* 
+Efecto visual al pasar el ratón por encima del botón
+
+background-color invierte el color pasando a ser verde neón y color cambia el texto a negro para mantener el contraste y la legibilidad.
+box-shadow crea una sombra brillante alrededor del botón. Los parámetros representan: desplazamiento en X (0), desplazamiento en Y (0), difuminado (10px) y el color transparente verde rgba(0, 255, 204, 0.4).
+*/
 .btn-volver:hover {
   background-color: #00ffcc;
   color: #000;
   box-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
 }
 
-/* Tarjeta de cada Amigo en la lista izquierda */
+/* 
+Tarjeta individual de cada contacto dentro de la lista
+
+position: relative es imprescindible porque sirve como 'ancla' o punto de referencia para que el menú desplegable flotante de opciones (que usa position: absolute) se posicione justo respecto a esta tarjeta y no respecto a la pantalla completa.
+width: 100% hace que ocupe todo el ancho de la columna izquierda.
+padding: 0.8rem 1rem da espacio interno para que el nombre y el avatar no queden aplastados.
+background-color da el color de fondo a la tarjeta (#202533).
+border aplica el borde exterior y border-radius: 10px suaviza las 4 esquinas de la tarjeta.
+margin-bottom: 0.5rem crea una separación vertical externa de 8px entre tarjeta y tarjeta para que no salgan pegadas.
+display: flex coloca la información del usuario a la izquierda y el botón '⋮' a la derecha. align-items: center los alinea en la misma altura media y justify-content: space-between los separa.
+transition: background-color 0.2s anima el cambio de color al pasar el cursor.
+*/
 .item-amigo-sidebar {
   position: relative;
   width: 100%;
@@ -63,19 +120,42 @@
   transition: background-color 0.2s;
 }
 
+/* 
+Efecto hover para las tarjetas de la lista
+
+background-color aclara un poco la tarjeta (#282e40) al poner el ratón encima para indicarle al usuario que se puede hacer clic sobre ella.
+*/
 .item-amigo-sidebar:hover {
   background-color: #282e40;
 }
 
+/* 
+Zona interactiva interna de la tarjeta (Avatar + Nombre del contacto)
+
+display: flex coloca el círculo del avatar y la columna del nombre/estado uno al lado del otro horizontalmente.
+align-items: center los centra en el eje vertical.
+gap: 0.8rem añade una separación exacta de 13px entre el avatar y el texto sin necesidad de usar márgenes.
+cursor: pointer indica que se puede pulsar sobre esa área.
+flex: 1 le permite a esta zona expandirse y ocupar todo el espacio que sobra dentro de la tarjeta, haciendo que casi toda la tarjeta sea clickeable para abrir la conversación.
+*/
 .info-amigo-click {
   display: flex;
   align-items: center;
   gap: 0.8rem;
   cursor: pointer;
-  flex: 1; /* Ocupa casi todo el ancho para que al pulsar abra el chat */
+  flex: 1;
 }
 
-/* Botón de 3 puntos en la columna izquierda */
+/* 
+Botón de los tres puntos '⋮' dentro de la tarjeta de contacto
+
+background: none y border: none le quitan el aspecto predeterminado de botón cuadrado gris de HTML.
+color: #8b92b0 le da un tono gris claro al icono.
+font-size: 1.4rem escala el tamaño de los puntos para que se vean bien.
+padding: 0.3rem 0.6rem amplia el área donde se puede hacer clic alrededor del icono.
+border-radius: 50% hace que cuando el botón reciba un hover, el fondo se pinte como un círculo perfecto.
+z-index: 2 asegura que este botón permanezca por encima de la capa de fondo de la tarjeta para capturar los clics de forma independiente sin abrir el chat.
+*/
 .btn-opciones-sidebar {
   background: none;
   border: none;
@@ -87,12 +167,28 @@
   z-index: 2;
 }
 
+/* 
+Efecto hover del botón de tres puntos
+
+background-color genera una circunferencia gris (#3a3f55) de fondo detrás de los tres puntos y color: #fff cambia los puntos a blanco brillante.
+*/
 .btn-opciones-sidebar:hover {
   background-color: #3a3f55;
   color: #fff;
 }
 
-/* Menú flotante desplegable desde el botón de la izquierda */
+/* 
+Menú desplegable de opciones (Visitar Perfil / Bloquear)
+
+position: absolute hace que el menú 'flote' y se desenganche del flujo normal. Busca la primera tarjeta padre que tenga 'position: relative' para ubicarse.
+top: 45px lo desplaza hacia abajo 45px respecto a la parte superior de la tarjeta. right: 10px lo pega a 10px de la esquina derecha.
+background-color le da un fondo sólido (#1f2433) para que no se transparente el texto de abajo.
+border y border-radius le otorgan forma de caja con bordes redondeados (8px).
+box-shadow proyecta una sombra proyectada hacia abajo (0 en X, 4px en Y, 15px de suavizado, color negro al 60%) para darle profundidad 3D sobre el resto de elementos.
+display: flex con flex-direction: column apila los botones de 'Perfil' y 'Bloquear' en formato de lista vertical.
+z-index: 100 garantiza que el menú flotante siempre se dibuje sobre las demás tarjetas de la lista y no quede tapado por la tarjeta de abajo.
+min-width: 170px exige que la caja tenga como mínimo 170px de ancho para que los textos nunca se dividan en dos líneas.
+*/
 .menu-desplegable-sidebar {
   position: absolute;
   top: 45px;
@@ -107,6 +203,16 @@
   min-width: 170px;
 }
 
+/* 
+Botón individual dentro del menú desplegable
+
+padding: 0.8rem 1rem le otorga espacio interno holgado para que sea fácil presionar con el ratón o el dedo.
+background: none y border: none le eliminan los estilos por defecto del botón.
+color: #fff establece texto blanco.
+text-align: left alinea el texto y los iconos a la izquierda.
+display: flex con align-items: center y gap: 0.5rem coloca los emojis al lado del texto respetando una separación constante de 8px.
+font-size: 0.9rem reduce ligeramente el tamaño del texto en comparación con los títulos principales.
+*/
 .opcion-item {
   padding: 0.8rem 1rem;
   background: none;
@@ -120,27 +226,63 @@
   font-size: 0.9rem;
 }
 
+/* 
+Efecto hover para los elementos del menú desplegable
+
+background-color resalta la opción sobre la que está el ratón usando un tono gris azulado (#2a2d3d).
+*/
 .opcion-item:hover {
   background-color: #2a2d3d;
 }
 
+/* 
+Estilo específico para el botón de bloquear usuario
+
+color: #ff4d4d pinta el texto en rojo de advertencia para indicar una acción destructiva o restrictiva.
+*/
 .opcion-bloquear {
   color: #ff4d4d;
 }
 
+/* 
+Hover del botón de bloquear
+
+background-color utiliza rgba(255, 77, 77, 0.15), que es el mismo rojo del texto pero con un 85% de transparencia, creando una luz suave roja detrás de la opción.
+*/
 .opcion-bloquear:hover {
   background-color: rgba(255, 77, 77, 0.15);
 }
 
+/* 
+Estilo específico para el botón de desbloquear usuario
+
+color: #00ffcc pinta el texto en verde neón indicando una acción de restauración o positiva.
+*/
 .opcion-desbloquear {
   color: #00ffcc;
 }
 
+/* 
+Hover del botón de desbloquear
+
+background-color utiliza rgba(0, 255, 204, 0.15), pintando un fondo verde neón translúcido al pasar el ratón.
+*/
 .opcion-desbloquear:hover {
   background-color: rgba(0, 255, 204, 0.15);
 }
 
-/* Columna Derecha: Área de conversación */
+/* COLUMNA DERECHA: ÁREA DE CONVERSACIÓN / CHAT ABIERTO */
+
+/* 
+Panel principal donde se leen y escriben los mensajes
+
+width: 70% asigna el 70% del ancho del contenedor principal a la conversación.
+min-width: 0 evita que un mensaje largo o una imagen descuadre y empuje la columna hacia fuera de la pantalla.
+flex: 1 1 70% configura Flexbox para crecer (1), encogerse (1) y partir de una base del 70%.
+background-color le da a la zona de conversación el tono de fondo más oscuro de toda la app (#0d1017).
+display: flex junto a flex-direction: column organiza la zona internamente de forma vertical: cabecera del chat arriba, historial de mensajes en el centro y cuadro de texto abajo.
+position: relative permite posicionar elementos absolutos internamente si fuera necesario (como un selector de emojis emergente).
+*/
 .chat-area {
   width: 70%;
   min-width: 0;
@@ -151,7 +293,14 @@
   position: relative;
 }
 
-/* Cabecera del chat abierto */
+/* 
+Cabecera superior del chat seleccionado
+
+padding: 0.8rem 1.5rem le da un relleno interno más amplio a los lados (24px) que la barra izquierda para encajar con el margen de la conversación.
+background-color aplica el fondo del panel (#151821).
+border-bottom traza la línea inferior separadora.
+display: flex, align-items: center y justify-content: space-between alinean al contacto a la izquierda y las opciones extras a la derecha.
+*/
 .chat-header {
   padding: 0.8rem 1.5rem;
   background-color: #151821;
@@ -161,10 +310,24 @@
   justify-content: space-between;
 }
 
+/* 
+Botón para volver a la lista de chats en móviles
+
+display: none oculta este botón por defecto en monitores o pantallas de ordenador, ya que en escritorio la lista de amigos y el chat se ven al mismo tiempo.
+*/
 .mobile-chat-back {
   display: none;
 }
 
+/* 
+Contenedor circular para el avatar del usuario
+
+width: 40px y height: 40px imponen dimensiones cuadradas idénticas.
+border-radius: 50% transforma el cuadrado en un círculo perfecto.
+background-color aplica un fondo oscuro (#2a2d3d) por si la imagen tarda en cargar o se usa un emoji.
+display: flex con align-items: center y justify-content: center asegura que cualquier emoji, letra o imagen cargada dentro quede exactamente en el centro del círculo.
+font-size: 1.4rem escala la imagen/emoji dentro del avatar.
+*/
 .avatar-header {
   width: 40px;
   height: 40px;
@@ -176,65 +339,141 @@
   font-size: 1.4rem;
 }
 
-/* Estado cuando no hay nadie seleccionado */
+/* 
+Estado inicial cuando no hay ningún chat abierto
+
+margin: auto dentro de un contenedor Flexbox calcula automáticamente todo el espacio libre arriba, abajo, izquierda y derecha, posicionando el texto justo en el centro de la pantalla.
+text-align: center alinea las líneas de texto en el medio.
+color: #6c728f usa un color gris apagado para avisos vacíos.
+*/
 .no-chat-selected {
   margin: auto;
   text-align: center;
   color: #6c728f;
 }
 
+/* ADAPTACIÓN RESPONSIVA (MÓVILES Y PANTALLAS PEQUEÑAS) */
+
+/* 
+Regla de consulta de medios (@media)
+
+Esta sección solo entra en funcionamiento cuando la pantalla del dispositivo mide 640 píxeles de ancho o menos (smartphones en vertical o ventanas muy pequeñas).
+*/
 @media (max-width: 640px) {
+  
+  /* 
+  Ajuste del contenedor en móvil
+  
+  position: relative asegura que la pantalla completa sea la referencia del dispositivo.
+  min-height obliga al contenedor a cubrir el 100% del alto de la pantalla del móvil.
+  */
   .chat-main-container {
     position: relative;
     min-height: 100vh;
     min-height: 100dvh;
   }
 
+  /* 
+  Reestructuración a pantalla completa
+  
+  En móvil ya no se dividen en 30% y 70%. Tanto la lista de amigos como el área del chat pasan a medir el 100% de ancho (width: 100% y flex: 1 1 100%), alternándose una sobre la otra.
+  */
   .chat-sidebar,
   .chat-area {
     width: 100%;
     flex: 1 1 100%;
   }
 
+  /* 
+  Líneas divisoras en móvil
+  
+  border-right: 0 elimina el borde derecho de la lista lateral porque en móvil ya no hay nada al lado.
+  */
   .chat-sidebar {
     border-right: 0;
   }
 
+  /* 
+  Ocultación dinámica de la lista
+  
+  Cuando la etiqueta contenedora recibe la clase React 'has-selected-chat' (significa que pulsaste en un contacto), display: none oculta por completo la lista de amigos para dejar paso al chat.
+  */
   .has-selected-chat .chat-sidebar {
     display: none;
   }
 
+  /* 
+  Ocultación inicial del chat
+  
+  Por defecto en móvil, si no has tocado a ningún amigo, display: none oculta la columna derecha del chat para que solo veas tus contactos.
+  */
   .chat-area {
     display: none;
   }
 
+  /* 
+  Visualización del chat activo
+  
+  Cuando entras a una conversación, display: flex muestra la zona del chat ocupando toda la pantalla del teléfono.
+  */
   .has-selected-chat .chat-area {
     display: flex;
   }
 
+  /* 
+  Ajuste de relleno de cabeceras en móviles
+  
+  padding: 0.75rem reduce los márgenes internos de las barras superiores para ganar espacio útil de pantalla en dispositivos pequeños.
+  */
   .sidebar-header,
   .chat-header {
     padding: 0.75rem;
   }
 
+  /* 
+  Espaciado de la cabecera lateral
+  
+  gap: 0.5rem estrecha la distancia entre botones para que no se pisen.
+  */
   .sidebar-header {
     gap: 0.5rem;
   }
 
+  /* 
+  Ajuste del bloque contenedor de botones
+  
+  min-width: 0 permite que los botones se estrechen si la pantalla es extremadamente pequeña.
+  */
   .sidebar-header > div {
     min-width: 0;
   }
 
+  /* 
+  Botón volver compacto
+  
+  padding: 0.45rem 0.65rem reduce el tamaño del botón. white-space: nowrap impide de forma estricta que las palabras se rompan en dos líneas.
+  */
   .btn-volver {
     padding: 0.45rem 0.65rem;
     white-space: nowrap;
   }
 
+  /* 
+  Alineación de la cabecera de chat en móvil
+  
+  justify-content: flex-start pega los elementos a la izquierda y gap: 0.5rem les da espacio entre sí.
+  */
   .chat-header {
     justify-content: flex-start;
     gap: 0.5rem;
   }
 
+  /* 
+  Activación del botón volver en móvil
+  
+  display: inline-flex activa y muestra el botón del círculo con la flecha para salir de la conversación y regresar a la lista de amigos en teléfonos.
+  width: 2.25rem y height: 2.25rem lo convierten en un botón táctil redondo de 36px de diámetro perfecto gracias a border-radius: 50%.
+  */
   .mobile-chat-back {
     display: inline-flex;
     align-items: center;
@@ -250,16 +489,35 @@
     font-size: 1.25rem;
   }
 
+  /* 
+  Prevención de desbordamiento en el título
+  
+  min-width: 0 en el div de la cabecera permite recortar nombres largos.
+  */
   .chat-header > div {
     min-width: 0;
   }
 
+  /* 
+  Recorte de textos largos con puntos suspensivos
+  
+  overflow: hidden esconde las letras sobrantes.
+  white-space: nowrap obliga a que el nombre permanezca en una única línea horizontal.
+  text-overflow: ellipsis añade automáticamente '...' al final del nombre si este no cabe en la pantalla del móvil.
+  */
   .chat-header h4 {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
+  /* 
+  Ajustes del formulario de envío de mensajes en móvil
+  
+  padding: 0.65rem reduce el tamaño del panel de entrada de texto.
+  min-width: 0 en el input permite que el campo de texto se contraiga en pantallas pequeñas.
+  padding-inline: 1rem !important asegura que el botón de enviar mantenga un margen horizontal cómodo para presionar con el dedo.
+  */
   .chat-area form {
     padding: 0.65rem;
   }
