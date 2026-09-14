@@ -80,7 +80,7 @@ class Command(BaseCommand):
                 break
             import json
             usuarios_pagina = response.json()
-            ##print(json.dumps(usuarios_pagina, indent=4, ensure_ascii=False))
+
 
             if not usuarios_pagina:
                 self.stdout.write(self.style.SUCCESS("\n🏁 ¡Catálogo masivo sincronizado! Ya no quedan más alumnos oficiales."))
@@ -150,15 +150,15 @@ class Command(BaseCommand):
             tier = rareza_por_nivel(nivel_cursus)
 
             # Parseo de Título (Reutilizado)
-            titulo = self._parsear_titulo_usuario(perfil, login)
+            titulo,tier = _parsear_titulo_usuario(perfil, login,tier)
 
             # Extracción de datos básicos (Campos raíz del JSON directo)
-            url_foto = perfil.get("image", {}).get("versions", {}).get("medium")
+            url_foto = perfil.get("image", {}).get("versions", {}).get("small")
             puntos_eval = perfil.get("correction_point", 0)
             wallets = perfil.get("wallet", 0)
 
             # Guardado en base de datos (Reutilizado)
-            self._guardar_o_actualizar_carta(
+            self._(
                 login=login, photo=url_foto, coalition=coalition, title=titulo,
                 altarians=wallets, cursus_lvl=nivel_cursus, eval_point=puntos_eval,
                 is_blackhole=blackhole, tier=tier
@@ -217,12 +217,14 @@ class Command(BaseCommand):
         url_foto = registro.get("user",{}).get("image",{}).get("versions",{}).get("medium")
         puntos_eval = registro.get("user",{}).get("correction_point")
         wallets = registro.get("user",{}).get("wallet")
+        import json
         perfil_completo = self._consultar_perfil_extendido(id_alumno, login_alumno, headers)
+        ##print(json.dumps(perfil_completo, indent=4, ensure_ascii=False))
         if not perfil_completo:
             return
 
-        titulo = self._parsear_titulo_usuario(perfil_completo, login_alumno)
-        
+        titulo,tier = _parsear_titulo_usuario(perfil_completo, login_alumno,tier)
+        print(tier)
         self._guardar_o_actualizar_carta(
             login=login_alumno, photo=url_foto, coalition=coalition, title=titulo,
             altarians=wallets, cursus_lvl=nivel_cursus, eval_point=puntos_eval,
@@ -292,27 +294,9 @@ class Command(BaseCommand):
             return {}
 
 
-
-    def _parsear_titulo_usuario(self, perfil_completo, login_alumno):
-        """Extrae el título marcado como seleccionado y formatea el tag %login."""
-        titulo = login_alumno
-        title_id = 0
-        
-        for t in perfil_completo.get("titles_users", []):
-            if t.get("selected"): 
-                title_id = t.get("title_id")
-                break
-        
-        if title_id and title_id != 0:
-            for t in perfil_completo.get("titles", []):
-                if t.get("id") == title_id:
-                    titulo = t.get("name", login_alumno).replace("%login", login_alumno)
-                    break
-        return titulo
-
-
     def _guardar_o_actualizar_carta(self, login, photo, coalition, title, altarians, cursus_lvl, eval_point, is_blackhole, tier):
         """Inserta o actualiza la instancia correspondiente del modelo Card."""
+        print(tier)
         carta, creada = Card.objects.get_or_create(
             login=login,
             defaults={
@@ -325,7 +309,6 @@ class Command(BaseCommand):
                 'tier': tier
             }
         )
-
         if creada:
             self.stdout.write(self.style.SUCCESS(f"      🃏 Cromo Creado: {login} -> {coalition} | Título: {title}"))
         else:
@@ -338,3 +321,26 @@ class Command(BaseCommand):
             carta.tier = tier
             carta.save()
             self.stdout.write(self.style.SUCCESS(f"      🔄 Cromo Actualizado: {login}"))
+
+def _parsear_titulo_usuario(perfil_completo, login_alumno, tier):
+    """Extrae el título marcado como seleccionado y formatea el tag %login."""
+    titulo = login_alumno
+    title_id = 0
+    
+    for t in perfil_completo.get("titles_users", []):
+        if t.get("selected"): 
+            title_id = t.get("title_id")
+            break
+
+    for t in perfil_completo.get("achievements", []):
+        if t.get("id") == 65:
+            tier = "staff"
+            break
+    
+    if title_id and title_id != 0:
+        for t in perfil_completo.get("titles", []):
+            if t.get("id") == title_id:
+                titulo = t.get("name", login_alumno).replace("%login", login_alumno)
+                break
+
+    return titulo, tier
