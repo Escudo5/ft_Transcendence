@@ -41,6 +41,9 @@ class Command(BaseCommand):
 
         # Extraer datos básicos
         login = user.get("login")
+        if(user.get("staff?") == True):
+            self.stdout.write(self.style.WARNING(f"   ⏩ la cuenta de {login} Es una cuenta de Staff , inserta su cuenta de alumno."))
+            return
         user_id = user.get("id")
         photo = user.get("image", {}).get("versions", {}).get("medium")
         correction_point = user.get("correction_point")
