@@ -66,7 +66,7 @@ class Command(BaseCommand):
         # es alguien que haya terminado, es alguien que se quedó parado al
         # final del tronco común. El porqué entero, con los datos de la Intra,
         # está en cards/rarezas.py.
-        tier = rareza_por_nivel(lvl)
+        tier = rareza_por_nivel(lvl,user)
         if grade not in ("Cadet", "Transcender", "Alumni"):
             self.stdout.write(self.style.WARNING(
                 f"⚠️ Advertencia: Grado '{grade}' desconocido o no pertenece a 42cursus para {login}."))
