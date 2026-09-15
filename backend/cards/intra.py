@@ -34,12 +34,25 @@ DOS TRAMPAS COMPROBADAS CONTRA LA API DE VERDAD (15/09)
    cursus_id se puede coger el de la piscina y sale una carta con los
    datos equivocados, otra vez sin ningún error.
 
-2. Si alguien es del staff se sabe por `user["staff?"]`, que YA VIENE en
-   las dos rutas. No hace falta mirar los logros: eso obliga a pedir el
-   perfil ampliado de cada alumno, o sea ~800 peticiones de más sobre un
-   límite de 1200 a la hora. Comprobado con el censo entero del campus:
-   `staff?`, `kind == "admin"` y no tener grade señalan a las mismas 26
-   personas.
+2. EL STAFF TIENE DOS CUENTAS, y la que nos interesa es la de alumno.
+
+   Cuando alguien de 42 entra a trabajar en el campus no pierde su cuenta
+   de alumno: le crean ADEMÁS una cuenta de staff aparte. Por ejemplo
+   `bazuara` es la cuenta de alumno y `sultan` la de staff.
+
+   Comprobado el 15/09 contra la Intra:
+
+       bazuara   kind=student  staff?=False  ->  logro 65 SÍ
+       sultan    kind=admin    staff?=True   ->  logro 65 no
+
+   O sea que `user["staff?"]` marca justo las cuentas que hay que TIRAR:
+   son cuentas de servicio con nivel 0 y sin cursus, y entre ellas hay
+   hasta bots (marvin, 42madrid_tech, madridbocal).
+
+   La señal buena es el LOGRO 65 en la cuenta de alumno, que se llama
+   "Come to the dark side, we have cookies". Eso obliga a mirar el perfil
+   ampliado, pero no cuesta ninguna petición de más: fill_db ya lo pide
+   para cada alumno, para sacarle el título.
 """
 
 # El 42cursus. El 9 es la piscina, y NO cuenta para la carta.
@@ -79,8 +92,12 @@ def datos_del_alumno(json_api):
         "foto":      (imagen.get("versions") or {}).get("medium"),
         "wallet":    usuario.get("wallet") or 0,
         "puntos":    usuario.get("correction_point") or 0,
-        # 👔 La marca del staff, sin pedir el perfil ampliado.
-        "staff":     bool(usuario.get("staff?")),
+        # 👔 OJO: esto NO quiere decir "su carta es Staff". Quiere decir
+        #    "esta es una cuenta creada a propósito para el staff", que es
+        #    justo la que hay que IGNORAR: nivel 0, sin cursus, y entre
+        #    ellas hay bots. Para saber si la carta es Staff hay que usar
+        #    `es_alumno_del_staff` de aquí abajo, sobre el perfil ampliado.
+        "cuenta_staff": bool(usuario.get("staff?")),
         "nivel":     cursus.get("level") or 0.0,
         "grade":     cursus.get("grade"),
         # 🏁 Cuándo se cerró su cursus. Vacío mientras sigue.
@@ -90,3 +107,26 @@ def datos_del_alumno(json_api):
         #    pasó. Al pasar el tronco común desaparece.
         "blackhole": cursus.get("blackholed_at"),
     }
+
+
+# El logro que le dan a un alumno cuando entra a trabajar en 42. Se llama
+# "Come to the dark side, we have cookies".
+LOGRO_STAFF = 65
+
+
+def es_alumno_del_staff(perfil_ampliado):
+    """
+    ¿Esta persona, siendo alumno, trabaja además en el campus?
+
+    Hay que pasarle el perfil ampliado (/users/<login> o /users/<id>),
+    porque los logros NO vienen en el listado de /cursus_users. No es un
+    gasto extra: fill_db ya pide ese perfil para cada alumno, para sacarle
+    el título.
+
+    Esto es lo que decide que una carta sea Staff, no la marca `staff?`:
+    esa señala la cuenta aparte que les crean, que no queremos.
+    """
+    for logro in perfil_ampliado.get("achievements") or []:
+        if logro.get("id") == LOGRO_STAFF:
+            return True
+    return False
