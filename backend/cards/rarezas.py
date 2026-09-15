@@ -2,113 +2,131 @@
 🎴 LAS RAREZAS DEL ÁLBUM
 
 Un fichero solo para esto, y pequeño a propósito: es la única fuente de
-verdad de qué rareza tiene cada carta. Lo usan fill_db (al cargar el
-catálogo desde la Intra) y el comando recalcular_rarezas (para arreglar
-las que ya están guardadas). Si algún día cambian los cortes, se tocan
-aquí y cambian en los dos sitios.
+verdad de qué rareza tiene cada carta, cuánto vale y en qué sobre entra.
+Si algún día cambia algo de eso, se toca aquí y solo aquí.
+
+Su gemelo en el navegador es frontend/src/components/rarezas.js, que
+tiene los colores. Si se renombra una rareza hay que pasar por los dos.
 
 ═══════════════════════════════════════════════════════════════════════
-POR QUÉ LA RAREZA VA POR NIVEL Y NO POR EL "GRADE" DE LA INTRA
+LA REGLA: GRADE Y NIVEL, NO SOLO NIVEL
 ═══════════════════════════════════════════════════════════════════════
 
-Antes se sacaba del campo `grade`: Cadet -> Junior/Senior, Transcender ->
-Transcender, Alumni -> Alumni. Parecía razonable, pero los datos de
-verdad de 42 Madrid (consultados el 10/09/2026) dicen otra cosa:
+Hasta el 15/09 la rareza salía SOLO del nivel. El problema lo encontró el
+equipo con un caso real: `acastrov` tiene nivel 11,57 pero sigue siendo
+Cadet, o sea que no ha pasado el tronco común. Por nivel le tocaba
+Transcender, y eso es falso: no es un Transcender, es un cadete que está
+a punto de serlo.
 
-  Transcender  190 alumnos   98% activos   nivel mediano 11,97
-  Alumni        95 alumnos   65% activos   nivel mediano 10,66
-                             52 de los 95 atascados entre nivel 10 y 11
+Así que la regla mira las dos cosas:
 
-En 42 te "alumnizan" cuando, después de Transcender, pasas más de seis
-meses sin entregar un proyecto. O sea que **Alumni no es un escalón por
-encima de Transcender: es alguien que se quedó parado justo al final del
-tronco común**, y un tercio ya ni aparece por el campus.
+    eres staff                  ->  Staff
+    grade Cadet                 ->  Junior si nivel < 4, si no Senior
+    grade Transcender o Alumni  ->  Legendario si nivel >= 14, si no Transcender
 
-Con el sistema viejo, la carta más "valiosa" del álbum habría sido la de
-quien se atascó. Por eso la rareza va por NIVEL, que sí mide lo que ha
-hecho cada uno. `grade` se sigue guardando en la carta como información,
-pero no decide nada.
+`Alumni` va con Transcender a propósito. En 42 te "alumnizan" cuando,
+después de Transcender, pasas más de seis meses sin entregar un proyecto:
+**no es un escalón por encima, es alguien que se paró**. Los datos lo
+confirman: de los 96 Alumni vivos del campus, 59 están por debajo del
+nivel 11, o sea atascados justo al final del tronco común. Si Alumni
+fuese la rareza más alta, la carta más valiosa del álbum sería la de
+quien se quedó parado.
 
 ═══════════════════════════════════════════════════════════════════════
-DE DÓNDE SALEN LOS CORTES
+CÓMO QUEDA EL CATÁLOGO (censo real del campus, 15/09/2026)
 ═══════════════════════════════════════════════════════════════════════
 
-No son inventados. El **nivel 11 es el final del tronco común** (los
-Transcender empiezan en 10,45), y el 4 es donde se deja de ser novato.
-Con el catálogo real de 719 cartas queda así:
+De los 2627 que han pasado por el cursus 21 en el campus 22, entran los
+que no tienen el cursus cerrado y a los que no se les ha pasado la fecha
+límite hace más de 30 días. Son 805:
 
-    Común        < 4      285 cartas   40%
-    Épica        4 - 11    214 cartas   30%
-    Transcender  11 - 14   170 cartas   24%
-    Legendaria   14+        50 cartas    7%
+    Junior       305   37,9%
+    Senior       183   22,7%
+    Transcender  241   29,9%
+    Legendario    50    6,2%
+    Staff         26    3,2%
 
-Es el único reparto que baja de verdad (40 > 30 > 24 > 7). Cualquier otro
-corte se desordena por el tapón de 114 personas que hay entre el nivel 11
-y el 12, justo al salir del tronco común.
-
-**Solo 50 legendarias en 719.** Esa escasez es la que hace que valga la
-pena buscarlas y cambiarlas.
-
-⚠️ Ojo con las que ya cayeron: la rareza "Blackhole" que existía antes
-DESAPARECE. Los alumnos que ya cayeron no entran en el catálogo, así que
-no puede haber ninguna carta de esa rareza.
+⚠️ OJO CON ESTO AL AJUSTAR EL JUEGO: Transcender (241) es más numeroso
+que Senior (183). No es un fallo, es la forma del campus: hay mucho
+Transcender que se queda y pocos cadetes de nivel alto. Pero significa
+que casi un tercio del álbum es de rareza alta, así que ahí se concentra
+el valor. Si algún día se quiere repartir mejor, la palanca son los
+PUNTOS de aquí abajo.
 """
 
-COMUN = 'Común'
-EPICA = 'Épica'
+JUNIOR = 'Junior'
+SENIOR = 'Senior'
 TRANSCENDER = 'Transcender'
-LEGENDARIA = 'Legendaria'
+LEGENDARIO = 'Legendario'
+STAFF = 'Staff'
 
-# De menos a más rara. El orden importa: lo usan el desplegable de filtrar
-# y la ordenación del catálogo.
-TODAS = (COMUN, EPICA, TRANSCENDER, LEGENDARIA)
+# De menos a más rara. El orden importa: lo usan la ordenación del
+# catálogo, "tu carta más rara" del perfil y el contrato, que sube una
+# carta al escalón siguiente.
+TODAS = (JUNIOR, SENIOR, TRANSCENDER, LEGENDARIO, STAFF)
 
-# (nivel a partir del cual, rareza). Se recorre de arriba abajo y se coge
-# la primera que encaja; si no encaja ninguna, es Común.
-CORTES = (
-    (14.0, LEGENDARIA),
-    (11.0, TRANSCENDER),
-    (4.0, EPICA),
-)
+# Los dos cortes por nivel de la regla de arriba.
+NIVEL_SENIOR = 4.0        # dentro de los Cadet
+NIVEL_LEGENDARIO = 14.0   # dentro de los que pasaron el tronco común
+
+# Los grades de la Intra que significan "ya pasó el tronco común".
+GRADES_PASADO_TRONCO = ('Transcender', 'Alumni')
+
+
+def rareza_de(grade, nivel, es_staff=False):
+    """
+    La rareza de una carta a partir de su grade y su nivel.
+
+    No recibe JSON a propósito: para eso está cards/intra.py, que traduce
+    las dos formas en que la API devuelve un alumno. Aquí llegan datos
+    limpios y esta función solo decide.
+
+    NUNCA devuelve vacío. Si el grade falta o es raro (un piscinero, un
+    dato incompleto de la Intra), devuelve Junior. Es a propósito: una
+    versión anterior devolvía "" cuando no encajaba nada, no daba ningún
+    error, y se habrían guardado ~800 cartas sin rareza sin que nadie se
+    enterase. Antes una carta común mal puesta que una carta rota.
+    """
+    if es_staff:
+        return STAFF
+
+    try:
+        nivel = float(nivel)
+    except (TypeError, ValueError):
+        nivel = 0.0
+
+    if grade in GRADES_PASADO_TRONCO:
+        return LEGENDARIO if nivel >= NIVEL_LEGENDARIO else TRANSCENDER
+
+    # Cadet, y también cualquier cosa que no reconozcamos.
+    return SENIOR if nivel >= NIVEL_SENIOR else JUNIOR
 
 
 # ══════════════════════════════════════════════════════════════════════
 # 🏆 LO QUE VALE CADA CARTA
 # ══════════════════════════════════════════════════════════════════════
 #
-# Antes, la "puntuación" del perfil era el ELO: un 1000 fijo que no movía
-# nada, puesto pensando en un juego de cartas que no existe. Un evaluador
-# lo ve igual en todos los perfiles y pregunta, y la respuesta era "no
-# hace nada". Ahora ese hueco enseña puntos de verdad.
+# Con las 805 cartas del censo, el álbum entero suma 39.885 puntos:
 #
-# Y resuelve algo más de fondo: hasta hoy, en el ranking una carta
-# Legendaria contaba lo mismo que una Común, así que la rareza solo
-# servía para el color y la animación del sobre. Con esto, elegir qué
-# cambias y qué descartas pasa a tener consecuencias.
+#   Junior       305 x  10 =  3.050    7,6%
+#   Senior       183 x  25 =  4.575   11,5%
+#   Transcender  241 x  60 = 14.460   36,3%
+#   Legendario    50 x 200 = 10.000   25,1%
+#   Staff         26 x 300 =  7.800   19,6%
 #
-# LOS NÚMEROS, Y POR QUÉ ESTOS:
-#
-#   Común        10  x285 =  2.850
-#   Épica        30  x214 =  6.420
-#   Transcender  80  x170 = 13.600
-#   Legendaria  250  x 50 = 12.500
-#                    ────────────
-#   Álbum entero        =  35.370
-#
-# Una legendaria vale 25 comunes, que es más o menos lo que cuesta
-# encontrarla (son el 7% del catálogo). Pero fíjate en que los totales por
-# rareza quedan parecidos: quien colecciona a lo ancho y quien caza rarezas
-# acaban en sitios parecidos. No hay una sola forma buena de jugar.
+# Un Staff vale 30 Junior, que es más o menos lo que cuesta encontrarlo:
+# son el 3% del catálogo y no hay ninguna otra forma de conseguirlos.
 #
 # ⚠️ SOLO CUENTAN LAS CARTAS DISTINTAS. Tener 10 copias de la misma no da
 # más puntos que tener una, a propósito: si no, acumular sin intercambiar
 # sería una estrategia, y lo que queremos premiar es completar el álbum.
 # Las repetidas valen para cambiarlas, y al cambiarlas sí suben los puntos.
 PUNTOS = {
-    COMUN: 10,
-    EPICA: 30,
-    TRANSCENDER: 80,
-    LEGENDARIA: 250,
+    JUNIOR: 10,
+    SENIOR: 25,
+    TRANSCENDER: 60,
+    LEGENDARIO: 200,
+    STAFF: 300,
 }
 
 
@@ -121,61 +139,31 @@ def puntos_de(rareza):
 # 🎁 LOS SOBRES
 # ══════════════════════════════════════════════════════════════════════
 #
-# Esto estaba escrito a mano en cards/views.py, y las rarezas viejas
-# estaban además repetidas en otros SIETE sitios. Al cambiarlas, todos se
-# quedaron viejos a la vez y nadie se enteró: los sobres siguieron
-# funcionando porque el código tiene un "si no hay cartas de esa rareza,
-# coge cualquiera", así que un sobre común empezó a dar 11% de
-# legendarias sin dar ningún error.
+# Qué probabilidad tiene cada rareza de salir, carta por carta. Cada
+# sobre trae CARTAS_POR_SOBRE cartas y se tira una vez por cada una.
 #
-# Por eso viven aquí ahora: para que cambiar una rareza sea cambiar UN
-# fichero, y no acordarse de ocho.
+# ⚠️ ESTOS NÚMEROS SON DE EQUILIBRIO DEL JUEGO, no de programación. Se
+# pueden mover sin miedo, pero cada fila tiene que sumar 100.
 #
-# ⚠️ ESTOS NÚMEROS SON DE EQUILIBRIO DEL JUEGO, no de programación. Están
-# pensados para que el álbum se pueda completar en algo menos de un año
-# viniendo casi todos los días, contando con que además se intercambia.
-# Se pueden mover sin miedo: solo hay que cambiarlos aquí.
+# El sobre común es el regalo diario. Los otros dos solo se consiguen
+# quemando repetidas (ver RAREZAS_POR_SOBRE), así que son la recompensa
+# de jugar, no de esperar.
 PROBABILIDADES_SOBRE = {
-    'comun': {COMUN: 55, EPICA: 30, TRANSCENDER: 13, LEGENDARIA: 2},
-    'raro': {COMUN: 35, EPICA: 33, TRANSCENDER: 25, LEGENDARIA: 7},
-    'epico': {COMUN: 20, EPICA: 30, TRANSCENDER: 33, LEGENDARIA: 17},
+    'comun': {JUNIOR: 55, SENIOR: 30, TRANSCENDER: 13, LEGENDARIO: 1.5, STAFF: 0.5},
+    'raro':  {JUNIOR: 35, SENIOR: 33, TRANSCENDER: 25, LEGENDARIO: 5,   STAFF: 2},
+    'epico': {JUNIOR: 20, SENIOR: 28, TRANSCENDER: 35, LEGENDARIO: 12,  STAFF: 5},
 }
 
 CARTAS_POR_SOBRE = 5
 
-# Qué rareza de carta hace falta descartar para llevarse cada sobre.
-# Lo usa el descarte de Sergio (cards/intercambios.py): 4 copias de la
-# misma carta te dan un sobre de la calidad que corresponda.
+# Qué rareza hay que quemar para llevarse cada sobre. Lo usa el descarte
+# (cards/intercambios.py): 4 copias de la misma carta dan un sobre de la
+# calidad que corresponda, y siempre te queda una copia.
 #
-# Son tres sobres y cuatro rarezas, así que las dos de arriba comparten
-# el sobre épico. Es lo que ya hacía él con las rarezas viejas.
+# Son tres sobres y cinco rarezas, así que las tres de arriba comparten
+# el sobre épico.
 RAREZAS_POR_SOBRE = {
-    'comun': {COMUN},
-    'raro': {EPICA},
-    'epico': {TRANSCENDER, LEGENDARIA},
+    'comun': {JUNIOR},
+    'raro':  {SENIOR},
+    'epico': {TRANSCENDER, LEGENDARIO, STAFF},
 }
-
-
-def rareza_por_nivel(nivel, perfil):
-    """
-    El nivel del cursus -> la rareza de su carta.
-    """
-    tier = ""
-    grade, level = "", 0.0
-
-    for t in perfil.get("cursus_users", {}):
-        if t.get("cursus_id") == 21:
-            grade = t.get("grade", "")
-            level = t.get("level", 0.0) or 0.0
-            break
-
-    if grade == "Cadet":
-        tier = "Senior" if level >= 4 else "Junior"
-    elif grade == "Transcender":
-        tier = "Legendaria" if level >= 14 else "Transcender"
-    elif grade == "Alumni":
-        tier = "Legendaria" if level >= 14 else "Transcender"
-    if any(a.get("id") == 65 for a in perfil.get("achievements", [])):
-        tier = "Staff"
-
-    return tier

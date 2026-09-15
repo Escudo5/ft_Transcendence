@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 
+from .rarezas import JUNIOR
+
 
 class Card(models.Model):
     # ==========================================
@@ -20,7 +22,26 @@ class Card(models.Model):
     # ==========================================
     # PARTE NO VISIBLE
     # ==========================================
-    tier = models.CharField(max_length=50, default="Bronce") # Un valor por defecto para empezar
+    # ⚠️ Nacho, 15/09: el valor por defecto era "Bronce", una rareza que no
+    # existe desde hace días. Nunca dio error porque nadie lo comprobaba.
+    tier = models.CharField(max_length=50, default=JUNIOR)
+
+    # 🎓 Nacho, 15/09: EL GRADE Y EL STAFF HAY QUE GUARDARLOS.
+    #
+    # Desde que la rareza depende del grade y no solo del nivel, no basta
+    # con guardar `cursus_lvl`: sin el grade no se puede volver a calcular
+    # la rareza de una carta que ya está en la base.
+    #
+    # Y eso importa porque `recalcular_rarezas` existe justo para eso:
+    # poner al día las cartas guardadas SIN gastar peticiones de la API.
+    # Si el grade no estuviera aquí, cada vez que se toque un corte habría
+    # que volver a bajarse los 800 alumnos de la Intra.
+    #
+    # `grade` va vacío y no nulo para no tener que preguntar por None en
+    # todas partes: un piscinero o un dato incompleto se queda en "".
+    grade = models.CharField(max_length=30, blank=True, default='')
+    es_staff = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     # 🛠️ ARREGLADO: Cambiado 'self.name' por 'self.login' para evitar que explote Django

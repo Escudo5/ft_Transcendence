@@ -267,7 +267,7 @@ def _logros(usuario, stats):
     solo un sí o un no.
     """
     from cards.models import UserCard
-    from cards.rarezas import LEGENDARIA, TRANSCENDER
+    from cards.rarezas import LEGENDARIO, TRANSCENDER, STAFF
 
     mis_cartas = list(UserCard.objects.filter(user=usuario).select_related('card'))
 
@@ -296,17 +296,22 @@ def _logros(usuario, stats):
               int(stats['porcentaje']), 50),
         logro('completista', 'Completista', 'Completa el álbum entero', '👑',
               distintas, total_catalogo),
-        # 🎴 CAMBIO (Nacho, 10/09). Estos dos miraban rarezas que ya no
-        # existen: "Buscador de Alumni" se había vuelto IMPOSIBLE de
-        # conseguir, porque ninguna carta es "Alumni" desde que la rareza va
-        # por nivel. Y "Cazador de leyendas" pedía una Transcender, que ahora
-        # es la tercera de cuatro y no la más rara.
+        # 🎴 CAMBIO (Nacho, 10/09 y 15/09). Estos logros miraban rarezas que
+        # ya no existen: "Buscador de Alumni" se había vuelto IMPOSIBLE de
+        # conseguir, y el 15/09 el nombre volvió a cambiar (Legendaria ->
+        # Legendario) al pasar a cinco rarezas.
         #
-        # Los nombres de las rarezas salen de cards/rarezas.py, no escritos a
-        # mano, que es justo lo que hizo que esto se rompiera.
+        # Los nombres salen de cards/rarezas.py, nunca escritos a mano, que es
+        # justo lo que hizo que esto se rompiera las dos veces. Si el import
+        # de arriba falla, es que alguien renombró una rareza y este fichero
+        # se enterará EN EL ARRANQUE, no cuando un usuario abra su perfil.
         logro('leyenda', 'Cazador de leyendas',
-              f'Consigue una carta {LEGENDARIA}', '✨',
-              1 if LEGENDARIA in tiers else 0, 1),
+              f'Consigue una carta {LEGENDARIO}', '✨',
+              1 if LEGENDARIO in tiers else 0, 1),
+        # 👔 Nuevo con la quinta rareza: solo 26 cartas de 805.
+        logro('staff', 'Has visto al staff',
+              f'Consigue una carta {STAFF}', '👔',
+              1 if STAFF in tiers else 0, 1),
         logro('transcender', 'Más allá del tronco común',
               f'Consigue una carta {TRANSCENDER}', '🎓',
               1 if TRANSCENDER in tiers else 0, 1),
