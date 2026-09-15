@@ -156,21 +156,26 @@ RAREZAS_POR_SOBRE = {
 }
 
 
-def rareza_por_nivel(nivel):
+def rareza_por_nivel(nivel, perfil):
     """
     El nivel del cursus -> la rareza de su carta.
-
-    Admite None y textos raros sin reventar: cualquier cosa que no sea un
-    número cuenta como nivel 0, o sea Común. Es a propósito: si la Intra
-    devuelve un dato incompleto de alguien, preferimos una carta común a
-    que se caiga la carga entera del catálogo a mitad.
     """
-    try:
-        nivel = float(nivel)
-    except (TypeError, ValueError):
-        return COMUN
+    tier = ""
+    grade, level = "", 0.0
 
-    for minimo, rareza in CORTES:
-        if nivel >= minimo:
-            return rareza
-    return COMUN
+    for t in perfil.get("cursus_users", {}):
+        if t.get("cursus_id") == 21:
+            grade = t.get("grade", "")
+            level = t.get("level", 0.0) or 0.0
+            break
+
+    if grade == "Cadet":
+        tier = "Senior" if level >= 4 else "Junior"
+    elif grade == "Transcender":
+        tier = "Legendaria" if level >= 14 else "Transcender"
+    elif grade == "Alumni":
+        tier = "Legendaria" if level >= 14 else "Transcender"
+    if any(a.get("id") == 65 for a in perfil.get("achievements", [])):
+        tier = "Staff"
+
+    return tier

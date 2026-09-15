@@ -117,8 +117,6 @@ class Command(BaseCommand):
                 
             perfil = res_user.json()
             user_id = perfil.get("id")
-            import json
-            print(json.dumps(perfil, indent=4, ensure_ascii=False))
 
             if perfil.get("staff?"):
                 self.stdout.write(self.style.WARNING(f"   ⏩ Saltando a {login} (Es miembro del Staff)"))
@@ -147,10 +145,11 @@ class Command(BaseCommand):
             # Aquí NO se filtra a nadie: estos cinco somos los del equipo y
             # nuestras cartas tienen que existir siempre, pase lo que pase con
             # nuestro cursus. Sin ellas la portada da errores 404.
-            tier = rareza_por_nivel(nivel_cursus)
+            tier = rareza_por_nivel(nivel_cursus,perfil)
+            print("[",tier,"]")
 
             # Parseo de Título (Reutilizado)
-            titulo,tier = _parsear_titulo_usuario(perfil, login,tier)
+            titulo = _parsear_titulo_usuario(perfil, login)
 
             # Extracción de datos básicos (Campos raíz del JSON directo)
             url_foto = perfil.get("image", {}).get("versions", {}).get("small")
@@ -211,8 +210,9 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(
                 f"   ⏩ Saltando a {login_alumno} (su cursus terminó el {fin_del_cursus[:10]})"))
             return
-
-        tier = rareza_por_nivel(nivel_cursus)
+        import json
+        tier = rareza_por_nivel(nivel_cursus,registro)
+        print(json.dumps(registro, indent=4, ensure_ascii=False))
 
         url_foto = registro.get("user",{}).get("image",{}).get("versions",{}).get("medium")
         puntos_eval = registro.get("user",{}).get("correction_point")
@@ -223,8 +223,7 @@ class Command(BaseCommand):
         if not perfil_completo:
             return
 
-        titulo,tier = _parsear_titulo_usuario(perfil_completo, login_alumno,tier)
-        print(tier)
+        titulo = _parsear_titulo_usuario(perfil_completo, login_alumno)
         self._guardar_o_actualizar_carta(
             login=login_alumno, photo=url_foto, coalition=coalition, title=titulo,
             altarians=wallets, cursus_lvl=nivel_cursus, eval_point=puntos_eval,
@@ -296,7 +295,6 @@ class Command(BaseCommand):
 
     def _guardar_o_actualizar_carta(self, login, photo, coalition, title, altarians, cursus_lvl, eval_point, is_blackhole, tier):
         """Inserta o actualiza la instancia correspondiente del modelo Card."""
-        print(tier)
         carta, creada = Card.objects.get_or_create(
             login=login,
             defaults={
@@ -322,7 +320,7 @@ class Command(BaseCommand):
             carta.save()
             self.stdout.write(self.style.SUCCESS(f"      🔄 Cromo Actualizado: {login}"))
 
-def _parsear_titulo_usuario(perfil_completo, login_alumno, tier):
+def _parsear_titulo_usuario(perfil_completo, login_alumno):
     """Extrae el título marcado como seleccionado y formatea el tag %login."""
     titulo = login_alumno
     title_id = 0
@@ -331,16 +329,10 @@ def _parsear_titulo_usuario(perfil_completo, login_alumno, tier):
         if t.get("selected"): 
             title_id = t.get("title_id")
             break
-
-    for t in perfil_completo.get("achievements", []):
-        if t.get("id") == 65:
-            tier = "staff"
-            break
-    
     if title_id and title_id != 0:
         for t in perfil_completo.get("titles", []):
             if t.get("id") == title_id:
                 titulo = t.get("name", login_alumno).replace("%login", login_alumno)
                 break
 
-    return titulo, tier
+    return titulo
