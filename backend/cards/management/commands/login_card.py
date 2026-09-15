@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from cards.models import Card
 from cards.management.commands.fill_db import _obtener_headers_auth
 from cards.rarezas import rareza_de          # 🎴 Nacho, 10/09 y 15/09
-from cards.intra import datos_del_alumno     # 🔌 Nacho, 15/09
+from cards.intra import datos_del_alumno, es_alumno_del_staff   # 🔌 Nacho, 15/09
 import json
 
 class Command(BaseCommand):
@@ -61,7 +61,12 @@ class Command(BaseCommand):
         # Antes salía solo del nivel, y había cadetes de nivel 11 saliendo
         # como Transcender sin haber pasado el tronco común (acastrov). El
         # porqué entero está en cards/rarezas.py.
-        tier = rareza_de(grade, lvl, d["staff"])
+        # 👔 El staff sale del logro 65 en la cuenta de ALUMNO, no de la
+        # marca `staff?`: esa señala la cuenta aparte que les crean (bazuara
+        # es la de alumno y sultan la de staff). Aquí `user` es el perfil
+        # ampliado, así que los logros ya vienen dentro.
+        del_staff = es_alumno_del_staff(user)
+        tier = rareza_de(grade, lvl, del_staff)
         if grade not in ("Cadet", "Transcender", "Alumni"):
             self.stdout.write(self.style.WARNING(
                 f"⚠️ Advertencia: Grado '{grade}' desconocido o no pertenece a 42cursus para {login}."))
@@ -116,7 +121,7 @@ class Command(BaseCommand):
                     # 🎓 Nacho, 15/09: se guardan para que recalcular_rarezas
                     # pueda rehacer la rareza sin volver a la API.
                     'grade': grade or '',
-                    'es_staff': d["staff"],
+                    'es_staff': del_staff,
                 }
             )
 
@@ -131,7 +136,7 @@ class Command(BaseCommand):
                 carta.title = title
                 carta.tier = tier
                 carta.grade = grade or ''
-                carta.es_staff = d["staff"]
+                carta.es_staff = del_staff
                 carta.save()
                 self.stdout.write(self.style.SUCCESS(f"     🔄 Cromo Actualizado: {login}"))
                 

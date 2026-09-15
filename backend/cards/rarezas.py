@@ -37,16 +37,26 @@ CÓMO QUEDA EL CATÁLOGO (censo real del campus, 15/09/2026)
 ═══════════════════════════════════════════════════════════════════════
 
 De los 2627 que han pasado por el cursus 21 en el campus 22, entran los
-que no tienen el cursus cerrado y a los que no se les ha pasado la fecha
-límite hace más de 30 días. Son 805:
+que no tienen el cursus cerrado, a los que no se les ha pasado la fecha
+límite hace más de 30 días, y que no sean una cuenta de servicio del
+staff. Son 779:
 
-    Junior       305   37,9%
-    Senior       183   22,7%
-    Transcender  241   29,9%
-    Legendario    50    6,2%
-    Staff         26    3,2%
+    Junior       305   39,2%
+    Senior       183   23,5%
+    Transcender  241   30,9%
+    Legendario    50    6,4%
+    Staff          ?    sale de dentro de esos cuatro
 
-⚠️ OJO CON ESTO AL AJUSTAR EL JUEGO: Transcender (241) es más numeroso
+⚠️ EL NÚMERO DE STAFF NO SE SABE TODAVÍA, y no es por vaguería: un alumno
+es del staff si tiene el logro 65, y los logros solo vienen en el perfil
+ampliado, uno por persona. Contarlos ahora costaría 779 peticiones. Se
+sabrá al cargar el catálogo, porque fill_db ya pide ese perfil de todas
+formas para sacar el título.
+
+Lo que sí se sabe: esas cartas salen de las cuatro de arriba, no se
+suman. `bazuara` (nivel 16,49, Transcender) es Staff, no Legendario.
+
+⚠️ Y OJO CON ESTO AL AJUSTAR EL JUEGO: Transcender (241) es más numeroso
 que Senior (183). No es un fallo, es la forma del campus: hay mucho
 Transcender que se queda y pocos cadetes de nivel alto. Pero significa
 que casi un tercio del álbum es de rareza alta, así que ahí se concentra
@@ -106,16 +116,17 @@ def rareza_de(grade, nivel, es_staff=False):
 # 🏆 LO QUE VALE CADA CARTA
 # ══════════════════════════════════════════════════════════════════════
 #
-# Con las 805 cartas del censo, el álbum entero suma 39.885 puntos:
+# Con las 779 del censo (y sin saber aún cuántas se irán a Staff):
 #
-#   Junior       305 x  10 =  3.050    7,6%
-#   Senior       183 x  25 =  4.575   11,5%
-#   Transcender  241 x  60 = 14.460   36,3%
-#   Legendario    50 x 200 = 10.000   25,1%
-#   Staff         26 x 300 =  7.800   19,6%
+#   Junior       305 x  10 =  3.050
+#   Senior       183 x  25 =  4.575
+#   Transcender  241 x  60 = 14.460
+#   Legendario    50 x 200 = 10.000
+#   Staff          ? x 300
 #
-# Un Staff vale 30 Junior, que es más o menos lo que cuesta encontrarlo:
-# son el 3% del catálogo y no hay ninguna otra forma de conseguirlos.
+# Un Staff vale 30 Junior. Cuando se sepa cuántos son, conviene repasar
+# este número: si salieran muchos dejaría de ser la rareza especial, y si
+# salen cuatro gatos igual hasta se queda corto.
 #
 # ⚠️ SOLO CUENTAN LAS CARTAS DISTINTAS. Tener 10 copias de la misma no da
 # más puntos que tener una, a propósito: si no, acumular sin intercambiar

@@ -4,7 +4,7 @@ import requests
 from django.core.management.base import BaseCommand
 from cards.models import Card
 from cards.rarezas import rareza_de          # 🎴 Nacho, 10/09 y 15/09
-from cards.intra import datos_del_alumno     # 🔌 Nacho, 15/09
+from cards.intra import datos_del_alumno, es_alumno_del_staff   # 🔌 Nacho, 15/09
 from datetime import datetime, timezone      # para la fecha límite
 
     # =========================================================================
@@ -151,7 +151,10 @@ class Command(BaseCommand):
             # Aquí NO se filtra a nadie: estos cinco somos los del equipo y
             # nuestras cartas tienen que existir siempre, pase lo que pase con
             # nuestro cursus. Sin ellas la portada da errores 404.
-            tier = rareza_de(d["grade"], nivel_cursus, d["staff"])
+            # 👔 El logro 65 va en la cuenta de alumno. `perfil` es el
+            # perfil ampliado, así que los logros ya vienen dentro.
+            del_staff = es_alumno_del_staff(perfil)
+            tier = rareza_de(d["grade"], nivel_cursus, del_staff)
 
             # Parseo de Título (Reutilizado)
             titulo = _parsear_titulo_usuario(perfil, login)
@@ -167,7 +170,7 @@ class Command(BaseCommand):
                 login=login, photo=url_foto, coalition=coalition, title=titulo,
                 altarians=wallets, cursus_lvl=nivel_cursus, eval_point=puntos_eval,
                 is_blackhole=blackhole, tier=tier,
-                grade=d["grade"] or '', es_staff=d["staff"]
+                grade=d["grade"] or '', es_staff=del_staff
             )
             time.sleep(0.5)
 
@@ -193,8 +196,17 @@ class Command(BaseCommand):
         if not coalition:
             return
 
+        # 👔 Nacho, 15/09: esto salta las cuentas CREADAS A PROPÓSITO para el
+        # staff (kind=admin, nivel 0, sin cursus), y está bien que las salte:
+        # entre ellas hay bots y cuentas de servicio como marvin,
+        # 42madrid_tech o madridbocal.
+        #
+        # Las cartas de Staff NO salen de aquí: salen de la cuenta de ALUMNO
+        # de esa persona, que sí tiene cursus y nivel, y se reconoce por el
+        # logro 65 más abajo. Por ejemplo bazuara (alumno, nivel 16,49) sí es
+        # carta; sultan (su cuenta de staff) no.
         if registro.get("user",{}).get("staff?"):
-            self.stdout.write(self.style.WARNING(f"   ⏩ Saltando a {login_alumno} (Es miembro del Staff)"))
+            self.stdout.write(self.style.WARNING(f"   ⏩ Saltando a {login_alumno} (cuenta de servicio del staff)"))
             return
         
         # 🎴 CAMBIO (Nacho, 10/09). Dos cosas, y las dos con datos reales de la
@@ -234,14 +246,19 @@ class Command(BaseCommand):
                 f"   ⏩ Saltando a {login_alumno} (se le pasó la fecha límite el {d['blackhole'][:10]})"))
             return
 
-        tier = rareza_de(d["grade"], nivel_cursus, d["staff"])
-
         url_foto = d["foto"]
         puntos_eval = d["puntos"]
         wallets = d["wallet"]
         perfil_completo = self._consultar_perfil_extendido(id_alumno, login_alumno, headers)
         if not perfil_completo:
             return
+
+        # 👔 La rareza se calcula AQUÍ y no antes, a propósito: el logro 65
+        # (el que dice que este alumno trabaja en el campus) solo viene en el
+        # perfil ampliado, y esa petición se hace justo arriba para sacar el
+        # título. Calcularlo antes obligaría a pedirlo dos veces.
+        del_staff = es_alumno_del_staff(perfil_completo)
+        tier = rareza_de(d["grade"], nivel_cursus, del_staff)
 
         titulo = _parsear_titulo_usuario(perfil_completo, login_alumno)
         self._guardar_o_actualizar_carta(
@@ -251,7 +268,7 @@ class Command(BaseCommand):
             # (El parámetro no se guarda en ninguna parte: el modelo Card no
             #  tiene ese campo. Se deja para no cambiarle la firma a Pablo.)
             is_blackhole=False, tier=tier,
-            grade=d["grade"] or '', es_staff=d["staff"]
+            grade=d["grade"] or '', es_staff=del_staff
         )
         time.sleep(0.5)
 
