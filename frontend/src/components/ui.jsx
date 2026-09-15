@@ -46,6 +46,30 @@ export function TextField({
   );
 }
 
+export function SelectField({
+  id,
+  label,
+  error,
+  children,
+  className = '',
+  ...props
+}) {
+  return (
+    <div className="ui-field">
+      <label className="ui-label" htmlFor={id}>{label}</label>
+      <select
+        id={id}
+        className={`ui-input ${error ? 'ui-input-error' : ''} ${className}`.trim()}
+        aria-invalid={error ? 'true' : 'false'}
+        {...props}
+      >
+        {children}
+      </select>
+      {error && <span className="ui-field-error">{error}</span>}
+    </div>
+  );
+}
+
 export function Alert({ children, tone = 'error', className = '', ...props }) {
   return (
     <div className={`ui-alert ui-alert-${tone} ${className}`.trim()} role="alert" {...props}>
@@ -119,5 +143,19 @@ export function StatusDot({ status = 'offline', label, className = '' }) {
       <span className="ui-status-dot" aria-hidden="true" />
       {label}
     </span>
+  );
+}
+
+export function IconButton({ children, label, className = '', type = 'button', ...props }) {
+  return (
+    <button
+      type={type}
+      className={`ui-button ${className}`.trim()}
+      aria-label={label}
+      title={label}
+      {...props}
+    >
+      {children}
+    </button>
   );
 }
