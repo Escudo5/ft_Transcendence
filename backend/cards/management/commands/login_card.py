@@ -44,6 +44,13 @@ class Command(BaseCommand):
         if(user.get("staff?") == True):
             self.stdout.write(self.style.WARNING(f"   ⏩ la cuenta de {login} Es una cuenta de Staff , inserta su cuenta de alumno."))
             return
+        cursus = user.get("cursus_users",{})
+        for t in cursus:
+            if t.get("cursus_id") == 21:
+                if t.get("end_at") is not None:
+                    self.stdout.write(self.style.WARNING(f"   ⏩ la cuenta de {login} ha sido blackholeada."))
+                    return
+
         user_id = user.get("id")
         photo = user.get("image", {}).get("versions", {}).get("medium")
         correction_point = user.get("correction_point")
