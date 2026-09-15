@@ -53,11 +53,20 @@
   --rarity-rare: #0284c7;
   --rarity-epic: #a855f7;
   --rarity-legendary: #d97706;
+  /* 👔 Nacho, 15/09: quinto color, para las cartas del staff. El sistema
+     de diseño traía cuatro y ahora las rarezas son cinco.
+     Magenta porque es el único hueco que queda libre de verdad: gris,
+     azul, morado y dorado ya son rarezas; el verde azulado es el color de
+     acento de toda la app (botones y cifras), y el rojo es el de los
+     errores. Si se reutilizara cualquiera de esos, la carta más rara del
+     juego se confundiria con un boton o con un aviso. */
+  --rarity-staff: #ec4899;
   
   --rarity-common-bg: linear-gradient(135deg, #1e293b, #0f172a);
   --rarity-rare-bg: linear-gradient(135deg, #0c4a6e, #0c1c30);
   --rarity-epic-bg: linear-gradient(135deg, #581c87, #1e1135);
   --rarity-legendary-bg: linear-gradient(135deg, #78350f, #251205);
+  --rarity-staff-bg: linear-gradient(135deg, #831843, #2b0716);
 
   /* Type Scale */
   --text-xs: 0.75rem;    
@@ -352,6 +361,7 @@ button, a, select {
 .card-item.rarity-rare { border-color: var(--rarity-rare); }
 .card-item.rarity-epic { border-color: var(--rarity-epic); }
 .card-item.rarity-legendary { border-color: var(--rarity-legendary); }
+.card-item.rarity-staff { border-color: var(--rarity-staff); }
 
 .card-header {
   display: flex;

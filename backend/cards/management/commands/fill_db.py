@@ -3,7 +3,9 @@ import time
 import requests
 from django.core.management.base import BaseCommand
 from cards.models import Card
-from cards.rarezas import rareza_por_nivel   # 🎴 Nacho, 10/09
+from cards.rarezas import rareza_de          # 🎴 Nacho, 10/09 y 15/09
+from cards.intra import datos_del_alumno     # 🔌 Nacho, 15/09
+from datetime import datetime, timezone      # para la fecha límite
 
     # =========================================================================
     # 🛠️ FUNCIONES AUXILIARES COMPARTIDAS (Misma lógica, cero redundancia)
@@ -129,13 +131,17 @@ class Command(BaseCommand):
             if res_coal.status_code == 200 and res_coal.json():
                 coalition = res_coal.json()[0].get("name", "Zefiria")
 
-            # Parseo de datos del Cursus 21 (Nivel, BH, Alumni)
-            nivel_cursus, blackhole, fecha_bh = self._parsear_datos_cursus(perfil)
-
-            # Filtro Blackhole histórico
-            if blackhole and fecha_bh and fecha_bh < "2023-06-17":
-                self.stdout.write(self.style.WARNING(f"   ⏩ Saltando a {login} (Inactivo/Blackhole anterior a la fecha límite)"))
-                continue
+            # 🔌 ARREGLADO (Nacho, 15/09): aquí se llamaba a
+            # `self._parsear_datos_cursus(perfil)`, que NO EXISTE en ningún
+            # sitio del fichero. Este flujo entero reventaba con AttributeError
+            # antes de llegar a guardar nada.
+            #
+            # Ahora el trabajo lo hace cards/intra.py, que además es la misma
+            # función que usa el flujo masivo: así los dos leen igual aunque la
+            # API les devuelva el JSON con formas distintas.
+            d = datos_del_alumno(perfil)
+            nivel_cursus = d["nivel"]
+            blackhole = d["fin"] is not None
 
             # 🎴 CAMBIO (Nacho, 10/09): la rareza sale del NIVEL, no del grade.
             # El porqué, con los datos reales de la Intra, está en
@@ -145,8 +151,7 @@ class Command(BaseCommand):
             # Aquí NO se filtra a nadie: estos cinco somos los del equipo y
             # nuestras cartas tienen que existir siempre, pase lo que pase con
             # nuestro cursus. Sin ellas la portada da errores 404.
-            tier = rareza_por_nivel(nivel_cursus,perfil)
-            print("[",tier,"]")
+            tier = rareza_de(d["grade"], nivel_cursus, d["staff"])
 
             # Parseo de Título (Reutilizado)
             titulo = _parsear_titulo_usuario(perfil, login)
@@ -156,11 +161,13 @@ class Command(BaseCommand):
             puntos_eval = perfil.get("correction_point", 0)
             wallets = perfil.get("wallet", 0)
 
-            # Guardado en base de datos (Reutilizado)
-            self._(
+            # 🔌 ARREGLADO (Nacho, 15/09): aquí ponía `self._(`, que tampoco
+            # existe. Era `self._guardar_o_actualizar_carta`.
+            self._guardar_o_actualizar_carta(
                 login=login, photo=url_foto, coalition=coalition, title=titulo,
                 altarians=wallets, cursus_lvl=nivel_cursus, eval_point=puntos_eval,
-                is_blackhole=blackhole, tier=tier
+                is_blackhole=blackhole, tier=tier,
+                grade=d["grade"] or '', es_staff=d["staff"]
             )
             time.sleep(0.5)
 
@@ -203,23 +210,36 @@ class Command(BaseCommand):
         #      cursus se acabó de verdad.
         #
         #   2. La RAREZA sale del nivel, no del grade.
-        fin_del_cursus = registro.get("end_at")
-        nivel_cursus = round(registro.get("level", 0.0), 2)
+        d = datos_del_alumno(registro)
+        fin_del_cursus = d["fin"]
+        nivel_cursus = round(d["nivel"], 2)
 
         if fin_del_cursus:
             self.stdout.write(self.style.WARNING(
                 f"   ⏩ Saltando a {login_alumno} (su cursus terminó el {fin_del_cursus[:10]})"))
             return
-        import json
-        tier = rareza_por_nivel(nivel_cursus,registro)
-        print(json.dumps(registro, indent=4, ensure_ascii=False))
 
-        url_foto = registro.get("user",{}).get("image",{}).get("versions",{}).get("medium")
-        puntos_eval = registro.get("user",{}).get("correction_point")
-        wallets = registro.get("user",{}).get("wallet")
-        import json
+        # ⏳ AÑADIDO (Nacho, 15/09): el filtro de arriba NO basta.
+        #
+        # Medido contra el censo entero del campus el 15/09: hay 200 personas
+        # a las que se les pasó la fecha límite y a las que la Intra NO les ha
+        # rellenado `end_at`. La más antigua lleva 604 días caída, en nivel
+        # 3,7. Mirando solo `end_at`, esas 200 entraban como cromos.
+        #
+        # Se perdonan DIAS_DE_GRACIA días para no dejar fuera a quien acaba de
+        # caer: acastrov, por ejemplo, tiene nivel 11,57 y se le pasó hace 12
+        # días. Con 30 días entra él y se quedan fuera los de hace un año.
+        if _blackhole_ya_pasado(d["blackhole"]):
+            self.stdout.write(self.style.WARNING(
+                f"   ⏩ Saltando a {login_alumno} (se le pasó la fecha límite el {d['blackhole'][:10]})"))
+            return
+
+        tier = rareza_de(d["grade"], nivel_cursus, d["staff"])
+
+        url_foto = d["foto"]
+        puntos_eval = d["puntos"]
+        wallets = d["wallet"]
         perfil_completo = self._consultar_perfil_extendido(id_alumno, login_alumno, headers)
-        ##print(json.dumps(perfil_completo, indent=4, ensure_ascii=False))
         if not perfil_completo:
             return
 
@@ -230,7 +250,8 @@ class Command(BaseCommand):
             # Siempre False: aquí solo se llega si el cursus NO ha terminado.
             # (El parámetro no se guarda en ninguna parte: el modelo Card no
             #  tiene ese campo. Se deja para no cambiarle la firma a Pablo.)
-            is_blackhole=False, tier=tier
+            is_blackhole=False, tier=tier,
+            grade=d["grade"] or '', es_staff=d["staff"]
         )
         time.sleep(0.5)
 
@@ -293,7 +314,9 @@ class Command(BaseCommand):
             return {}
 
 
-    def _guardar_o_actualizar_carta(self, login, photo, coalition, title, altarians, cursus_lvl, eval_point, is_blackhole, tier):
+    def _guardar_o_actualizar_carta(self, login, photo, coalition, title, altarians,
+                                    cursus_lvl, eval_point, is_blackhole, tier,
+                                    grade='', es_staff=False):
         """Inserta o actualiza la instancia correspondiente del modelo Card."""
         carta, creada = Card.objects.get_or_create(
             login=login,
@@ -304,7 +327,11 @@ class Command(BaseCommand):
                 'altarians': altarians,
                 'cursus_lvl': cursus_lvl,
                 'eval_point': eval_point,
-                'tier': tier
+                'tier': tier,
+                # 🎓 Nacho, 15/09: se guardan para que recalcular_rarezas
+                # pueda rehacer la rareza sin volver a pedirla a la API.
+                'grade': grade,
+                'es_staff': es_staff,
             }
         )
         if creada:
@@ -317,8 +344,34 @@ class Command(BaseCommand):
             carta.eval_point = eval_point
             carta.title = title
             carta.tier = tier
+            carta.grade = grade
+            carta.es_staff = es_staff
             carta.save()
             self.stdout.write(self.style.SUCCESS(f"      🔄 Cromo Actualizado: {login}"))
+
+# ⏳ Nacho, 15/09: cuántos días se perdonan después de la fecha límite.
+# El porqué está donde se usa, en _procesar_registro_usuario.
+DIAS_DE_GRACIA = 30
+
+
+def _blackhole_ya_pasado(fecha_iso):
+    """
+    ¿A esta persona se le pasó la fecha límite hace más de DIAS_DE_GRACIA?
+
+    Tener fecha de blackhole NO significa haber caído: la tiene todo alumno
+    vivo del tronco común. Lo que importa es si ya pasó, y cuánto hace.
+
+    Si la fecha viene rara o vacía, devuelve False: ante la duda, la persona
+    entra. Preferimos un cromo de más que tumbar la carga del catálogo.
+    """
+    if not fecha_iso:
+        return False
+    try:
+        fecha = datetime.fromisoformat(str(fecha_iso).replace('Z', '+00:00'))
+    except (TypeError, ValueError):
+        return False
+    return (datetime.now(timezone.utc) - fecha).days > DIAS_DE_GRACIA
+
 
 def _parsear_titulo_usuario(perfil_completo, login_alumno):
     """Extrae el título marcado como seleccionado y formatea el tag %login."""
