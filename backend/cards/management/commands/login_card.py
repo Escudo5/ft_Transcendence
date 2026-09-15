@@ -4,7 +4,8 @@ import requests
 from django.core.management.base import BaseCommand
 from cards.models import Card
 from cards.management.commands.fill_db import _obtener_headers_auth
-from cards.rarezas import rareza_por_nivel   # 🎴 Nacho, 10/09
+from cards.rarezas import rareza_de          # 🎴 Nacho, 10/09 y 15/09
+from cards.intra import datos_del_alumno, es_alumno_del_staff   # 🔌 Nacho, 15/09
 import json
 
 class Command(BaseCommand):
@@ -33,39 +34,49 @@ class Command(BaseCommand):
             res_user.raise_for_status() # Lanza error para otros códigos (500, 403, etc.)
             
             user = res_user.json()
+            ##print(json.dumps(user, indent=4, ensure_ascii=False))
         except requests.exceptions.RequestException as e:
             self.stdout.write(self.style.ERROR(f"❌ Error de conexión al consultar el usuario: {e}"))
             return
 
         # Extraer datos básicos
         login = user.get("login")
+        if(user.get("staff?") == True):
+            self.stdout.write(self.style.WARNING(f"   ⏩ la cuenta de {login} Es una cuenta de Staff , inserta su cuenta de alumno."))
+            return
+        cursus = user.get("cursus_users",{})
+        for t in cursus:
+            if t.get("cursus_id") == 21:
+                if t.get("end_at") is not None:
+                    self.stdout.write(self.style.WARNING(f"   ⏩ la cuenta de {login} ha sido blackholeada."))
+                    return
+
         user_id = user.get("id")
         photo = user.get("image", {}).get("versions", {}).get("medium")
         correction_point = user.get("correction_point")
         wallet = user.get("wallet")
         cursus = user.get("cursus_users", [])
         
-        # Inicializamos variables por si el usuario no tiene el 42cursus (ej. Piscineros)
-        blackhole = False
-        lvl = 0.0
-        grade = None
-        tier = "Desconocido"
+        # 🔌 CAMBIO (Nacho, 15/09): el bucle de buscar el 42cursus a mano se
+        # ha ido a cards/intra.py, porque fill_db necesitaba exactamente el
+        # mismo trabajo pero con un JSON de otra forma. Ahora los dos
+        # comandos llaman a la misma función y dejan de importarles de qué
+        # ruta de la API venía el dato.
+        d = datos_del_alumno(user)
+        lvl = d["nivel"]
+        grade = d["grade"]
+        blackhole = d["fin"] is not None
 
-        # Buscar el 42cursus
-        for it in cursus:
-            if it.get("cursus", {}).get("name") == "42cursus":
-                bh_date = it.get("end_at")
-                blackhole = bh_date is not None
-                lvl = it.get("level", 0.0)
-                grade = it.get("grade")
-                break # Encontrado, salimos del bucle
-
-        # 🎴 CAMBIO (Nacho, 10/09): la rareza sale del NIVEL, no del grade.
-        # Mismo cambio que en fill_db.py, y por lo mismo: en 42, "Alumni" no
-        # es alguien que haya terminado, es alguien que se quedó parado al
-        # final del tronco común. El porqué entero, con los datos de la Intra,
-        # está en cards/rarezas.py.
-        tier = rareza_por_nivel(lvl)
+        # 🎴 CAMBIO (Nacho, 15/09): la rareza sale del grade Y del nivel.
+        # Antes salía solo del nivel, y había cadetes de nivel 11 saliendo
+        # como Transcender sin haber pasado el tronco común (acastrov). El
+        # porqué entero está en cards/rarezas.py.
+        # 👔 El staff sale del logro 65 en la cuenta de ALUMNO, no de la
+        # marca `staff?`: esa señala la cuenta aparte que les crean (bazuara
+        # es la de alumno y sultan la de staff). Aquí `user` es el perfil
+        # ampliado, así que los logros ya vienen dentro.
+        del_staff = es_alumno_del_staff(user)
+        tier = rareza_de(grade, lvl, del_staff)
         if grade not in ("Cadet", "Transcender", "Alumni"):
             self.stdout.write(self.style.WARNING(
                 f"⚠️ Advertencia: Grado '{grade}' desconocido o no pertenece a 42cursus para {login}."))
@@ -116,7 +127,11 @@ class Command(BaseCommand):
                     'altarians': wallet,
                     'cursus_lvl': lvl,
                     'eval_point': correction_point,
-                    'tier': tier
+                    'tier': tier,
+                    # 🎓 Nacho, 15/09: se guardan para que recalcular_rarezas
+                    # pueda rehacer la rareza sin volver a la API.
+                    'grade': grade or '',
+                    'es_staff': del_staff,
                 }
             )
 
@@ -130,6 +145,8 @@ class Command(BaseCommand):
                 carta.eval_point = correction_point
                 carta.title = title
                 carta.tier = tier
+                carta.grade = grade or ''
+                carta.es_staff = del_staff
                 carta.save()
                 self.stdout.write(self.style.SUCCESS(f"     🔄 Cromo Actualizado: {login}"))
                 
