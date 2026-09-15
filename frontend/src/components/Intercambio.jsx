@@ -17,10 +17,11 @@ const API = import.meta.env.VITE_API_URL || '/api';
    src={carta.foto}> y ya está, el dato ya te llega.
    =========================================================================== */
 const EMOJI_POR_RAREZA = {
-  'Común': '🃏',
-  'Épica': '🎴',
+  'Junior': '🃏',
+  'Senior': '🎴',
   'Transcender': '👾',
-  'Legendaria': '👑',
+  'Legendario': '👑',
+  'Staff': '👔',
 };
 
 // Las dos columnas de cartas del modal. Alto generoso pero limitado a lo que

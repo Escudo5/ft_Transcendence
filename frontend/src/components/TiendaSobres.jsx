@@ -80,9 +80,9 @@ function TiendaSobres() {
   // SERGIO: son 3 sobres y 4 rarezas, así que las dos de arriba comparten el
   // sobre épico, igual que hacías tú antes con Alumni y Transcender.
   const SOBRES = [
-    { id: 'comun', nombre: 'Sobre común', rarezas: ['Común'], color: 'var(--rarity-common)' },
-    { id: 'raro', nombre: 'Sobre raro', rarezas: ['Épica'], color: 'var(--rarity-rare)' },
-    { id: 'legendario', backendType: 'epico', nombre: 'Sobre legendario', rarezas: ['Transcender', 'Legendaria'], color: 'var(--rarity-legendary)' },
+    { id: 'comun', nombre: 'Sobre común', rarezas: ['Junior'], color: 'var(--rarity-common)' },
+    { id: 'raro', nombre: 'Sobre raro', rarezas: ['Senior'], color: 'var(--rarity-rare)' },
+    { id: 'legendario', backendType: 'epico', nombre: 'Sobre legendario', rarezas: ['Transcender', 'Legendario', 'Staff'], color: 'var(--rarity-legendary)' },
   ];
 
   // Las rarezas del backend (tier) no se llaman igual que los estilos de esta
@@ -110,7 +110,7 @@ function TiendaSobres() {
           cardId: item.card?.id,
           cantidad: item.cantidad ?? 1,
           login: item.card?.login || '',
-          tier: item.card?.tier || 'Común',
+          tier: item.card?.tier || 'Junior',
         })));
       } catch (e) {
         console.error('No se pudo cargar el álbum para crear sobres:', e);

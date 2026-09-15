@@ -27,7 +27,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from cards.models import Card
-from cards.rarezas import TODAS, rareza_por_nivel
+from cards.rarezas import TODAS, rareza_de
 
 
 class Command(BaseCommand):
@@ -49,13 +49,36 @@ class Command(BaseCommand):
 
         antes = Counter(c.tier for c in cartas)
         cambios = []
+        sin_grade = []
         for carta in cartas:
-            nueva = rareza_por_nivel(carta.cursus_lvl)
+            # ⚠️ Nacho, 15/09: ahora la rareza necesita el grade, no solo el
+            # nivel. Por eso el modelo lo guarda: así este comando sigue
+            # siendo gratis y no hay que volver a bajarse 800 alumnos de la
+            # Intra cada vez que se mueva un corte.
+            #
+            # Y POR ESO ESTA RED: si una carta no tiene grade guardado (las
+            # que ya estaban en la base antes de que el campo existiera), NO
+            # se toca. Sin grade, `rareza_de` las manda a todas a Junior o
+            # Senior, así que este comando las habría degradado en bloque sin
+            # dar ningún error: una carta de nivel 16 se habría quedado en
+            # Senior. Se avisa y se dejan como están hasta que fill_db o
+            # login_card les rellenen el grade.
+            if not carta.grade and not carta.es_staff:
+                sin_grade.append(carta)
+                continue
+            nueva = rareza_de(carta.grade, carta.cursus_lvl, carta.es_staff)
             if carta.tier != nueva:
                 cambios.append((carta, carta.tier, nueva))
                 carta.tier = nueva
 
         self.stdout.write(f'\n{len(cartas)} cartas · {len(cambios)} cambian de rareza\n')
+
+        if sin_grade:
+            self.stdout.write(self.style.WARNING(
+                f'⚠️  {len(sin_grade)} cartas SIN TOCAR porque no tienen grade guardado.\n'
+                f'    Son de antes de que existiera el campo. Sin grade no se puede\n'
+                f'    saber su rareza, y tocarlas las degradaría todas a Junior/Senior.\n'
+                f'    Se arregla solo en cuanto pase fill_db o login_card por ellas.\n'))
 
         self.stdout.write(self.style.HTTP_INFO('ANTES:'))
         for tier, n in antes.most_common():
