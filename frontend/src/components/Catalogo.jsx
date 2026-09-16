@@ -27,6 +27,13 @@ import { CLASE_RAREZA, RAREZAS } from "./rarezas";
 // medio proyecto se quedara viejo en silencio al cambiar las rarezas.
 const TIER_A_RAREZA = CLASE_RAREZA;
 
+const LOGOS_COALICIONES = {
+  zefiria: "/icons/zefiria_logo.png",
+  marventis: "/icons/marventis_logo.png",
+  tiamant: "/icons/logo_tiamant.png",
+  ignisaria: "/icons/ignisaria_logo.png",
+};
+
 // Para el desplegable de filtrar y para la ordenación "por rareza": de la
 // más rara a la más común. RAREZAS va al revés, así que se le da la vuelta
 // a una COPIA, porque reverse() modifica el array original.
@@ -253,7 +260,16 @@ export default function Catalogo() {
                 }}
               >
                 <div className="card-header">
-                  <span className="card-type">{card.coalicion}</span>
+                  {LOGOS_COALICIONES[card.coalicion.toLowerCase()] ? (
+                    <img
+                      className="card-coalition-logo"
+                      src={LOGOS_COALICIONES[card.coalicion.toLowerCase()]}
+                      alt={card.coalicion}
+                      title={card.coalicion}
+                    />
+                  ) : (
+                    <span className="card-type">{card.coalicion}</span>
+                  )}
                   <Badge tone={card.rareza}>
                     {card.tier.toUpperCase()}
                   </Badge>
@@ -304,13 +320,21 @@ export default function Catalogo() {
 
                 <div className="card-stats">
                   <div className="stat">
-                    <span className="stat-label">📈 NIVEL</span>
+                    <span className="stat-label"> NIVEL</span>
                     <span className="stat-value">{card.nivel}</span>
                   </div>
                   <div className="stat-divider"></div>
                   <div className="stat">
-                    <span className="stat-label">✅ EVALS</span>
+                    <span className="stat-label"> EVALS</span>
                     <span className="stat-value">{card.evaluaciones}</span>
+                  </div>
+                  <div className="stat-divider"></div>
+                  <div className="stat">
+                    <span className="stat-label">WALLET</span>
+                    <span className="stat-value stat-wallet-value">
+                      {card.altarians}
+                      <img className="stat-logo" src="/icons/Altarians_logo.png" alt="" aria-hidden="true" />
+                    </span>
                   </div>
                 </div>
               </motion.article>
