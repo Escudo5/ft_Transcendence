@@ -228,32 +228,50 @@ class Command(BaseCommand):
         if fin_del_cursus:
             self.stdout.write(self.style.WARNING(
                 f"   ⏩ Saltando a {login_alumno} (su cursus terminó el {fin_del_cursus[:10]})"))
+
+            # 🗑️ BORRADO DE LOS QUE YA NO ESTÁN (Pablo, 16/09)
+            #
+            # A quien la Intra le ha cerrado el cursus se le quita la carta del
+            # catálogo. Y al borrarla se va TAMBIÉN de los álbumes de quien la
+            # tuviera y de las propuestas de intercambio con esa carta dentro:
+            # lo hace la base de datos sola, por las relaciones en cascada.
+            #
+            # Por eso se cuenta ANTES a cuánta gente afecta y se dice: si no,
+            # alguien abre su perfil mañana, ve que le faltan puntos y no hay
+            # forma de saber por qué.
+            carta = Card.objects.filter(login=login_alumno).first()
+            if carta:
+                cuantos = carta.poseedores.count()
+                carta.delete()
+                self.stdout.write(self.style.ERROR(
+                    f"    🗑️  Se ha eliminado la carta previa de {login_alumno} "
+                    f"de la base de datos"
+                    + (f" · la tenían {cuantos} personas" if cuantos else "")))
             return
 
-        # ✅ CORREGIDO (Nacho, 16/09): ¿sigue siendo alumno?
+        # ⚠️ AQUÍ HUBO UN FILTRO POR `active?` Y SE QUITÓ A PROPÓSITO (16/09).
         #
-        # El filtro de `end_at` no basta: hay 200 personas a las que se les
-        # pasó la fecha límite y a las que la Intra NO les ha cerrado el
-        # cursus. Mirando solo `end_at`, esas 200 entraban como cromos.
+        # La decisión es del equipo, y es de juego, no técnica: entra en el
+        # álbum TODO AQUEL A QUIEN LA INTRA NO LE HAYA CERRADO EL CURSUS.
         #
-        # Ayer puse un plazo de 30 días desde la fecha límite. ERA UNA MALA
-        # IDEA y lo dijo Nacho: `blackholed_at` NO se mantiene al día en la
-        # API. De esas 200 personas, 176 tienen la cuenta perfectamente
-        # ACTIVA y la fecha pasada de mediana hace 120 días -congelaciones,
-        # extensiones, gente que entregó-. Aquel plazo echaba fuera a 142
-        # alumnos que están en el campus ahora mismo, acastrov entre ellos.
+        # Por el camino se probaron otras dos formas y las dos estaban mal:
         #
-        # El campo bueno es `active?`, que la Intra sí mantiene. Y además
-        # pilla 212 casos que el plazo ni miraba: gente que se fue por su
-        # cuenta ANTES de que se le acabara el tiempo, así que su fecha
-        # límite sigue en el futuro pero su cuenta ya no está activa.
+        #   1. Descartar a quien se le hubiera pasado la fecha límite. Mal:
+        #      `blackholed_at` no se mantiene al día en la API. Hay 176
+        #      personas con esa fecha pasada y la cuenta activa.
         #
-        # Dejamos de preguntar "¿se te pasó la fecha?", que es un dato viejo,
-        # y preguntamos "¿sigues siendo alumno?", que es el que vale.
-        if not d["activo"]:
-            self.stdout.write(self.style.WARNING(
-                f"   ⏩ Saltando a {login_alumno} (su cuenta ya no está activa)"))
-            return
+        #   2. Descartar a quien tuviera `active?` en falso. También mal para
+        #      lo que queremos: deja fuera a 236 personas -casi todas Alumni
+        #      paradas al final del tronco común, tipo pcuadrad o aleon-ca-
+        #      que siguen VIVAS y pueden volver al campus cuando quieran. La
+        #      intra nunca les cerró el cursus, así que siguen siendo alumnos.
+        #
+        # El dato `activo` se sigue trayendo en cards/intra.py, pero ya NO
+        # decide nada: queda como información, por si algún día se quiere
+        # enseñar en la carta un "lleva tiempo sin venir".
+        #
+        # Si alguien vuelve a añadir un filtro aquí, que sea a sabiendas.
+
 
         url_foto = d["foto"]
         puntos_eval = d["puntos"]

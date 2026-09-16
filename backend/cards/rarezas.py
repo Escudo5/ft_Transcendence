@@ -36,14 +36,22 @@ quien se quedó parado.
 CÓMO QUEDA EL CATÁLOGO (censo real del campus, 15/09/2026)
 ═══════════════════════════════════════════════════════════════════════
 
-De los 2627 que han pasado por el cursus 21 en el campus 22, entran los
-que **siguen siendo alumnos**: cursus sin cerrar, cuenta activa, y que no
-sean una cuenta de servicio del staff. Son 705.
+De los 2627 que han pasado por el cursus 21 en el campus 22, entra TODO
+AQUEL A QUIEN LA INTRA NO LE HAYA CERRADO EL CURSUS (`end_at` vacío), sin
+contar las cuentas de servicio del staff. Son ~941.
 
-⚠️ Ojo: NO se filtra por la fecha de blackhole, a propósito. La Intra no
-mantiene ese campo al día: hay 176 personas con la fecha pasada (mediana
-120 días) y la cuenta perfectamente activa. Filtrar por ahí echaba fuera
-a 142 alumnos que están en el campus. El campo que vale es `active?`.
+⚠️ No se filtra por nada más, y es una decisión del equipo del 16/09:
+
+  - NO por la fecha de blackhole: la Intra no mantiene ese campo al día.
+    Hay 176 personas con la fecha pasada y la cuenta perfectamente activa.
+
+  - NO por `active?`: dejaba fuera a 236 personas, casi todas Alumni
+    paradas al final del tronco común, que siguen vivas y pueden volver al
+    campus cuando quieran.
+
+El reparto de abajo se midió cuando el criterio era más estricto (705
+cartas), así que las proporciones valen pero los números absolutos se
+quedarán cortos. Se sabrán exactos al cargar el catálogo entero.
 
 ⚠️ EL NÚMERO DE STAFF NO SE SABE TODAVÍA, y no es por vaguería: un alumno
 es del staff si tiene el logro 65, y los logros solo vienen en el perfil
