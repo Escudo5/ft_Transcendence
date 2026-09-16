@@ -92,9 +92,11 @@ def datos_del_alumno(json_api):
         "foto":      (imagen.get("versions") or {}).get("medium"),
         "wallet":    usuario.get("wallet") or 0,
         "puntos":    usuario.get("correction_point") or 0,
-        # ✅ ¿Sigue siendo alumno? Es el campo que la Intra SÍ mantiene al
-        #    día, y el que decide si alguien entra en el catálogo. Ver el
-        #    comentario largo en fill_db, donde se usa.
+        # ℹ️ ¿La cuenta sigue activa? Es un dato fiable -la Intra sí lo
+        #    mantiene- pero YA NO DECIDE NADA: el 16/09 el equipo decidió que
+        #    entra en el álbum todo aquel a quien no le hayan cerrado el
+        #    cursus, aunque lleve tiempo sin venir. Se deja por si algún día
+        #    se quiere enseñar en la carta un "hace tiempo que no aparece".
         "activo":    bool(usuario.get("active?")),
         # 👔 OJO: esto NO quiere decir "su carta es Staff". Quiere decir
         #    "esta es una cuenta creada a propósito para el staff", que es
