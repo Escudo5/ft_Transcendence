@@ -5,7 +5,6 @@ from django.core.management.base import BaseCommand
 from cards.models import Card
 from cards.rarezas import rareza_de          # 🎴 Nacho, 10/09 y 15/09
 from cards.intra import datos_del_alumno, es_alumno_del_staff   # 🔌 Nacho, 15/09
-from datetime import datetime, timezone      # para la fecha límite
 
     # =========================================================================
     # 🛠️ FUNCIONES AUXILIARES COMPARTIDAS (Misma lógica, cero redundancia)
@@ -231,19 +230,29 @@ class Command(BaseCommand):
                 f"   ⏩ Saltando a {login_alumno} (su cursus terminó el {fin_del_cursus[:10]})"))
             return
 
-        # ⏳ AÑADIDO (Nacho, 15/09): el filtro de arriba NO basta.
+        # ✅ CORREGIDO (Nacho, 16/09): ¿sigue siendo alumno?
         #
-        # Medido contra el censo entero del campus el 15/09: hay 200 personas
-        # a las que se les pasó la fecha límite y a las que la Intra NO les ha
-        # rellenado `end_at`. La más antigua lleva 604 días caída, en nivel
-        # 3,7. Mirando solo `end_at`, esas 200 entraban como cromos.
+        # El filtro de `end_at` no basta: hay 200 personas a las que se les
+        # pasó la fecha límite y a las que la Intra NO les ha cerrado el
+        # cursus. Mirando solo `end_at`, esas 200 entraban como cromos.
         #
-        # Se perdonan DIAS_DE_GRACIA días para no dejar fuera a quien acaba de
-        # caer: acastrov, por ejemplo, tiene nivel 11,57 y se le pasó hace 12
-        # días. Con 30 días entra él y se quedan fuera los de hace un año.
-        if _blackhole_ya_pasado(d["blackhole"]):
+        # Ayer puse un plazo de 30 días desde la fecha límite. ERA UNA MALA
+        # IDEA y lo dijo Nacho: `blackholed_at` NO se mantiene al día en la
+        # API. De esas 200 personas, 176 tienen la cuenta perfectamente
+        # ACTIVA y la fecha pasada de mediana hace 120 días -congelaciones,
+        # extensiones, gente que entregó-. Aquel plazo echaba fuera a 142
+        # alumnos que están en el campus ahora mismo, acastrov entre ellos.
+        #
+        # El campo bueno es `active?`, que la Intra sí mantiene. Y además
+        # pilla 212 casos que el plazo ni miraba: gente que se fue por su
+        # cuenta ANTES de que se le acabara el tiempo, así que su fecha
+        # límite sigue en el futuro pero su cuenta ya no está activa.
+        #
+        # Dejamos de preguntar "¿se te pasó la fecha?", que es un dato viejo,
+        # y preguntamos "¿sigues siendo alumno?", que es el que vale.
+        if not d["activo"]:
             self.stdout.write(self.style.WARNING(
-                f"   ⏩ Saltando a {login_alumno} (se le pasó la fecha límite el {d['blackhole'][:10]})"))
+                f"   ⏩ Saltando a {login_alumno} (su cuenta ya no está activa)"))
             return
 
         url_foto = d["foto"]
@@ -365,30 +374,6 @@ class Command(BaseCommand):
             carta.es_staff = es_staff
             carta.save()
             self.stdout.write(self.style.SUCCESS(f"      🔄 Cromo Actualizado: {login}"))
-
-# ⏳ Nacho, 15/09: cuántos días se perdonan después de la fecha límite.
-# El porqué está donde se usa, en _procesar_registro_usuario.
-DIAS_DE_GRACIA = 30
-
-
-def _blackhole_ya_pasado(fecha_iso):
-    """
-    ¿A esta persona se le pasó la fecha límite hace más de DIAS_DE_GRACIA?
-
-    Tener fecha de blackhole NO significa haber caído: la tiene todo alumno
-    vivo del tronco común. Lo que importa es si ya pasó, y cuánto hace.
-
-    Si la fecha viene rara o vacía, devuelve False: ante la duda, la persona
-    entra. Preferimos un cromo de más que tumbar la carga del catálogo.
-    """
-    if not fecha_iso:
-        return False
-    try:
-        fecha = datetime.fromisoformat(str(fecha_iso).replace('Z', '+00:00'))
-    except (TypeError, ValueError):
-        return False
-    return (datetime.now(timezone.utc) - fecha).days > DIAS_DE_GRACIA
-
 
 def _parsear_titulo_usuario(perfil_completo, login_alumno):
     """Extrae el título marcado como seleccionado y formatea el tag %login."""

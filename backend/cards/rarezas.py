@@ -37,15 +37,13 @@ CÓMO QUEDA EL CATÁLOGO (censo real del campus, 15/09/2026)
 ═══════════════════════════════════════════════════════════════════════
 
 De los 2627 que han pasado por el cursus 21 en el campus 22, entran los
-que no tienen el cursus cerrado, a los que no se les ha pasado la fecha
-límite hace más de 30 días, y que no sean una cuenta de servicio del
-staff. Son 779:
+que **siguen siendo alumnos**: cursus sin cerrar, cuenta activa, y que no
+sean una cuenta de servicio del staff. Son 705.
 
-    Junior       305   39,2%
-    Senior       183   23,5%
-    Transcender  241   30,9%
-    Legendario    50    6,4%
-    Staff          ?    sale de dentro de esos cuatro
+⚠️ Ojo: NO se filtra por la fecha de blackhole, a propósito. La Intra no
+mantiene ese campo al día: hay 176 personas con la fecha pasada (mediana
+120 días) y la cuenta perfectamente activa. Filtrar por ahí echaba fuera
+a 142 alumnos que están en el campus. El campo que vale es `active?`.
 
 ⚠️ EL NÚMERO DE STAFF NO SE SABE TODAVÍA, y no es por vaguería: un alumno
 es del staff si tiene el logro 65, y los logros solo vienen en el perfil
