@@ -320,20 +320,20 @@ export default function Catalogo() {
 
                 <div className="card-stats">
                   <div className="stat">
-                    <span className="stat-label">📈 NIVEL</span>
+                    <span className="stat-label"> NIVEL</span>
                     <span className="stat-value">{card.nivel}</span>
                   </div>
                   <div className="stat-divider"></div>
                   <div className="stat">
-                    <span className="stat-label">✅ EVALS</span>
+                    <span className="stat-label"> EVALS</span>
                     <span className="stat-value">{card.evaluaciones}</span>
                   </div>
                   <div className="stat-divider"></div>
                   <div className="stat">
                     <span className="stat-label">WALLET</span>
                     <span className="stat-value stat-wallet-value">
-                      <img className="stat-logo" src="/icons/altarians_logo.svg" alt="" aria-hidden="true" />
                       {card.altarians}
+                      <img className="stat-logo" src="/icons/Altarians_logo.png" alt="" aria-hidden="true" />
                     </span>
                   </div>
                 </div>
