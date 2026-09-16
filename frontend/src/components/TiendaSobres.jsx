@@ -97,6 +97,7 @@ function TiendaSobres() {
     login: c.login,
     nombre: c.title || c.login,
     foto: c.photo,
+    tier:c.tier,//Esto seria el nombre : "SENIOR", POR EJEMPLO
     rareza: TIER_A_RAREZA[c.tier] || 'common',
   });
 
@@ -473,7 +474,7 @@ function TiendaSobres() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
                       <span style={{ fontWeight: 'bold' }}>{carta.login}</span>
                       <span style={{ color: estiloRareza.color, fontWeight: 'bold', fontSize: '0.65rem', textTransform: 'uppercase' }}>
-                        {carta.rareza}
+                        {carta.tier}
                       </span>
                     </div>
 
