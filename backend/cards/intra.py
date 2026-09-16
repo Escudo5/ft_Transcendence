@@ -92,6 +92,10 @@ def datos_del_alumno(json_api):
         "foto":      (imagen.get("versions") or {}).get("medium"),
         "wallet":    usuario.get("wallet") or 0,
         "puntos":    usuario.get("correction_point") or 0,
+        # ✅ ¿Sigue siendo alumno? Es el campo que la Intra SÍ mantiene al
+        #    día, y el que decide si alguien entra en el catálogo. Ver el
+        #    comentario largo en fill_db, donde se usa.
+        "activo":    bool(usuario.get("active?")),
         # 👔 OJO: esto NO quiere decir "su carta es Staff". Quiere decir
         #    "esta es una cuenta creada a propósito para el staff", que es
         #    justo la que hay que IGNORAR: nivel 0, sin cursus, y entre
@@ -103,8 +107,14 @@ def datos_del_alumno(json_api):
         # 🏁 Cuándo se cerró su cursus. Vacío mientras sigue.
         "fin":       cursus.get("end_at"),
         # ⏳ Su fecha límite. La tiene TODO alumno vivo del tronco común,
-        #    así que tenerla NO significa haber caído: hay que mirar si ya
-        #    pasó. Al pasar el tronco común desaparece.
+        #    así que tenerla NO significa haber caído.
+        #
+        #    ⚠️ Y NO SIRVE PARA FILTRAR: la Intra no la mantiene al día. Hay
+        #    176 personas en el campus con esta fecha pasada (mediana 120
+        #    días) y la cuenta perfectamente activa: congelaciones,
+        #    extensiones, gente que entregó a tiempo. Se deja porque es
+        #    información útil de la carta, pero quien decide si alguien entra
+        #    es "activo", de aquí arriba.
         "blackhole": cursus.get("blackholed_at"),
     }
 
