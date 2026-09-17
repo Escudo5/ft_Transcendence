@@ -8,6 +8,35 @@ const PACK_WIDTH = 3.3;
 const PACK_HEIGHT = 4.7;
 const TEAR_V = 1 - 127 / 1384;
 const TEAR_Y = (TEAR_V - 0.5) * PACK_HEIGHT;
+const PACK_PALETTES = {
+  comun: {
+    dark: '#111827',
+    mid: '#050f1c',
+    accent: '#f8fafc',
+    accentSoft: 'rgba(248,250,252,.98)',
+    particle: 'rgba(248,250,252,.8)',
+    hue: 210,
+    light: 0xf8fafc,
+  },
+  raro: {
+    dark: '#003cff',
+    mid: '#075985',
+    accent: '#253c2d',
+    accentSoft: 'rgba(56,189,248,1)',
+    particle: 'rgba(56,189,248,.85)',
+    hue: 195,
+    light: 0x38bdf8,
+  },
+  epico: {
+    dark: '#451a03',
+    mid: '#b45309',
+    accent: '#facc15',
+    accentSoft: 'rgba(250,204,21,1)',
+    particle: 'rgba(250,204,21,.9)',
+    hue: 38,
+    light: 0xfacc15,
+  },
+};
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const smoothstep = (a, b, value) => {
   const t = clamp((value - a) / (b - a), 0, 1);
@@ -64,10 +93,10 @@ function spaced(context, text, centerX, y, spacing) {
   });
 }
 
-function holoPatch(context, x, y, radius, brightness = 1) {
+function holoPatch(context, x, y, radius, brightness = 1, palette = PACK_PALETTES.comun) {
   const glow = context.createRadialGradient(x, y, radius * 0.1, x, y, radius * 1.6);
-  glow.addColorStop(0, `rgba(170,255,255,${0.45 * brightness})`);
-  glow.addColorStop(0.55, `rgba(120,160,255,${0.16 * brightness})`);
+  glow.addColorStop(0, `rgba(255,255,255,${0.45 * brightness})`);
+  glow.addColorStop(0.55, `hsla(${palette.hue},100%,68%,${0.3 * brightness})`);
   glow.addColorStop(1, 'rgba(0,0,0,0)');
   context.fillStyle = glow;
   context.beginPath();
@@ -76,7 +105,7 @@ function holoPatch(context, x, y, radius, brightness = 1) {
   for (let index = 0; index < 24; index += 1) {
     const angle = index / 24 * TAU;
     const length = index % 2 ? radius * 0.55 : radius;
-    context.fillStyle = `hsla(${185 + index * 9},100%,68%,${0.85 * brightness})`;
+    context.fillStyle = `hsla(${palette.hue + index * 9},100%,68%,${0.85 * brightness})`;
     context.beginPath();
     context.moveTo(x + Math.cos(angle - 0.06) * length, y + Math.sin(angle - 0.06) * length);
     context.lineTo(x + Math.cos(angle + 0.06) * length, y + Math.sin(angle + 0.06) * length);
@@ -90,11 +119,11 @@ function holoPatch(context, x, y, radius, brightness = 1) {
   context.stroke();
 }
 
-function createPackTexture() {
+function createPackTexture(palette) {
   const [image, context] = canvas(1024, 1384);
   const background = context.createLinearGradient(0, 0, 0, image.height);
-  background.addColorStop(0, '#090c15');
-  background.addColorStop(0.48, '#11151f');
+  background.addColorStop(0, palette.dark);
+  background.addColorStop(0.48, palette.mid);
   background.addColorStop(1, '#070910');
   context.fillStyle = background;
   context.fillRect(0, 0, image.width, image.height);
@@ -115,14 +144,14 @@ function createPackTexture() {
 
   for (let y = 170; y < 1210; y += 34) {
     for (let x = 48; x < 980; x += 34) {
-      context.fillStyle = Math.random() < 0.03 ? 'rgba(110,231,255,.55)' : 'rgba(160,180,215,.18)';
+      context.fillStyle = Math.random() < 0.03 ? palette.particle : 'rgba(255,255,255,.18)';
       context.beginPath();
       context.arc(x, y, Math.random() < 0.03 ? 2.1 : 1.1, 0, TAU);
       context.fill();
     }
   }
 
-  holoPatch(context, 512, 545, 330, 0.1);
+  holoPatch(context, 512, 545, 330, 0.1, palette);
   context.save();
   context.shadowColor = 'rgba(0,0,0,.65)';
   context.shadowBlur = 42;
@@ -140,7 +169,7 @@ function createPackTexture() {
   context.fillStyle = '#f3f6ff';
   context.font = '700 46px monospace';
   spaced(context, 'MADRID', 512, 886, 20);
-  context.fillStyle = '#6ee7ff';
+  context.fillStyle = palette.accent;
   context.fillRect(442, 910, 140, 2);
   context.fillStyle = 'rgba(205,222,250,.9)';
   context.font = '700 21px monospace';
@@ -160,7 +189,7 @@ function createPackTexture() {
   context.fillRect(64, 196, 150, 1);
   context.fillRect(810, 196, 150, 1);
 
-  context.strokeStyle = 'rgba(160,220,255,.9)';
+  context.strokeStyle = palette.accentSoft;
   context.lineWidth = 3;
   context.setLineDash([16, 11]);
   context.beginPath();
@@ -171,10 +200,10 @@ function createPackTexture() {
   context.fillStyle = 'rgba(6,8,12,.55)';
   context.roundRect(322, 52, 380, 44, 22);
   context.fill();
-  context.strokeStyle = 'rgba(110,231,255,.5)';
+  context.strokeStyle = palette.accentSoft;
   context.lineWidth = 1.5;
   context.stroke();
-  context.fillStyle = '#aef0ff';
+  context.fillStyle = palette.accent;
   context.font = '700 17px monospace';
   context.textAlign = 'center';
   context.fillText('DESLIZA PARA ABRIR', 512, 82);
@@ -184,14 +213,14 @@ function createPackTexture() {
   return texture;
 }
 
-function createEmissionTexture() {
+function createEmissionTexture(palette) {
   const [image, context] = canvas(1024, 1384);
   context.fillStyle = '#000000';
   context.fillRect(0, 0, image.width, image.height);
-  holoPatch(context, 846, 808, 86);
-  context.fillStyle = 'rgba(110,231,255,.95)';
+  holoPatch(context, 846, 808, 86, 1, palette);
+  context.fillStyle = palette.accentSoft;
   context.fillRect(442, 910, 140, 2);
-  context.strokeStyle = 'rgba(110,231,255,.9)';
+  context.strokeStyle = palette.accentSoft;
   context.lineWidth = 3;
   context.setLineDash([16, 11]);
   context.beginPath();
@@ -199,7 +228,7 @@ function createEmissionTexture() {
   context.lineTo(998, 127.5);
   context.stroke();
   context.setLineDash([]);
-  context.strokeStyle = 'rgba(110,231,255,.7)';
+  context.strokeStyle = palette.accentSoft;
   context.lineWidth = 2;
   context.roundRect(322, 52, 380, 44, 22);
   context.stroke();
@@ -208,13 +237,13 @@ function createEmissionTexture() {
   return texture;
 }
 
-function createStripTexture() {
+function createStripTexture(palette) {
   const [image, context] = canvas(1024, 150);
   context.fillStyle = '#07080d';
   context.fillRect(0, 0, image.width, image.height);
   context.fillStyle = 'rgba(255,255,255,.1)';
   for (let x = 4; x < image.width; x += 7) context.fillRect(x, 3, 2, image.height - 6);
-  context.strokeStyle = 'rgba(160,220,255,.95)';
+  context.strokeStyle = palette.accentSoft;
   context.lineWidth = 4;
   context.setLineDash([16, 11]);
   context.beginPath();
@@ -222,7 +251,7 @@ function createStripTexture() {
   context.lineTo(image.width - 26, 127);
   context.stroke();
   context.setLineDash([]);
-  context.fillStyle = '#aef0ff';
+  context.fillStyle = palette.accent;
   context.font = '700 18px monospace';
   context.textAlign = 'center';
   context.fillText('DESLIZA PARA ABRIR', image.width / 2, 75);
@@ -308,7 +337,7 @@ function buildShell(start, end, widthSegments, heightSegments, yOffset = 0) {
   return geometry;
 }
 
-export default function SobreHolografico({ onOpen, onProgress }) {
+export default function SobreHolografico({ tipo = 'comun', onOpen, onProgress }) {
   const mountRef = useRef(null);
   const callbacksRef = useRef({ onOpen, onProgress });
   callbacksRef.current = { onOpen, onProgress };
@@ -338,9 +367,10 @@ export default function SobreHolografico({ onOpen, onProgress }) {
     controls.rotateSpeed = 0.85;
     controls.zoomSpeed = 0.7;
 
-    const texture = createPackTexture();
-    const emission = createEmissionTexture();
-    const stripTexture = createStripTexture();
+    const palette = PACK_PALETTES[tipo] || PACK_PALETTES.comun;
+    const texture = createPackTexture(palette);
+    const emission = createEmissionTexture(palette);
+    const stripTexture = createStripTexture(palette);
     const backTexture = texture.clone();
     backTexture.repeat.x = -1;
     backTexture.offset.x = 1;
@@ -383,7 +413,7 @@ export default function SobreHolografico({ onOpen, onProgress }) {
     pack.add(body, stripGroup);
     const openingGuide = new THREE.Mesh(
       new THREE.PlaneGeometry(PACK_WIDTH * 0.96, 0.018),
-      new THREE.MeshBasicMaterial({ color: 0x6ee7ff, transparent: true, opacity: 0.72, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+      new THREE.MeshBasicMaterial({ color: palette.light, transparent: true, opacity: 0.72, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
     );
     openingGuide.position.set(0, TEAR_Y + 0.035, 0.14);
     pack.add(openingGuide);
@@ -403,10 +433,10 @@ export default function SobreHolografico({ onOpen, onProgress }) {
     const key = new THREE.DirectionalLight(0xffffff, 2.6);
     key.position.set(3.5, 6, 5.5);
     scene.add(key);
-    const cyan = new THREE.DirectionalLight(0x6fd6ff, 3.2);
+    const cyan = new THREE.DirectionalLight(palette.light, 3.2);
     cyan.position.set(-5.5, 2.5, -4.5);
     scene.add(cyan);
-    const pink = new THREE.DirectionalLight(0xff8fc8, 2.4);
+    const pink = new THREE.DirectionalLight(palette.light, 1.5);
     pink.position.set(5.5, -1.5, -4);
     scene.add(pink);
 
@@ -416,6 +446,7 @@ export default function SobreHolografico({ onOpen, onProgress }) {
     let progress = 0;
     let dragging = false;
     let startX = 0;
+    let tearReversed = false;
     let opened = false;
     let frame = 0;
     const raycaster = new THREE.Raycaster();
@@ -429,6 +460,15 @@ export default function SobreHolografico({ onOpen, onProgress }) {
       raycaster.setFromCamera(pointer, camera);
       return raycaster.intersectObject(strip, false).length > 0;
     };
+    const updateTearDirection = () => {
+      const leftEnd = new THREE.Vector3(-PACK_WIDTH * 0.48, TEAR_Y + 0.08, 0)
+        .applyMatrix4(pack.matrixWorld)
+        .project(camera);
+      const rightEnd = new THREE.Vector3(PACK_WIDTH * 0.48, TEAR_Y + 0.08, 0)
+        .applyMatrix4(pack.matrixWorld)
+        .project(camera);
+      tearReversed = leftEnd.x > rightEnd.x;
+    };
     const updateStrip = (tear, time) => {
       const progressFront = tear * 1.22;
       for (let index = 0; index < stripPositions.count; index += 1) {
@@ -438,7 +478,11 @@ export default function SobreHolografico({ onOpen, onProgress }) {
         let x = stripBase[index * 3];
         let y = stripBase[index * 3 + 1];
         let z = stripBase[index * 3 + 2];
-        const localProgress = clamp((progressFront - u) / 0.16, 0, 1);
+        // La cara trasera usa una textura espejada. Invertimos el avance
+        // segun la proyeccion de los extremos para que siempre se vea
+        // rasgarse de izquierda a derecha en pantalla.
+        const visualU = tearReversed ? 1 - u : u;
+        const localProgress = clamp((progressFront - visualU) / 0.16, 0, 1);
         const eased = localProgress * localProgress * (3 - 2 * localProgress);
         if (eased > 0) {
           const wobble = Math.sin(u * 9 + time * 7) * 0.05 * eased + Math.sin(u * 33 + time * 13) * 0.02 * eased;
@@ -469,6 +513,7 @@ export default function SobreHolografico({ onOpen, onProgress }) {
       controls.enabled = false;
       dragging = true;
       startX = event.clientX;
+      updateTearDirection();
       renderer.domElement.style.cursor = 'ew-resize';
       renderer.domElement.setPointerCapture(event.pointerId);
     };
