@@ -153,7 +153,8 @@ class Command(BaseCommand):
             titulo = self._parsear_titulo_usuario(perfil, login)
 
             # Extracción de datos básicos (Campos raíz del JSON directo)
-            url_foto = perfil.get("image", {}).get("versions", {}).get("medium")
+            photo_versions = perfil.get("image", {}).get("versions", {})
+            url_foto = photo_versions.get("large") or photo_versions.get("medium")
             puntos_eval = perfil.get("correction_point", 0)
             wallets = perfil.get("wallet", 0)
 
@@ -214,7 +215,8 @@ class Command(BaseCommand):
 
         tier = rareza_por_nivel(nivel_cursus)
 
-        url_foto = registro.get("user",{}).get("image",{}).get("versions",{}).get("medium")
+        photo_versions = registro.get("user", {}).get("image", {}).get("versions", {})
+        url_foto = photo_versions.get("large") or photo_versions.get("medium")
         puntos_eval = registro.get("user",{}).get("correction_point")
         wallets = registro.get("user",{}).get("wallet")
         perfil_completo = self._consultar_perfil_extendido(id_alumno, login_alumno, headers)

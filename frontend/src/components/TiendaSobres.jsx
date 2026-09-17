@@ -292,6 +292,13 @@ function TiendaSobres() {
     setCartasCargadas([]);
   };
 
+  const cancelarApertura = () => {
+    if (abriendo) return;
+    setError('');
+    setCartasCargadas([]);
+    setFase('SELECCION');
+  };
+
   const obtenerEstiloRareza = (rareza) => {
     switch (rareza) {
       case 'legendary': return { color: 'var(--rarity-legendary)', border: '3px solid var(--rarity-legendary)', shadow: '0 0 25px rgba(217, 119, 6, 0.6)' };
@@ -305,16 +312,12 @@ function TiendaSobres() {
     return (
       <button
         onClick={clickVolver}
-        className="back-btn-link"
+        className="back-btn-link floating-pack-back-button"
         style={{
           padding: '0.8rem 1.5rem',
           fontSize: '1.2rem',
           cursor: 'pointer',
           borderRadius: '50px',
-          position: 'absolute',
-          top: '1.5rem',
-          left: '1.5rem',
-          zIndex: 10,
           backgroundColor: 'var(--surface-raised)',
           color: '#fff',
           border: '2px solid #ff9ffc',
@@ -351,9 +354,19 @@ function TiendaSobres() {
         )}
 
         <SobreHolografico
+          tipo={tipoSobreActivo}
           onOpen={tocarSobre}
           onProgress={() => {}}
         />
+
+        <button
+          type="button"
+          className="cancel-pack-button"
+          onClick={cancelarApertura}
+          disabled={abriendo}
+        >
+          ← Volver a elegir sobre
+        </button>
 
       </div>
     );
@@ -562,7 +575,7 @@ function TiendaSobres() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
             {SOBRES.map((sobre) => (
-              <button key={sobre.id} type="button" onClick={() => abrirSelectorSobre(sobre)} style={{ border: `2px solid ${sobre.color}`, color: sobre.color, padding: '1.25rem', borderRadius: '12px', background: 'rgba(12, 15, 22, 0.72)', cursor: 'pointer', fontWeight: 800, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+              <button key={sobre.id} type="button" className={`pack-option pack-option-${sobre.id}`} onClick={() => abrirSelectorSobre(sobre)} style={{ '--pack-color': sobre.color }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
                   <IconoSobre /> {sobre.nombre}
                 </span>
@@ -645,7 +658,7 @@ function TiendaSobres() {
               const tipo = sobre.backendType || sobre.id;
               const cuantos = sobresDisponibles[tipo];
               return (
-                <button key={sobre.id} type="button" onClick={() => seleccionarTipoSobre(tipo)} style={{ border: `2px solid ${sobre.color}`, color: sobre.color, padding: '1.25rem', borderRadius: '12px', background: tipoSobreActivo === tipo ? 'rgba(255, 255, 255, 0.16)' : 'rgba(12, 15, 22, 0.72)', cursor: 'pointer', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.55rem' }}>
+                <button key={sobre.id} type="button" className={`pack-option pack-option-${sobre.id} ${tipoSobreActivo === tipo ? 'is-selected' : ''}`} onClick={() => seleccionarTipoSobre(tipo)} style={{ '--pack-color': sobre.color }}>
                   <IconoSobre /> {sobre.nombre}
                   {/* Solo el número: la palabra "disponibles" ya la dice el
                       título de la sección, repetirla en cada recuadro sobra. */}
