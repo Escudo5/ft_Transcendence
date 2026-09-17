@@ -89,7 +89,11 @@ def datos_del_alumno(json_api):
     return {
         "login":     usuario.get("login"),
         "id":        usuario.get("id"),
-        "foto":      (imagen.get("versions") or {}).get("medium"),
+        # 📸 La grande si existe, y si no la mediana. Lo pidió Sergio el
+        #    17/09: con la mediana se cortaban las cabezas en las cartas.
+        #    Aquí y no en fill_db, para que valga para las dos rutas de la API.
+        "foto":      ((imagen.get("versions") or {}).get("large")
+                      or (imagen.get("versions") or {}).get("medium")),
         "wallet":    usuario.get("wallet") or 0,
         "puntos":    usuario.get("correction_point") or 0,
         # ℹ️ ¿La cuenta sigue activa? Es un dato fiable -la Intra sí lo

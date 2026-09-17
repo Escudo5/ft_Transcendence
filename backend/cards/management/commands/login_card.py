@@ -52,7 +52,8 @@ class Command(BaseCommand):
                     return
 
         user_id = user.get("id")
-        photo = user.get("image", {}).get("versions", {}).get("medium")
+        photo_versions = user.get("image", {}).get("versions", {})
+        photo = photo_versions.get("large") or photo_versions.get("medium")
         correction_point = user.get("correction_point")
         wallet = user.get("wallet")
         cursus = user.get("cursus_users", [])

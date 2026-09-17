@@ -152,7 +152,7 @@ export default function Catalogo() {
     <main className="app-container">
       {/* Cabecera del Álbum */}
       <header className="app-header">
-        <div className="header-navigation">
+        <div className="header-navigation floating-navigation">
           <Link to="/home" className="back-btn-link">
             ← Volver al Inicio
           </Link>
@@ -304,9 +304,9 @@ export default function Catalogo() {
                   )}
                   {card.foto ? (
                     <img
+                      className="card-photo"
                       src={card.foto}
                       alt={card.login}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" }}
                     />
                   ) : (
                     <div className="artwork-symbol">👤</div>

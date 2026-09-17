@@ -159,7 +159,10 @@ class Command(BaseCommand):
             titulo = _parsear_titulo_usuario(perfil, login)
 
             # Extracción de datos básicos (Campos raíz del JSON directo)
-            url_foto = perfil.get("image", {}).get("versions", {}).get("small")
+            # La foto sale de datos_del_alumno, como todo lo demás. Sergio la
+            # quería en grande (17/09) para que no se corten las cabezas, y eso
+            # se decide en cards/intra.py, en un solo sitio para las dos rutas.
+            url_foto = d["foto"]
             puntos_eval = perfil.get("correction_point", 0)
             wallets = perfil.get("wallet", 0)
 
