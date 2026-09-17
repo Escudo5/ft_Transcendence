@@ -562,7 +562,7 @@ export default function Perfil() {
   return (
     <main className="app-container">
       <header className="app-header">
-        <div className="header-navigation">
+        <div className="header-navigation floating-navigation">
           <Link to="/home" className="back-btn-link">← Volver al Inicio</Link>
           <Link to="/catalogo" className="back-btn-link">📂 Ver Álbum</Link>
         </div>
