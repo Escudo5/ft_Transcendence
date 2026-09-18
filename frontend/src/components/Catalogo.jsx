@@ -6,27 +6,20 @@ import ModalContratos, { BotonContratos } from "./Contratos";
 import BotonAbrirSobres from "./BotonAbrirSobres";
 import { CLASE_RAREZA, RAREZAS } from "./rarezas";
 
-/**
- * EL ÁLBUM
- * --------
- * Muestra las cartas que el usuario tiene de verdad, leyéndolas de
- * GET /api/cards/album/. Antes esta pantalla enseñaba 16 cartas escritas a mano
- * ("Cadete", "Norminette"...) que no existían en ninguna parte: abrías sobres,
- * las cartas se guardaban en tu álbum... y aquí seguías viendo las inventadas.
- *
- * 🎨 KONRAD Y SERGIO: se mantienen vuestras clases de estilo (card-item,
- * rarity-*, card-artwork...) para no romper el diseño. Lo que cambia es de
- * dónde salen los datos y qué se enseña en cada carta, porque una carta real
- * no tiene ataque ni defensa: tiene nivel, puntos de evaluación y coalición.
- */
+/*
+Mapeo global de rarezas a clases del sistema de diseño
 
-// 🎴 La rareza del backend -> la clase de color del sistema de diseño.
-// El diccionario ya no vive aquí: está en rarezas.js, que es el único sitio
-// donde se escriben los nombres de las rarezas. Esta era la tercera copia
-// del mismo dato, y tener el mismo dato en tres sitios es lo que hizo que
-// medio proyecto se quedara viejo en silencio al cambiar las rarezas.
+CLASE_RAREZA traduce los identificadores devueltos por el backend 
+(por ejemplo: "Junior", "Senior") a sus estilos CSS equivalentes ("common", "rare").
+*/
 const TIER_A_RAREZA = CLASE_RAREZA;
 
+/*
+Rutas estáticas a los logotipos de las coaliciones
+
+Este objeto vincula el nombre de la coalición en minúsculas con su
+respectiva imagen guardada dentro del directorio público.
+*/
 const LOGOS_COALICIONES = {
   zefiria: "/icons/zefiria_logo.png",
   marventis: "/icons/marventis_logo.png",
@@ -34,33 +27,63 @@ const LOGOS_COALICIONES = {
   ignisaria: "/icons/ignisaria_logo.png",
 };
 
-// Para el desplegable de filtrar y para la ordenación "por rareza": de la
-// más rara a la más común. RAREZAS va al revés, así que se le da la vuelta
-// a una COPIA, porque reverse() modifica el array original.
+/*
+Listado ordenado de niveles de rareza de mayor a menor exclusividad
+
+Invierte el array exportado de rarezas sin alterar la referencia original,
+utilizado para poblar el selector de filtros y el criterio de ordenación.
+*/
 const TIERS = [...RAREZAS].reverse();
 
 export default function Catalogo() {
+  /*
+  Dirección base del servidor de la API
+
+  Toma la variable de entorno expuesta por Vite o recurre al proxy '/api' por defecto.
+  */
   const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
 
-  // Datos que vienen del backend
+  /*
+  Estados principales de datos y carga de la vista
+
+  album almacena el listado plano de las cartas procesadas.
+  cargando controla el estado visual de espera mientras la petición finaliza.
+  error captura mensajes de fallo de autenticación o de conexión con la API.
+  */
   const [album, setAlbum] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
-  // Estados para búsqueda, filtro, ordenación y paginación
+  /*
+  Estados para la manipulación y paginación de los datos
+
+  searchTerm filtra por cadenas de texto introducidas.
+  rarityFilter limita las cartas a una categoría específica.
+  sortBy define el criterio de ordenación en la vista.
+  currentPage e indexOfLastCard/indexOfFirstCard gestionan el troceado de datos.
+  */
   const [searchTerm, setSearchTerm] = useState("");
   const [rarityFilter, setRarityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("login");
   const [currentPage, setCurrentPage] = useState(1);
   const cardsPerPage = 8;
 
-  // 🤝 Contratos: 4 cartas repetidas de la misma rareza -> 1 mejor.
-  // 'refrescoAlbum' solo sirve para forzar que se vuelva a pedir el álbum
-  // cuando un contrato lo cambia: al subirlo, el efecto de abajo se dispara.
+  /*
+  Estados de integración para la funcionalidad de contratos
+
+  contratosAbierto conmuta la visibilidad del modal de canjes.
+  refrescoAlbum actúa como un contador de control que fuerza la recarga del efecto.
+  */
   const [contratosAbierto, setContratosAbierto] = useState(false);
   const [refrescoAlbum, setRefrescoAlbum] = useState(0);
 
-  // Pedimos el álbum al entrar
+  /*
+  Petición remota para la carga del álbum de cartas
+
+  useEffect ejecuta la llamada a 'GET /api/cards/album/' al montar la vista o al
+  modificar el contador de refrescoAlbum. Aclana la estructura de respuesta para
+  vincular directamente las URLs de fotos (item.card.photo) y sus atributos.
+  */
   useEffect(() => {
     async function cargarAlbum() {
       try {
@@ -76,8 +99,6 @@ export default function Catalogo() {
         }
 
         const datos = await res.json();
-        // Cada elemento es { id, card: {...}, cantidad, fecha_obtencion }.
-        // Lo aplanamos para que sea más cómodo de pintar.
         setAlbum(
           (datos || []).map((item) => ({
             id: item.id,
@@ -86,7 +107,7 @@ export default function Catalogo() {
             login: item.card?.login || "",
             titulo: item.card?.title || item.card?.login || "",
             coalicion: item.card?.coalition || "Sin coalición",
-            foto: item.card?.photo,
+            foto: item.card?.photo, // 👈 CARGA DE FOTO: Asignación de la URL devuelta por la API
             tier: item.card?.tier || "Junior",
             rareza: TIER_A_RAREZA[item.card?.tier] || "common",
             nivel: item.card?.cursus_lvl ?? 0,
@@ -104,12 +125,22 @@ export default function Catalogo() {
     cargarAlbum();
   }, [apiBaseUrl, refrescoAlbum]);
 
-  // Reiniciar a la primera página si cambian los filtros
+  /*
+  Restablecimiento de página en búsquedas activas
+
+  Reinicia la paginación a la primera posición cada vez que el usuario modifica
+  el texto del buscador, el filtro de rareza o la opción de ordenación.
+  */
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, rarityFilter, sortBy]);
 
-  // Filtrado: busca por login, título y coalición
+  /*
+  Filtrado dinámico de cartas
+
+  Busca coincidencias insensibles a mayúsculas dentro del login, título o coalición,
+  evaluando simultáneamente si la carta pertenece al nivel de rareza seleccionado.
+  */
   const filteredCards = album.filter((card) => {
     const texto = searchTerm.toLowerCase();
     const matchesSearch =
@@ -120,7 +151,12 @@ export default function Catalogo() {
     return matchesSearch && matchesRarity;
   });
 
-  // Ordenación
+  /*
+  Ordenación de la lista filtrada
+
+  Crea una copia de la lista y la ordena alfabéticamente por login, por nivel
+  de rareza segun el índice de TIERS, por nivel de estudiante o por repetidas.
+  */
   const sortedCards = [...filteredCards].sort((a, b) => {
     if (sortBy === "login") return a.login.localeCompare(b.login);
     if (sortBy === "nivel") return b.nivel - a.nivel;
@@ -129,7 +165,12 @@ export default function Catalogo() {
     return 0;
   });
 
-  // Cálculos de paginación
+  /*
+  Cálculos matemáticos para la paginación de la cuadrícula
+
+  Determina el total de páginas necesarias e identifica el segmento de array
+  correspondiente a la página activa actual mediante slice.
+  */
   const totalCards = sortedCards.length;
   const totalPages = Math.ceil(totalCards / cardsPerPage) || 1;
   const activePage = currentPage > totalPages ? totalPages : currentPage;
@@ -138,9 +179,18 @@ export default function Catalogo() {
   const indexOfFirstCard = indexOfLastCard - cardsPerPage;
   const currentCards = sortedCards.slice(indexOfFirstCard, indexOfLastCard);
 
-  // Cuántas cartas tienes en total contando repetidas
+  /*
+  Cómputo total de volumen de la colección
+
+  Suma las copias acumuladas de todas las cartas pertenecientes al álbum.
+  */
   const totalConRepetidas = album.reduce((suma, c) => suma + c.cantidad, 0);
 
+  /*
+  Manejadores de eventos de cambio de página
+
+  Sumariza o resta el indicador numérico de la página activa respetando los límites.
+  */
   const goToNextPage = () => {
     if (activePage < totalPages) setCurrentPage(activePage + 1);
   };
@@ -150,7 +200,12 @@ export default function Catalogo() {
 
   return (
     <main className="app-container">
-      {/* Cabecera del Álbum */}
+      {/*
+      Cabecera superior del álbum
+
+      Agrupa la barra de navegación superior flotante, los accesos a contratos
+      y apertura de sobres, el título general y el recuento total de cartas.
+      */}
       <header className="app-header">
         <div className="header-navigation floating-navigation">
           <Link to="/home" className="back-btn-link">
@@ -170,10 +225,13 @@ export default function Catalogo() {
         </p>
       </header>
 
-      {/* Panel de control para filtros, búsqueda y ordenación */}
+      {/*
+      Panel interactivo de filtros y ordenación
+
+      Monta un campo de búsqueda por texto junto con dos selectores desplegables
+      para filtrar por categoría de rareza y ordenar por diferentes criterios.
+      */}
       <section className="control-panel">
-        {/* Campo del sistema de diseño (ui.jsx): trae ya la etiqueta, el
-            aviso de error y el aria-invalid para los lectores de pantalla */}
         <TextField
           id="search"
           type="text"
@@ -204,7 +262,13 @@ export default function Catalogo() {
         </div>
       </section>
 
-      {/* Cuadrícula de Cartas (Grid) */}
+      {/*
+      Contenedor principal y cuadrícula adaptativa Flexbox
+
+      Organiza la información meta de la página e inserta un contenedor Flexbox
+      con flexWrap y un ancho relativo fijo (width: calc(25% - 1.15rem)). Esto previene
+      que una única carta se expanda hasta ocupar toda la pantalla cuando no hay más.
+      */}
       <section className="album-grid-wrapper">
         <div className="grid-meta">
           <span>Cartas encontradas: <strong>{totalCards}</strong></span>
@@ -225,8 +289,6 @@ export default function Catalogo() {
           <div className="empty-state">
             <span className="empty-icon">📂</span>
             <p>Tu álbum está vacío. Abre sobres en la tienda para conseguir cartas.</p>
-            {/* El mismo botón que arriba: si el álbum está vacío, este es
-                justo el sitio donde más apetece que llame la atención. */}
             <div style={{ marginTop: "1rem" }}>
               <BotonAbrirSobres>Ir a abrir sobres</BotonAbrirSobres>
             </div>
@@ -237,11 +299,36 @@ export default function Catalogo() {
             <p>Ninguna carta de tu álbum coincide con la búsqueda.</p>
           </div>
         ) : (
-          <div className="album-grid">
-            {currentCards.map((card, index) => (
+          /*
+          Contenedor Flexbox de la colección de cartas
+
+          display: flex junto con flexWrap: wrap ordenan horizontalmente las cartas.
+          justifyContent: flex-start empuja el contenido al origen inicial de la fila.
+          */
+          <div 
+            className="album-grid" 
+            style={{ 
+              display: 'flex', 
+              flexWrap: 'wrap', 
+              gap: '1.5rem', 
+              justifyContent: 'flex-start' 
+            }}
+          >
+            {currentCards.map((card) => (
+              /*
+              Componente animado individual de cada carta
+
+              motion.article envuelve los datos de la carta con animaciones de entrada,
+              hover y tap mediante Framer Motion. El estilo inline fija el ancho relativo a 4 columnas.
+              */
               <motion.article
                 key={card.id}
                 className={`card-item rarity-${card.rareza}`}
+                style={{
+                  width: 'calc(25% - 1.15rem)',
+                  minWidth: '220px',
+                  boxSizing: 'border-box'
+                }}
                 initial={{ opacity: 0, y: 24, scale: 0.94 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.38, type: 'spring', stiffness: 190, damping: 17 }}
@@ -259,6 +346,12 @@ export default function Catalogo() {
                   transition: { duration: 0.18, delay: 0, type: 'tween' },
                 }}
               >
+                {/*
+                Encabezado de la carta
+
+                Despliega el icono de la coalición si existe en el diccionario
+                LOGOS_COALICIONES y proyecta la etiqueta con el nivel de rareza.
+                */}
                 <div className="card-header">
                   {LOGOS_COALICIONES[card.coalicion.toLowerCase()] ? (
                     <img
@@ -275,11 +368,16 @@ export default function Catalogo() {
                   </Badge>
                 </div>
 
+                {/*
+                Contenedor del marco artístico y renderizado de foto
+
+                Muestra una insignia flotante con el multiplicador de copias (si es mayor a 1)
+                y ejecuta la lógica condicional de renderizado de la foto del alumno:
+                si 'card.foto' tiene valor renderiza un <img> con la URL remota; si es nulo,
+                despliega el emoji '👤' como icono de reemplazo.
+                */}
                 <div className="card-artwork">
                   <div className="artwork-glow"></div>
-                  {/* Cuántas copias tienes; solo se enseña si hay repetidas.
-                      Lleva estilo propio en vez de la clase .artwork-id porque
-                      esa se pinta al 30% de opacidad y sobre una foto no se ve. */}
                   {card.cantidad > 1 && (
                     <span
                       title={`Tienes ${card.cantidad} copias de esta carta`}
@@ -302,6 +400,7 @@ export default function Catalogo() {
                       ×{card.cantidad}
                     </span>
                   )}
+                  {/* 👇 RENDERIZADO DE LA FOTO REAL O FALLBACK */}
                   {card.foto ? (
                     <img
                       className="card-photo"
@@ -313,11 +412,23 @@ export default function Catalogo() {
                   )}
                 </div>
 
+                {/*
+                Bloque de información de usuario
+
+                Imprime el login principal del usuario en el título y su
+                título oficial o alias registrado en la descripción inferior.
+                */}
                 <div className="card-body">
                   <h3 className="card-title">{card.login}</h3>
                   <p className="card-description">{card.titulo}</p>
                 </div>
 
+                {/*
+                Panel de estadísticas de la carta
+
+                Visualiza en métricas separadas el nivel del estudiante (cursus_lvl),
+                sus puntos de evaluación (eval_point) y el saldo de altarians.
+                */}
                 <div className="card-stats">
                   <div className="stat">
                     <span className="stat-label"> NIVEL</span>
@@ -343,7 +454,12 @@ export default function Catalogo() {
         )}
       </section>
 
-      {/* Controles de paginación */}
+      {/*
+      Controles inferiores de paginación
+
+      Renderiza los botones de navegación anterior/siguiente e itera numéricamente
+      sobre 'totalPages' para generar los botones de acceso directo a cada página.
+      */}
       {totalPages > 1 && (
         <nav className="pagination-container" aria-label="Selector de páginas del álbum">
           <button
@@ -381,6 +497,12 @@ export default function Catalogo() {
         </nav>
       )}
 
+      {/*
+      Modal global del sistema de contratos
+
+      Ventana emergente que procesa la quema de cartas repetidas para la obtención
+      de cartas de nivel superior. Ejecuta 'refrescoAlbum' al completar una operación.
+      */}
       <ModalContratos
         isOpen={contratosAbierto}
         onClose={() => setContratosAbierto(false)}
