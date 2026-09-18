@@ -5,16 +5,13 @@ import { Badge, TextField } from "./ui";
 import ModalContratos, { BotonContratos } from "./Contratos";
 import BotonAbrirSobres from "./BotonAbrirSobres";
 import { CLASE_RAREZA, RAREZAS } from "./rarezas";
+import ElectricBorder from "./ElectricBorder";
 
 /*
 Mapeo global de rarezas a clases del sistema de diseño
 
-CLASE_RAREZA traduce los identificadores devueltos por el backend
+CLASE_RAREZA traduce los identificadores devueltos por el backend 
 (por ejemplo: "Junior", "Senior") a sus estilos CSS equivalentes ("common", "rare").
-
-⚠️ El diccionario NO se escribe aquí, se importa de rarezas.js, y es a
-propósito: esta llegó a ser la tercera copia del mismo dato. Al cambiar las
-rarezas, las tres se quedaron viejas a la vez y ninguna dio error.
 */
 const TIER_A_RAREZA = CLASE_RAREZA;
 
@@ -111,7 +108,7 @@ export default function Catalogo() {
             login: item.card?.login || "",
             titulo: item.card?.title || item.card?.login || "",
             coalicion: item.card?.coalition || "Sin coalición",
-            foto: item.card?.photo, // 👈 CARGA DE FOTO: Asignación de la URL devuelta por la API
+            foto: item.card?.photo,
             tier: item.card?.tier || "Junior",
             rareza: TIER_A_RAREZA[item.card?.tier] || "common",
             nivel: item.card?.cursus_lvl ?? 0,
@@ -202,14 +199,145 @@ export default function Catalogo() {
     if (activePage > 1) setCurrentPage(activePage - 1);
   };
 
+  /*
+  Función auxiliar de renderizado individual de cartas
+
+  Aísla la estructura DOM de la carta para permitir envolverla condicionalmente
+  con el componente ElectricBorder en caso de pertenecer a la categoría Staff.
+  */
+  const renderCardContent = (card) => {
+    const isStaff = card.tier.toLowerCase() === "staff";
+
+    const cardMarkup = (
+      <motion.article
+        key={card.id}
+        className={`card-item rarity-${card.rareza}`}
+        initial={{ opacity: 0, y: 24, scale: 0.94 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.38, type: "spring", stiffness: 190, damping: 17 }}
+        whileHover={{
+          y: -6,
+          scale: 1.02,
+          transition: { duration: 0.18, delay: 0, type: "tween" },
+        }}
+        whileTap={{
+          scale: 0.96,
+          transition: { duration: 0.12, delay: 0, type: "tween" },
+        }}
+        whileFocus={{
+          scale: 1.02,
+          transition: { duration: 0.18, delay: 0, type: "tween" },
+        }}
+      >
+        {/* Encabezado de la carta */}
+        <div className="card-header">
+          {LOGOS_COALICIONES[card.coalicion.toLowerCase()] ? (
+            <img
+              className="card-coalition-logo"
+              src={LOGOS_COALICIONES[card.coalicion.toLowerCase()]}
+              alt={card.coalicion}
+              title={card.coalicion}
+            />
+          ) : (
+            <span className="card-type">{card.coalicion}</span>
+          )}
+          <Badge tone={card.rareza}>
+            {card.tier.toUpperCase()}
+          </Badge>
+        </div>
+
+        {/* Marco artístico y foto */}
+        <div className="card-artwork">
+          <div className="artwork-glow"></div>
+          {card.cantidad > 1 && (
+            <span
+              title={`Tienes ${card.cantidad} copias de esta carta`}
+              style={{
+                position: "absolute",
+                top: "8px",
+                right: "8px",
+                zIndex: 3,
+                background: "rgba(12, 15, 22, 0.85)",
+                border: "2px solid var(--accent)",
+                color: "var(--accent)",
+                borderRadius: "999px",
+                padding: "0.15rem 0.55rem",
+                fontFamily: "var(--font-heading)",
+                fontSize: "0.85rem",
+                fontWeight: 800,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+              }}
+            >
+              ×{card.cantidad}
+            </span>
+          )}
+          {card.foto ? (
+            <img
+              className="card-photo"
+              src={card.foto}
+              alt={card.login}
+            />
+          ) : (
+            <div className="artwork-symbol">👤</div>
+          )}
+        </div>
+
+        {/* Información del estudiante */}
+        <div className="card-body">
+          <h3 className="card-title">{card.login}</h3>
+          <p className="card-description">{card.titulo}</p>
+        </div>
+
+        {/* Estadísticas */}
+        <div className="card-stats">
+          <div className="stat">
+            <span className="stat-label"> NIVEL</span>
+            <span className="stat-value">{card.nivel}</span>
+          </div>
+          <div className="stat-divider"></div>
+          <div className="stat">
+            <span className="stat-label"> EVALS</span>
+            <span className="stat-value">{card.evaluaciones}</span>
+          </div>
+          <div className="stat-divider"></div>
+          <div className="stat">
+            <span className="stat-label">WALLET</span>
+            <span className="stat-value stat-wallet-value">
+              {card.altarians}
+              <img className="stat-logo" src="/icons/Altarians_logo.png" alt="" aria-hidden="true" />
+            </span>
+          </div>
+        </div>
+      </motion.article>
+    );
+
+    /*
+    Aplicación condicional del marco animado ElectricBorder
+
+    Si la carta pertenece al nivel 'Staff', se envuelve con el componente
+    ElectricBorder configurado con un todo cian brillante (#7df9ff) y bordes de 16px.
+    */
+    if (isStaff) {
+      return (
+        <ElectricBorder
+          key={card.id}
+          color="#ec4899"
+          speed={1}
+          chaos={0.2}
+          thickness={2}
+          borderRadius={16}
+        >
+          {cardMarkup}
+        </ElectricBorder>
+      );
+    }
+
+    return cardMarkup;
+  };
+
   return (
     <main className="app-container">
-      {/*
-      Cabecera superior del álbum
-
-      Agrupa la barra de navegación superior flotante, los accesos a contratos
-      y apertura de sobres, el título general y el recuento total de cartas.
-      */}
+      {/* Cabecera superior del álbum */}
       <header className="app-header">
         <div className="header-navigation floating-navigation">
           <Link to="/home" className="back-btn-link">
@@ -229,12 +357,7 @@ export default function Catalogo() {
         </p>
       </header>
 
-      {/*
-      Panel interactivo de filtros y ordenación
-
-      Monta un campo de búsqueda por texto junto con dos selectores desplegables
-      para filtrar por categoría de rareza y ordenar por diferentes criterios.
-      */}
+      {/* Panel interactivo de filtros y ordenación */}
       <section className="control-panel">
         <TextField
           id="search"
@@ -266,13 +389,7 @@ export default function Catalogo() {
         </div>
       </section>
 
-      {/*
-      Contenedor principal y cuadrícula adaptativa Flexbox
-
-      Organiza la información meta de la página e inserta un contenedor Flexbox
-      con flexWrap y un ancho relativo fijo (width: calc(25% - 1.15rem)). Esto previene
-      que una única carta se expanda hasta ocupar toda la pantalla cuando no hay más.
-      */}
+      {/* Cuadrícula de cartas */}
       <section className="album-grid-wrapper">
         <div className="grid-meta">
           <span>Cartas encontradas: <strong>{totalCards}</strong></span>
@@ -303,158 +420,13 @@ export default function Catalogo() {
             <p>Ninguna carta de tu álbum coincide con la búsqueda.</p>
           </div>
         ) : (
-          /*
-          Contenedor de la colección de cartas
-
-          El ancho y el número de columnas los pone la clase .album-grid en
-          styles.css, y NO se escriben aquí a propósito (Nacho, 18/09): un
-          style en el JSX gana a cualquier regla del CSS, incluidas las
-          media queries, así que el diseño de móvil dejaba de funcionar.
-          Las 4 columnas que quería Konrad están puestas allí, con sus
-          escalones para tablet y móvil.
-          */
           <div className="album-grid">
-            {currentCards.map((card) => (
-              /*
-              Componente animado individual de cada carta
-
-              motion.article envuelve los datos de la carta con animaciones de entrada,
-              hover y tap mediante Framer Motion.
-              */
-              <motion.article
-                key={card.id}
-                className={`card-item rarity-${card.rareza}`}
-                initial={{ opacity: 0, y: 24, scale: 0.94 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.38, type: 'spring', stiffness: 190, damping: 17 }}
-                whileHover={{
-                  y: -6,
-                  scale: 1.02,
-                  transition: { duration: 0.18, delay: 0, type: 'tween' },
-                }}
-                whileTap={{
-                  scale: 0.96,
-                  transition: { duration: 0.12, delay: 0, type: 'tween' },
-                }}
-                whileFocus={{
-                  scale: 1.02,
-                  transition: { duration: 0.18, delay: 0, type: 'tween' },
-                }}
-              >
-                {/*
-                Encabezado de la carta
-
-                Despliega el icono de la coalición si existe en el diccionario
-                LOGOS_COALICIONES y proyecta la etiqueta con el nivel de rareza.
-                */}
-                <div className="card-header">
-                  {LOGOS_COALICIONES[card.coalicion.toLowerCase()] ? (
-                    <img
-                      className="card-coalition-logo"
-                      src={LOGOS_COALICIONES[card.coalicion.toLowerCase()]}
-                      alt={card.coalicion}
-                      title={card.coalicion}
-                    />
-                  ) : (
-                    <span className="card-type">{card.coalicion}</span>
-                  )}
-                  <Badge tone={card.rareza}>
-                    {card.tier.toUpperCase()}
-                  </Badge>
-                </div>
-
-                {/*
-                Contenedor del marco artístico y renderizado de foto
-
-                Muestra una insignia flotante con el multiplicador de copias (si es mayor a 1)
-                y ejecuta la lógica condicional de renderizado de la foto del alumno:
-                si 'card.foto' tiene valor renderiza un <img> con la URL remota; si es nulo,
-                despliega el emoji '👤' como icono de reemplazo.
-                */}
-                <div className="card-artwork">
-                  <div className="artwork-glow"></div>
-                  {card.cantidad > 1 && (
-                    <span
-                      title={`Tienes ${card.cantidad} copias de esta carta`}
-                      style={{
-                        position: "absolute",
-                        top: "8px",
-                        right: "8px",
-                        zIndex: 3,
-                        background: "rgba(12, 15, 22, 0.85)",
-                        border: "2px solid var(--accent)",
-                        color: "var(--accent)",
-                        borderRadius: "999px",
-                        padding: "0.15rem 0.55rem",
-                        fontFamily: "var(--font-heading)",
-                        fontSize: "0.85rem",
-                        fontWeight: 800,
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
-                      }}
-                    >
-                      ×{card.cantidad}
-                    </span>
-                  )}
-                  {/* 👇 RENDERIZADO DE LA FOTO REAL O FALLBACK */}
-                  {card.foto ? (
-                    <img
-                      className="card-photo"
-                      src={card.foto}
-                      alt={card.login}
-                    />
-                  ) : (
-                    <div className="artwork-symbol">👤</div>
-                  )}
-                </div>
-
-                {/*
-                Bloque de información de usuario
-
-                Imprime el login principal del usuario en el título y su
-                título oficial o alias registrado en la descripción inferior.
-                */}
-                <div className="card-body">
-                  <h3 className="card-title">{card.login}</h3>
-                  <p className="card-description">{card.titulo}</p>
-                </div>
-
-                {/*
-                Panel de estadísticas de la carta
-
-                Visualiza en métricas separadas el nivel del estudiante (cursus_lvl),
-                sus puntos de evaluación (eval_point) y el saldo de altarians.
-                */}
-                <div className="card-stats">
-                  <div className="stat">
-                    <span className="stat-label"> NIVEL</span>
-                    <span className="stat-value">{card.nivel}</span>
-                  </div>
-                  <div className="stat-divider"></div>
-                  <div className="stat">
-                    <span className="stat-label"> EVALS</span>
-                    <span className="stat-value">{card.evaluaciones}</span>
-                  </div>
-                  <div className="stat-divider"></div>
-                  <div className="stat">
-                    <span className="stat-label">WALLET</span>
-                    <span className="stat-value stat-wallet-value">
-                      {card.altarians}
-                      <img className="stat-logo" src="/icons/Altarians_logo.png" alt="" aria-hidden="true" />
-                    </span>
-                  </div>
-                </div>
-              </motion.article>
-            ))}
+            {currentCards.map((card) => renderCardContent(card))}
           </div>
         )}
       </section>
 
-      {/*
-      Controles inferiores de paginación
-
-      Renderiza los botones de navegación anterior/siguiente e itera numéricamente
-      sobre 'totalPages' para generar los botones de acceso directo a cada página.
-      */}
+      {/* Controles inferiores de paginación */}
       {totalPages > 1 && (
         <nav className="pagination-container" aria-label="Selector de páginas del álbum">
           <button
@@ -492,12 +464,7 @@ export default function Catalogo() {
         </nav>
       )}
 
-      {/*
-      Modal global del sistema de contratos
-
-      Ventana emergente que procesa la quema de cartas repetidas para la obtención
-      de cartas de nivel superior. Ejecuta 'refrescoAlbum' al completar una operación.
-      */}
+      {/* Modal global del sistema de contratos */}
       <ModalContratos
         isOpen={contratosAbierto}
         onClose={() => setContratosAbierto(false)}

@@ -1,0 +1,80 @@
+/*
+Estilos del contenedor de borde eléctrico
+
+isolation: isolate crea un nuevo contexto de apilamiento para evitar
+que los efectos de blur y glow se mezclen de forma no deseada con el fondo.
+*/
+.electric-border {
+  --electric-light-color: oklch(from var(--electric-border-color) l c h);
+  position: relative;
+  border-radius: inherit;
+  overflow: visible;
+  isolation: isolate;
+}
+
+/*
+Contenedor del Canvas centrado respecto a la carta
+*/
+.eb-canvas-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.eb-canvas {
+  display: block;
+}
+
+/*
+Capa contenedora de la carta original
+*/
+.eb-content {
+  position: relative;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/*
+Capas de resplandor (Glow) y sombras luminosas
+
+Se eliminan las líneas de borde sólido (border: none) dejando
+únicamente el efecto de rayo dinámico en el Canvas y el resplandor de fondo.
+*/
+.eb-layers {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.eb-glow-1,
+.eb-glow-2,
+.eb-background-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+/* Sin bordes estáticos en las capas de brillo */
+.eb-glow-1 {
+  border: none;
+}
+
+.eb-glow-2 {
+  border: none;
+}
+
+/* Aura/Resplandor suave de fondo manteniendo el color cyan (#7df9ff) */
+.eb-background-glow {
+  z-index: -1;
+  transform: scale(1.05);
+  filter: blur(24px);
+  opacity: 0.25;
+  background: radial-gradient(circle, var(--electric-light-color) 0%, transparent 70%);
+}
