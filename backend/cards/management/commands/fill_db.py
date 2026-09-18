@@ -171,8 +171,7 @@ class Command(BaseCommand):
             self._guardar_o_actualizar_carta(
                 login=login, photo=url_foto, coalition=coalition, title=titulo,
                 altarians=wallets, cursus_lvl=nivel_cursus, eval_point=puntos_eval,
-                is_blackhole=blackhole, tier=tier,
-                grade=d["grade"] or '', es_staff=del_staff
+                is_blackhole=blackhole, tier=tier
             )
             time.sleep(0.5)
 
@@ -297,9 +296,7 @@ class Command(BaseCommand):
             # Siempre False: aquí solo se llega si el cursus NO ha terminado.
             # (El parámetro no se guarda en ninguna parte: el modelo Card no
             #  tiene ese campo. Se deja para no cambiarle la firma a Pablo.)
-            is_blackhole=False, tier=tier,
-            grade=d["grade"] or '', es_staff=del_staff
-        )
+            is_blackhole=False, tier=tier)
         time.sleep(0.5)
 
 
@@ -362,8 +359,7 @@ class Command(BaseCommand):
 
 
     def _guardar_o_actualizar_carta(self, login, photo, coalition, title, altarians,
-                                    cursus_lvl, eval_point, is_blackhole, tier,
-                                    grade='', es_staff=False):
+                                    cursus_lvl, eval_point, is_blackhole, tier):
         """Inserta o actualiza la instancia correspondiente del modelo Card."""
         carta, creada = Card.objects.get_or_create(
             login=login,
@@ -377,8 +373,6 @@ class Command(BaseCommand):
                 'tier': tier,
                 # 🎓 Nacho, 15/09: se guardan para que recalcular_rarezas
                 # pueda rehacer la rareza sin volver a pedirla a la API.
-                'grade': grade,
-                'es_staff': es_staff,
             }
         )
         if creada:
@@ -391,8 +385,6 @@ class Command(BaseCommand):
             carta.eval_point = eval_point
             carta.title = title
             carta.tier = tier
-            carta.grade = grade
-            carta.es_staff = es_staff
             carta.save()
             self.stdout.write(self.style.SUCCESS(f"      🔄 Cromo Actualizado: {login}"))
 
