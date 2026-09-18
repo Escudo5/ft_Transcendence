@@ -24,12 +24,30 @@ class UserPackAdmin(admin.ModelAdmin):
 
 @admin.register(UserCard)
 class UserCardAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'card', 'cantidad', 'fecha_obtencion')
+    # 1. Añadimos los métodos personalizados a list_display
+    list_display = (
+        'id', 
+        'user_id_display',  # Muestra la ID del usuario
+        'user', 
+        'card_id_display',  # Muestra la ID de la carta
+        'card', 
+        'cantidad', 
+        'fecha_obtencion'
+    )
+    
     list_filter = ('card__tier', 'card__coalition')
-    search_fields = ('user__username', 'card__login')
-    raw_id_fields = ('user', 'card') # Útil para seleccionar usuario y carta rápidamente si la BD es grande
+    search_fields = ('user__username', 'card__login', 'user__id', 'card__id')
+    raw_id_fields = ('user', 'card')
 
+    # 2. Método para la ID del usuario
+    @admin.display(ordering='user__id', description='User ID')
+    def user_id_display(self, obj):
+        return obj.user.id if obj.user else '-'
 
+    # 3. Método para la ID de la carta
+    @admin.display(ordering='card__id', description='Card ID')
+    def card_id_display(self, obj):
+        return obj.card.id if obj.card else '-'
 @admin.register(Intercambio)
 class IntercambioAdmin(admin.ModelAdmin):
     """
