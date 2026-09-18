@@ -81,7 +81,10 @@ Se eliminan las líneas de borde sólido (border: none) dejando
   border: none;
 }
 
-/* Aura/Resplandor suave de fondo manteniendo el color cyan (#7df9ff) */
+/* Aura/Resplandor suave de fondo, del color que se le pase al componente.
+ * (Nacho, 18/09: aquí ponía "manteniendo el color cyan (#7df9ff)", que era
+ *  un resto del ejemplo original. El color no está fijado aquí: llega desde
+ *  Catalogo.jsx, y hoy es el magenta de la rareza Staff.) */
 .eb-background-glow {
   z-index: -1;
   transform: scale(1.05);
