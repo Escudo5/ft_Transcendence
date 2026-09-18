@@ -40,6 +40,10 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # 🟢 Anota que el usuario sigue vivo (para el estado en línea de los
+    # amigos). VA DESPUÉS de AuthenticationMiddleware a propósito: es quien
+    # pone request.user, y sin él este no sabría de quién hablamos.
+    "users.middleware.SenalDeVidaMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
