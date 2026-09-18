@@ -787,8 +787,10 @@ button, a, select {
 .ui-status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--color-neutral-400); }
 .ui-status-online { color: #4ade80; }
 .ui-status-online .ui-status-dot { background: #4ade80; }
-.ui-status-ingame { color: #fbbf24; }
-.ui-status-ingame .ui-status-dot { background: #fbbf24; }
+/* Nacho, 18/09 (con el visto bueno de Konrad): aquí estaban las dos reglas
+   de .ui-status-ingame. Se quitan porque ese estado ya no existe: el backend
+   no lo escribía nunca y el 18/09 salió también del modelo. Nada más de este
+   fichero se ha tocado. */
 .ui-status-offline { color: #94a3b8; }
 
 .card-artwork {
