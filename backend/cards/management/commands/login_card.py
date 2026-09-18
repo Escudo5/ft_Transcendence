@@ -131,8 +131,6 @@ class Command(BaseCommand):
                     'tier': tier,
                     # 🎓 Nacho, 15/09: se guardan para que recalcular_rarezas
                     # pueda rehacer la rareza sin volver a la API.
-                    'grade': grade or '',
-                    'es_staff': del_staff,
                 }
             )
 
@@ -146,8 +144,6 @@ class Command(BaseCommand):
                 carta.eval_point = correction_point
                 carta.title = title
                 carta.tier = tier
-                carta.grade = grade or ''
-                carta.es_staff = del_staff
                 carta.save()
                 self.stdout.write(self.style.SUCCESS(f"     🔄 Cromo Actualizado: {login}"))
                 
