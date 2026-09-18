@@ -23,8 +23,13 @@ class CustomUserAdmin(UserAdmin):
         ('Perfil Personalizado', {
             'fields': ('nombre_mostrado', 'bio', 'avatar')
         }),
+        # ⚠️ Nacho, 18/09: quitado 'last_login_date' de esta lista (lo demás,
+        # de Pablo, igual). El campo ya no existe en el modelo, y el admin
+        # habría reventado al abrir la ficha de cualquier usuario. Si quieres
+        # el último acceso, Django lo trae en 'last_login' y sale arriba, en
+        # la sección de fechas importantes que pone UserAdmin.
         ('Estado y Actividad', {
-            'fields': ('estado', 'last_login_date', 'ultima_actividad', 'ultimo_regalo_diario')
+            'fields': ('estado', 'ultima_actividad', 'ultimo_regalo_diario')
         }),
     )
 

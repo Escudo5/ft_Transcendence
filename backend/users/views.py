@@ -75,8 +75,6 @@ def login_42_callback(request):
         if not id_42 or not username:
             return JsonResponse({"error": "La Intra no devolvió un perfil válido", "detalles": datos_perfil}, status=400)
 
-        hoy = timezone.now().date()  # Fecha de hoy sin horas, para el control de sobres
-
         # PASO 4: Buscamos al alumno por su id_42 (su "DNI" en la Intra, nunca cambia)
         usuario = CustomUser.objects.filter(id_42=id_42).first()
         creado = usuario is None
@@ -90,8 +88,6 @@ def login_42_callback(request):
             usuario = CustomUser(
                 id_42=id_42,
                 username=username,
-                elo=1000,               # ELO base para el juego de cartas
-                last_login_date=hoy,    # Su primer login con sobres es hoy
             )
             # Las cuentas que entran por 42 no tienen contraseña propia: así Django
             # la marca como "inutilizable" y nadie puede colarse por ese hueco
@@ -108,10 +104,12 @@ def login_42_callback(request):
         usuario.profile_image = datos_perfil.get("image", {}).get("versions", {}).get("medium")
         usuario.estado = 'online'  # Se acaba de conectar
 
-        # PASO 6: 🔄 Guardamos el día de esta conexión. El contador de sobres
-        # diarios reclamados ahora se lleva en la tabla UserPack (tarea de Pablo)
-        if not creado and usuario.last_login_date < hoy:
-            usuario.last_login_date = hoy
+        # PASO 6: 🗑️ Aquí se guardaba `last_login_date` (Nacho, 18/09).
+        # Solo se escribía: ninguna decisión del proyecto dependía de su
+        # valor, y Django ya trae `last_login`, que rellena él solo al hacer
+        # login() tres líneas más abajo. De hecho la exportación del RGPD ya
+        # usaba el de Django, no el nuestro. El regalo diario se lleva en
+        # `ultimo_regalo_diario`, que sí decide.
 
         usuario.save()  # Guardamos todo en PostgreSQL
 
@@ -175,7 +173,6 @@ def me(request):
         # front en la portada y en el ranking.
         'profile_image': u.foto,
         'tiene_avatar': bool(u.avatar),
-        'elo': u.elo,
         'estado': u.estado_real,
         'is_alumni': u.is_alumni,
         'sobres_disponibles_hoy': SOBRES_DIARIOS,
@@ -343,11 +340,7 @@ def _perfil_publico(usuario):
         'profile_image': usuario.foto,
         'tiene_avatar': bool(usuario.avatar),
         # 🏆 La puntuación del perfil sale de la colección (ver cards/rarezas.py).
-        # El 'elo' se sigue mandando porque el campo existe en la base y puede
-        # haber algo que lo lea, pero ya no lo enseña nadie: era un 1000 fijo
-        # que no movía nada.
         'puntos': stats['puntos'],
-        'elo': usuario.elo,
         'estado': usuario.estado_real,
         'is_alumni': usuario.is_alumni,
         'miembro_desde': usuario.date_joined.date().isoformat(),
@@ -631,7 +624,12 @@ def descargar_mis_datos(request):
             'foto_subida_por_ti': u.avatar.url if u.avatar else None,
             'id_42': u.id_42,
             'es_alumni': u.is_alumni,
-            'puntuacion_elo': u.elo,
+            # 🏆 Su puntuación de verdad, la de la colección. Antes aquí iba
+            # 'puntuacion_elo', que era un 1000 igual para todo el mundo: se
+            # exportaba un dato que no decía nada de esta persona y no se
+            # exportaba el único que sí. Sale de la misma función que el
+            # perfil, para que no haya dos cuentas distintas.
+            'puntos': _estadisticas_coleccion(u)['puntos'],
             'estado': u.estado_real,
             'alta': u.date_joined.isoformat(),
             'ultimo_acceso': u.last_login.isoformat() if u.last_login else None,
@@ -710,7 +708,6 @@ def list_users(request):
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'profile_image': user.foto,
-                'elo': user.elo,
                 'estado': user.estado_real,
                 'is_alumni': user.is_alumni,
             }
@@ -795,8 +792,6 @@ def register(request):
         username=_generar_username(nombre, email),
         email=email,
         first_name=nombre[:150],
-        elo=1000,
-        last_login_date=timezone.now().date(),
         estado='online',
     )
     usuario.set_password(password)  # 👈 aqui es donde se cifra
@@ -837,10 +832,7 @@ def login_email(request):
     if not usuario.is_active:
         return JsonResponse({'error': 'Esta cuenta está desactivada.'}, status=403)
 
-    hoy = timezone.now().date()
     usuario.estado = 'online'
-    if usuario.last_login_date < hoy:
-        usuario.last_login_date = hoy
     usuario.save()
 
     login(request, usuario, backend='django.contrib.auth.backends.ModelBackend')

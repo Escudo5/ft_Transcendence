@@ -75,7 +75,11 @@ class UserPack(models.Model):
 
     tipo_sobre = models.CharField(max_length=20, choices=TIPOS_SOBRE)
     cantidad = models.PositiveIntegerField(default=0)
-    last_daily = models.DateTimeField(null=True, blank=True)
+
+    # 🗑️ Aquí había `last_daily`, quitado el 18/09. Se escribía al entregar
+    # el regalo y NO lo leía nadie: quien decide si te toca regalo es
+    # `CustomUser.ultimo_regalo_diario` (ver cards/views.py). Dos campos
+    # para lo mismo, y uno de ellos solo escribía.
 
     class Meta:
         unique_together = ('user', 'tipo_sobre')

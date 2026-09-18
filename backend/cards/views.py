@@ -263,7 +263,6 @@ def reclamar_regalo_diario(request):
             user=usuario_bloqueado, tipo_sobre=TIPO_SOBRE_REGALO
         )
         pack.cantidad += SOBRES_REGALO_DIARIO
-        pack.last_daily = timezone.now()
         pack.save()
 
         usuario_bloqueado.ultimo_regalo_diario = timezone.localdate()
@@ -292,7 +291,8 @@ def ranking(request):
     delante en puntos. Lo que valen las cartas está en cards/rarezas.py.
 
     Antes había un campo 'elo' que no ordenaba nada porque era 1000 para todo
-    el mundo. Ya no se usa aquí.
+    el mundo. Se borró del proyecto el 18/09: no hay juego, y los puntos ya
+    hacían su trabajo mejor.
 
     ⚠️ TODO en UNA consulta, con anotaciones. Calcular los puntos en Python
     obligaría a recorrer el álbum de cada usuario: 50 consultas en vez de una.
@@ -339,7 +339,6 @@ def ranking(request):
             'cartas_con_repetidas': u.copias,
             'porcentaje': round(u.distintas / total_catalogo * 100, 1),
             'puntos': u.puntos,
-            'elo': u.elo,
             'soy_yo': u.pk == request.user.pk,
         })
 
