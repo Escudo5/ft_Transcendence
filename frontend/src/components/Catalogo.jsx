@@ -9,8 +9,12 @@ import { CLASE_RAREZA, RAREZAS } from "./rarezas";
 /*
 Mapeo global de rarezas a clases del sistema de diseño
 
-CLASE_RAREZA traduce los identificadores devueltos por el backend 
+CLASE_RAREZA traduce los identificadores devueltos por el backend
 (por ejemplo: "Junior", "Senior") a sus estilos CSS equivalentes ("common", "rare").
+
+⚠️ El diccionario NO se escribe aquí, se importa de rarezas.js, y es a
+propósito: esta llegó a ser la tercera copia del mismo dato. Al cambiar las
+rarezas, las tres se quedaron viejas a la vez y ninguna dio error.
 */
 const TIER_A_RAREZA = CLASE_RAREZA;
 
@@ -300,35 +304,26 @@ export default function Catalogo() {
           </div>
         ) : (
           /*
-          Contenedor Flexbox de la colección de cartas
+          Contenedor de la colección de cartas
 
-          display: flex junto con flexWrap: wrap ordenan horizontalmente las cartas.
-          justifyContent: flex-start empuja el contenido al origen inicial de la fila.
+          El ancho y el número de columnas los pone la clase .album-grid en
+          styles.css, y NO se escriben aquí a propósito (Nacho, 18/09): un
+          style en el JSX gana a cualquier regla del CSS, incluidas las
+          media queries, así que el diseño de móvil dejaba de funcionar.
+          Las 4 columnas que quería Konrad están puestas allí, con sus
+          escalones para tablet y móvil.
           */
-          <div 
-            className="album-grid" 
-            style={{ 
-              display: 'flex', 
-              flexWrap: 'wrap', 
-              gap: '1.5rem', 
-              justifyContent: 'flex-start' 
-            }}
-          >
+          <div className="album-grid">
             {currentCards.map((card) => (
               /*
               Componente animado individual de cada carta
 
               motion.article envuelve los datos de la carta con animaciones de entrada,
-              hover y tap mediante Framer Motion. El estilo inline fija el ancho relativo a 4 columnas.
+              hover y tap mediante Framer Motion.
               */
               <motion.article
                 key={card.id}
                 className={`card-item rarity-${card.rareza}`}
-                style={{
-                  width: 'calc(25% - 1.15rem)',
-                  minWidth: '220px',
-                  boxSizing: 'border-box'
-                }}
                 initial={{ opacity: 0, y: 24, scale: 0.94 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.38, type: 'spring', stiffness: 190, damping: 17 }}

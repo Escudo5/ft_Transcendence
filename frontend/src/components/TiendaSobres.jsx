@@ -294,41 +294,54 @@ function TiendaSobres() {
 
   // Asigna colores, bordes y sombras dinámicas según la rareza/categoría
   // Orden de exclusividad: Junior < Senior < Transcender < Legendario < Staff
+  // ⚠️ Nacho, 18/09: los COLORES vuelven a salir de styles.css.
+  //
+  // Konrad los había escrito a mano aquí, y tres de los cinco no coincidían
+  // con los del resto de la web: la misma carta salía dorada al abrir el
+  // sobre y ámbar en el catálogo, y el Staff rosa neón aquí y magenta allí.
+  //
+  // Es el mismo fallo que está contado en rarezas.js: el mismo dato en
+  // varios sitios se queda viejo a trozos y sin dar ningún error. Con
+  // var(--rarity-*) basta con tocar styles.css y cambia en todas partes.
+  //
+  // Los RGBA del brillo sí van a mano, porque box-shadow no puede sacar la
+  // transparencia de una variable sin color-mix(), y color-mix() es
+  // reciente y nos evalúan en Firefox. Cada uno es su var de al lado:
+  //     common #94a3b8 · rare #0284c7 · epic #a855f7
+  //     legendary #d97706 · staff #ec4899
+  // Si algún día se cambia un color, hay que cambiar también su rgba.
   const obtenerEstiloRareza = (rareza) => {
     switch (rareza) {
-      case 'staff': // 5. La más exclusiva (Rosa Neón con sombra intensa)
-        return { 
-          color: '#ff007f', 
-          border: '3px solid #ff007f', 
-          shadow: '0 0 30px rgba(255, 0, 127, 0.8), 0 0 10px rgba(255, 0, 127, 0.5)' 
+      case 'staff': // 5. La más exclusiva
+        return {
+          color: 'var(--rarity-staff)',
+          border: '3px solid var(--rarity-staff)',
+          shadow: '0 0 30px rgba(236, 72, 153, 0.8), 0 0 10px rgba(236, 72, 153, 0.5)'
         };
-      case 'legendary': // 4. Legendario (Dorado Intenso)
-        return { 
-          color: '#ffd700', 
-          border: '3px solid #ffd700', 
-          shadow: '0 0 25px rgba(255, 215, 0, 0.7)' 
+      case 'legendary': // 4. Legendario
+        return {
+          color: 'var(--rarity-legendary)',
+          border: '3px solid var(--rarity-legendary)',
+          shadow: '0 0 25px rgba(217, 119, 6, 0.7)'
         };
-      case 'epic':
-      case 'transcender': // 3. Transcender (Morado Violeta)
-        return { 
-          color: '#a855f7', 
-          border: '3px solid #a855f7', 
-          shadow: '0 0 20px rgba(168, 85, 247, 0.6)' 
+      case 'epic': // 3. Transcender
+        return {
+          color: 'var(--rarity-epic)',
+          border: '3px solid var(--rarity-epic)',
+          shadow: '0 0 20px rgba(168, 85, 247, 0.6)'
         };
-      case 'rare':
-      case 'senior': // 2. Senior (Azul)
-        return { 
-          color: '#0284c7', 
-          border: '3px solid #0284c7', 
-          shadow: '0 0 15px rgba(2, 132, 199, 0.5)' 
+      case 'rare': // 2. Senior
+        return {
+          color: 'var(--rarity-rare)',
+          border: '3px solid var(--rarity-rare)',
+          shadow: '0 0 15px rgba(2, 132, 199, 0.5)'
         };
-      case 'common':
-      case 'junior': // 1. Junior (Gris)
+      case 'common': // 1. Junior
       default:
-        return { 
-          color: '#9ca3af', 
-          border: '2px solid #9ca3af', 
-          shadow: '0 0 10px rgba(156, 163, 175, 0.3)' 
+        return {
+          color: 'var(--rarity-common)',
+          border: '2px solid var(--rarity-common)',
+          shadow: '0 0 10px rgba(148, 163, 184, 0.3)'
         };
     }
   };

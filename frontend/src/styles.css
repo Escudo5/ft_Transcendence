@@ -298,9 +298,20 @@ button, a, select {
   gap: var(--space-4);
 }
 
+/* Nacho, 18/09 (lo pidió Konrad, arreglado aquí en vez de en el JSX).
+ *
+ * Antes: repeat(auto-fit, minmax(250px, 1fr)). El problema que encontró
+ * Konrad es real: con auto-fit, si solo tienes UNA carta se estira hasta
+ * ocupar toda la pantalla y queda ridícula.
+ *
+ * Su arreglo iba en el style={{}} del JSX, y eso rompía el móvil: un
+ * estilo en línea gana a cualquier regla del CSS, así que la media query
+ * de abajo dejaba de aplicarse y las cartas se quedaban en 220px pegadas
+ * a la izquierda. Aquí se consigue lo mismo y las media queries siguen
+ * mandando. */
 .album-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-6);
 }
 
@@ -1077,13 +1088,19 @@ button, a, select {
    8. MEDIA QUERIES (web-layout-patterns)
    ========================================================================== */
 @media (max-width: 1024px) {
-  .team-grid {
+  /* Nacho, 18/09: se añade .album-grid a estos dos escalones. Antes no
+   * hacía falta porque auto-fit se apañaba solo; ahora que son 4 columnas
+   * fijas, sin esto saldrían 4 columnas apretadísimas en tablet. Mismo
+   * patrón que .team-grid, que ya bajaba 4 -> 3 -> 2 -> 1. */
+  .team-grid,
+  .album-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 768px) {
   .team-grid,
+  .album-grid,
   .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
