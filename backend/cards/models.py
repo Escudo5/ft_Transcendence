@@ -39,8 +39,6 @@ class Card(models.Model):
     #
     # `grade` va vacío y no nulo para no tener que preguntar por None en
     # todas partes: un piscinero o un dato incompleto se queda en "".
-    grade = models.CharField(max_length=30, blank=True, default='')
-    es_staff = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

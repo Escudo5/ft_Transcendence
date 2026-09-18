@@ -9,8 +9,8 @@ class CardAdmin(admin.ModelAdmin):
     # justo lo que hay que poder comprobar: la rareza se calcula con el
     # grade Y el nivel (ver cards/rarezas.py), así que si una carta parece
     # mal puesta, aquí se ve el porqué sin abrir la base de datos a mano.
-    list_display = ('id', 'login', 'title', 'tier', 'cursus_lvl', 'grade', 'es_staff', 'coalition')
-    list_filter = ('tier', 'grade', 'es_staff', 'coalition')
+    list_display = ('id', 'login', 'title', 'tier', 'cursus_lvl','eval_point','altarians','coalition')
+    list_filter = ('tier', 'coalition')
     search_fields = ('login', 'title') # Añade buscador por login y título
 
 
