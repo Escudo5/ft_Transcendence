@@ -97,7 +97,7 @@ function TiendaSobres() {
     login: c.login,
     nombre: c.title || c.login,
     foto: c.photo,
-    tier:c.tier,//Esto seria el nombre : "SENIOR", POR EJEMPLO
+    tier: c.tier, // Esto seria el nombre : "SENIOR", POR EJEMPLO
     rareza: TIER_A_RAREZA[c.tier] || 'common',
   });
 
@@ -238,17 +238,9 @@ function TiendaSobres() {
       setAbriendo(false);
     }
   };
-  
+
   // Array de control: registra qué carta está bocarriba (true) o bocabajo (false)
   const [cartasVolteadas, setCartasVolteadas] = useState([false, false, false, false, false]);
-
-  const INTEGRANTES = [
-    { login: "ksudyn", nombre: "Konrad", avatar: "💻", rareza: "legendary" },
-    { login: "pablalva", nombre: "Pablo", avatar: "⚡", rareza: "legendary" },
-    { login: "nmagro-r", nombre: "Nacho", avatar: "🔥", rareza: "epic" },
-    { login: "smarquez", nombre: "Sergio", avatar: "🛡️", rareza: "rare" },
-    { login: "osmunoz-", nombre: "Óscar", avatar: "⚔️", rareza: "common" },
-  ];
 
   const clickVolver = () => {
     navigate('/catalogo');
@@ -300,12 +292,44 @@ function TiendaSobres() {
     setFase('SELECCION');
   };
 
+  // Asigna colores, bordes y sombras dinámicas según la rareza/categoría
+  // Orden de exclusividad: Junior < Senior < Transcender < Legendario < Staff
   const obtenerEstiloRareza = (rareza) => {
     switch (rareza) {
-      case 'legendary': return { color: 'var(--rarity-legendary)', border: '3px solid var(--rarity-legendary)', shadow: '0 0 25px rgba(217, 119, 6, 0.6)' };
-      case 'epic': return { color: 'var(--rarity-epic)', border: '3px solid var(--rarity-epic)', shadow: '0 0 25px rgba(168, 85, 247, 0.6)' };
-      case 'rare': return { color: 'var(--rarity-rare)', border: '3px solid var(--rarity-rare)', shadow: '0 0 20px rgba(2, 132, 199, 0.5)' };
-      default: return { color: '#ffffff', border: '2px solid #ffffff', shadow: '0 4px 15px rgba(255, 255, 255, 0.2)' };
+      case 'staff': // 5. La más exclusiva (Rosa Neón con sombra intensa)
+        return { 
+          color: '#ff007f', 
+          border: '3px solid #ff007f', 
+          shadow: '0 0 30px rgba(255, 0, 127, 0.8), 0 0 10px rgba(255, 0, 127, 0.5)' 
+        };
+      case 'legendary': // 4. Legendario (Dorado Intenso)
+        return { 
+          color: '#ffd700', 
+          border: '3px solid #ffd700', 
+          shadow: '0 0 25px rgba(255, 215, 0, 0.7)' 
+        };
+      case 'epic':
+      case 'transcender': // 3. Transcender (Morado Violeta)
+        return { 
+          color: '#a855f7', 
+          border: '3px solid #a855f7', 
+          shadow: '0 0 20px rgba(168, 85, 247, 0.6)' 
+        };
+      case 'rare':
+      case 'senior': // 2. Senior (Azul)
+        return { 
+          color: '#0284c7', 
+          border: '3px solid #0284c7', 
+          shadow: '0 0 15px rgba(2, 132, 199, 0.5)' 
+        };
+      case 'common':
+      case 'junior': // 1. Junior (Gris)
+      default:
+        return { 
+          color: '#9ca3af', 
+          border: '2px solid #9ca3af', 
+          shadow: '0 0 10px rgba(156, 163, 175, 0.3)' 
+        };
     }
   };
 
@@ -424,7 +448,7 @@ function TiendaSobres() {
                   type: 'spring',
                   stiffness: 100,
                   damping: 14
-,                }}
+                }}
                 onClick={() => voltearCarta(index)}
                 style={{
                   width: '180px',
@@ -444,7 +468,7 @@ function TiendaSobres() {
                   animate={{ rotateY: estaVolteada ? 180 : 0 }}
                   transition={{ duration: 0.6, ease: 'easeInOut' }}
                 >
-                  {/* CARA A (BOCABAJO): Reverso común del juego */}
+                  {/* CARA A (BOCABAJO): Reverso adaptado con el color de su categoría */}
                   <div
                     style={{
                       position: 'absolute',
@@ -452,15 +476,15 @@ function TiendaSobres() {
                       height: '100%',
                       backfaceVisibility: 'hidden',
                       backgroundColor: 'var(--surface-raised)',
-                      border: '3px solid #ff9ffc',
+                      border: estiloRareza.border,
                       borderRadius: '12px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 4px 15px rgba(0,0,0,0.6)'
+                      boxShadow: estiloRareza.shadow
                     }}
                   >
-                    <div style={{ color: '#ff9ffc', fontWeight: 'bold', fontSize: '2rem', textShadow: '0 0 10px #ff9ffc' }}>
+                    <div style={{ color: estiloRareza.color, fontWeight: 'bold', fontSize: '2rem', textShadow: `0 0 10px ${estiloRareza.color}` }}>
                       42
                     </div>
                   </div>
