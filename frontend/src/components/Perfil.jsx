@@ -27,15 +27,16 @@ import { COLOR_RAREZA } from './rarezas';
 const AVATAR_MAX_MB = 2;
 const AVATAR_TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
 
+// ⚠️ Nacho, 18/09 (con el visto bueno de Konrad): quitado el estado
+// 'ingame'. El backend no lo escribía nunca porque no hay juego, y el
+// 18/09 se borró también del modelo. Solo se tocan estas dos líneas.
 const COLOR_ESTADO = {
   online: '#4ade80',
-  ingame: '#fbbf24',
   offline: '#94a3b8',
 };
 
 const TEXTO_ESTADO = {
   online: 'En línea',
-  ingame: 'Jugando',
   offline: 'Desconectado',
 };
 

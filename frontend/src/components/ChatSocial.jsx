@@ -11,9 +11,10 @@ import './Chat.css';
 
 const API = import.meta.env.VITE_API_URL || '/api';
 
+// ⚠️ Nacho, 18/09 (con el visto bueno de Konrad): quitado 'ingame', que el
+// backend no escribía nunca. Es la única línea que se toca de este fichero.
 const TEXTO_ESTADO = {
   online: 'En línea',
-  ingame: 'Jugando',
   offline: 'Desconectado',
 };
 
