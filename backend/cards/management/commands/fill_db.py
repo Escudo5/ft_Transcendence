@@ -370,9 +370,9 @@ class Command(BaseCommand):
                 'altarians': altarians,
                 'cursus_lvl': cursus_lvl,
                 'eval_point': eval_point,
+                # La rareza, ya decidida arriba con el grade y el nivel que
+                # acaba de devolver la API (ver cards/rarezas.py).
                 'tier': tier,
-                # 🎓 Nacho, 15/09: se guardan para que recalcular_rarezas
-                # pueda rehacer la rareza sin volver a pedirla a la API.
             }
         )
         if creada:

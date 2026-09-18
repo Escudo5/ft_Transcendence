@@ -26,19 +26,21 @@ class Card(models.Model):
     # existe desde hace días. Nunca dio error porque nadie lo comprobaba.
     tier = models.CharField(max_length=50, default=JUNIOR)
 
-    # 🎓 Nacho, 15/09: EL GRADE Y EL STAFF HAY QUE GUARDARLOS.
+    # 🗑️ Aquí estuvieron `grade` y `es_staff` entre el 15/09 y el 18/09.
+    # Los quitó Pablo y el equipo lo dio por bueno. Lo que hay que saber:
     #
-    # Desde que la rareza depende del grade y no solo del nivel, no basta
-    # con guardar `cursus_lvl`: sin el grade no se puede volver a calcular
-    # la rareza de una carta que ya está en la base.
+    # LA RAREZA SIGUE SALIENDO BIEN. `fill_db` y `login_card` cogen el grade
+    # de la API en el momento de la carga y llaman a `rareza_de(grade,
+    # nivel, es_staff)` (ver cards/rarezas.py). Lo que ya no se hace es
+    # GUARDARLO, porque en la web no se pinta en ningún sitio.
     #
-    # Y eso importa porque `recalcular_rarezas` existe justo para eso:
-    # poner al día las cartas guardadas SIN gastar peticiones de la API.
-    # Si el grade no estuviera aquí, cada vez que se toque un corte habría
-    # que volver a bajarse los 800 alumnos de la Intra.
-    #
-    # `grade` va vacío y no nulo para no tener que preguntar por None en
-    # todas partes: un piscinero o un dato incompleto se queda en "".
+    # ⚠️ EL PRECIO, para que nadie se lo encuentre por sorpresa: sin el
+    # grade guardado no se puede rehacer la rareza de las cartas que ya
+    # están en la base. Por eso el 18/09 se borró `recalcular_rarezas`, que
+    # existía justo para eso. Si algún día se mueve un corte de rareza
+    # (por ejemplo Legendario de 14 a 15), hay que volver a cargar el
+    # catálogo entero: ~824 alumnos, y el límite de la API son 1200
+    # peticiones por hora.
 
     created_at = models.DateTimeField(auto_now_add=True)
 
