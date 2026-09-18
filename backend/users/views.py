@@ -153,11 +153,15 @@ def me(request):
 
     u = request.user
 
-    # 🟢 Señal de vida. El front llama aquí al abrir cualquier página, así que
-    # es el sitio natural para anotar "esta persona sigue por aquí". De esto
-    # depende que tus amigos te vean en línea (ver estado_real en el modelo).
-    u.ultima_actividad = timezone.now()
-    u.save(update_fields=['ultima_actividad'])
+    # 🟢 La señal de vida ya NO se anota aquí (Nacho, 18/09).
+    #
+    # Estaba solo en esta vista, y el front la llama al abrir la página y
+    # poco más. Mientras tanto el chat pregunta cada 3 segundos sin marcar
+    # nada, así que a los 5 minutos aparecías desconectado escribiendo.
+    #
+    # Ahora lo hace users/middleware.py en TODAS las peticiones con sesión,
+    # con un freno de un minuto. Cuando esta vista llega, request.user ya
+    # trae la fecha nueva, así que el `estado_real` de abajo es correcto.
 
     return JsonResponse({
         'id': u.id,
