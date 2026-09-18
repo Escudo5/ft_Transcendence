@@ -10,8 +10,12 @@ import ElectricBorder from "./ElectricBorder";
 /*
 Mapeo global de rarezas a clases del sistema de diseño
 
-CLASE_RAREZA traduce los identificadores devueltos por el backend 
+CLASE_RAREZA traduce los identificadores devueltos por el backend
 (por ejemplo: "Junior", "Senior") a sus estilos CSS equivalentes ("common", "rare").
+
+⚠️ El diccionario NO se escribe aquí, se importa de rarezas.js, y es a
+propósito: esta llegó a ser la tercera copia del mismo dato. Al cambiar las
+rarezas, las tres se quedaron viejas a la vez y ninguna dio error.
 */
 const TIER_A_RAREZA = CLASE_RAREZA;
 
@@ -314,8 +318,17 @@ export default function Catalogo() {
     /*
     Aplicación condicional del marco animado ElectricBorder
 
-    Si la carta pertenece al nivel 'Staff', se envuelve con el componente
-    ElectricBorder configurado con un todo cian brillante (#7df9ff) y bordes de 16px.
+    Si la carta es de rareza Staff, se envuelve con ElectricBorder. Las Staff
+    van distintas al resto a propósito: son las más raras del álbum.
+
+    ⚠️ Nacho, 18/09, dos restos de copiar y pegar arreglados:
+      - Este comentario decía "cian brillante (#7df9ff)" y el color que se
+        pasa es magenta. El bueno es el magenta: es el de la rareza Staff
+        en todo el proyecto (--rarity-staff en styles.css).
+      - Se le pasaba thickness={2}, y ElectricBorder NO acepta esa
+        propiedad (sus props son color, speed, chaos, borderRadius,
+        className y style). React la ignoraba en silencio, así que quien
+        la leyera creería que el grosor se controla desde aquí.
     */
     if (isStaff) {
       return (
@@ -324,7 +337,6 @@ export default function Catalogo() {
           color="#ec4899"
           speed={1}
           chaos={0.2}
-          thickness={2}
           borderRadius={16}
         >
           {cardMarkup}
