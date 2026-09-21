@@ -385,12 +385,20 @@ def _mejor_carta_del_catalogo():
     if carta is None:
         return None
 
+    # ⚠️ Nacho, 21/09: aquí se mandaba también la coalición y se ha quitado.
+    # El equipo decidió que no salga en el tablón de la portada, que es el
+    # único sitio que pide este dato, así que mandarla era cargar la
+    # respuesta con algo que nadie mira. Si algún día se quiere enseñar, es
+    # una línea aquí y otra en CartaMini (Home.jsx).
+    #
+    # Se devuelven los mismos campos que `carta_mas_rara` del perfil a
+    # propósito: las dos cartas van una al lado de la otra en el tablón y
+    # tienen que poder pintarse con el mismo componente.
     return {
         'login': carta.login,
         'tier': carta.tier,
         'nivel': carta.cursus_lvl,
         'photo': carta.photo,
-        'coalition': carta.coalition,
     }
 
 
