@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import PieLegal from './PieLegal';
 import ContadorMensajes from './ContadorMensajes';
 import { Avatar, Badge, Button, Card, Modal } from './ui';
+import { COLOR_RAREZA } from './rarezas';
 
 // 👥 Tarjetas base de presentación del equipo de desarrollo
 const INTEGRANTES_BASE = [
@@ -38,6 +39,96 @@ function ColumnaTablon({ color, titulo, children }) {
     <div style={{ ...estilosTablon.columna, borderLeftColor: color }}>
       <h4 style={estilosTablon.titulo}>{titulo}</h4>
       {children}
+    </div>
+  );
+}
+
+/*
+🍩 EL ANILLO DE PROGRESO (Nacho, 21/09)
+
+Un SVG a mano, sin ninguna librería. Son treinta líneas y evita meter una
+dependencia entera para dibujar un círculo.
+
+CÓMO FUNCIONA, que parece magia y no lo es: se dibuja el círculo completo y
+se le pinta la línea a trozos con `strokeDasharray`. El primer número es
+cuánto se pinta y el segundo cuánto se salta. Si la vuelta entera mide
+2·π·r, pintando ese largo por el porcentaje sale justo el arco que toca.
+
+El -90 de la rotación es para que empiece arriba y no a la derecha, que es
+como la gente espera leer un progreso.
+
+Va con role y aria-label porque un dibujo no lo lee nadie con un lector de
+pantalla: sin eso, para quien no ve la imagen esta columna estaría vacía.
+*/
+function AnilloProgreso({ porcentaje, color = 'var(--accent)', tamano = 92 }) {
+  const seguro = Math.max(0, Math.min(100, Number(porcentaje) || 0));
+  const grosor = 9;
+  const radio = (tamano - grosor) / 2;
+  const vuelta = 2 * Math.PI * radio;
+  const pintado = (vuelta * seguro) / 100;
+
+  return (
+    <svg
+      width={tamano}
+      height={tamano}
+      viewBox={`0 0 ${tamano} ${tamano}`}
+      role="img"
+      aria-label={`Llevas el ${seguro}% del álbum`}
+      style={{ display: 'block' }}
+    >
+      {/* El carril de atrás: la vuelta entera, apagada */}
+      <circle
+        cx={tamano / 2} cy={tamano / 2} r={radio}
+        fill="none" stroke="var(--border-default)" strokeWidth={grosor}
+      />
+      {/* Y encima, el trozo conseguido */}
+      <circle
+        cx={tamano / 2} cy={tamano / 2} r={radio}
+        fill="none" stroke={color} strokeWidth={grosor} strokeLinecap="round"
+        strokeDasharray={`${pintado} ${vuelta - pintado}`}
+        transform={`rotate(-90 ${tamano / 2} ${tamano / 2})`}
+      />
+      <text
+        x="50%" y="50%" textAnchor="middle" dominantBaseline="central"
+        fill="var(--text-primary)"
+        style={{ fontFamily: 'var(--font-heading)', fontSize: '1.05rem', fontWeight: 800 }}
+      >
+        {seguro}%
+      </text>
+    </svg>
+  );
+}
+
+/*
+🎴 UNA CARTA EN PEQUEÑO, con su foto.
+
+Mismo aspecto que "tu carta más rara" del perfil (foto de 54px redondeada y
+la rareza en su color) para que las dos pantallas se parezcan. El color sale
+de COLOR_RAREZA, que es el diccionario de rarezas.js: no se escribe aquí
+ningún color a mano.
+*/
+function CartaMini({ carta }) {
+  if (!carta) return null;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+      {carta.photo ? (
+        <img
+          src={carta.photo}
+          alt={carta.login}
+          style={{ width: '54px', height: '54px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }}
+        />
+      ) : (
+        <div style={{ width: '54px', height: '54px', borderRadius: '8px', background: 'var(--surface-overlay)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>👤</div>
+      )}
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{carta.login}</div>
+        <div style={{ color: COLOR_RAREZA[carta.tier] || 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 700 }}>
+          {carta.tier}
+        </div>
+        <div style={{ fontSize: '0.8rem' }}>nivel {carta.nivel}</div>
+      </div>
     </div>
   );
 }
@@ -286,12 +377,14 @@ function Home() {
           {/* ── 1. TU PROGRESO ───────────────────────────────────────── */}
           <ColumnaTablon color="var(--accent)" titulo="Tu progreso">
             {tablon?.coleccion ? (
-              <>
-                <p style={estilosTablon.cifra}>{tablon.coleccion.porcentaje} %</p>
-                <p>{tablon.coleccion.cartas_distintas} de {tablon.coleccion.cartas_en_catalogo} cartas</p>
-                <p>{(tablon.puntos ?? 0).toLocaleString('es-ES')} puntos</p>
-                {tablon.posicion && <p>Vas el <strong>#{tablon.posicion}</strong> del ranking</p>}
-              </>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+                <AnilloProgreso porcentaje={tablon.coleccion.porcentaje} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ margin: 0 }}>{tablon.coleccion.cartas_distintas} de {tablon.coleccion.cartas_en_catalogo}</p>
+                  <p style={{ margin: 0 }}>{(tablon.puntos ?? 0).toLocaleString('es-ES')} puntos</p>
+                  {tablon.posicion && <p style={{ margin: 0 }}>Vas el <strong>#{tablon.posicion}</strong></p>}
+                </div>
+              </div>
             ) : <p>…</p>}
           </ColumnaTablon>
 
@@ -299,9 +392,8 @@ function Home() {
           <ColumnaTablon color="var(--rarity-legendary)" titulo="La carta más alta que existe">
             {tablon?.cartaMasAlta ? (
               <>
-                <p style={estilosTablon.cifra}>{tablon.cartaMasAlta.login}</p>
-                <p>{tablon.cartaMasAlta.tier} · nivel {tablon.cartaMasAlta.nivel}</p>
-                <p>{tablon.cartaMasAlta.coalition}</p>
+                <CartaMini carta={tablon.cartaMasAlta} />
+                <p style={{ marginTop: '0.4rem' }}>{tablon.cartaMasAlta.coalition}</p>
               </>
             ) : <p>…</p>}
           </ColumnaTablon>
@@ -309,10 +401,7 @@ function Home() {
           {/* ── 3. LA MEJOR QUE TIENES TÚ ─────────────────────────────── */}
           <ColumnaTablon color="var(--rarity-epic)" titulo="La más alta que tienes">
             {tablon?.miCartaMasAlta ? (
-              <>
-                <p style={estilosTablon.cifra}>{tablon.miCartaMasAlta.login}</p>
-                <p>{tablon.miCartaMasAlta.tier} · nivel {tablon.miCartaMasAlta.nivel}</p>
-              </>
+              <CartaMini carta={tablon.miCartaMasAlta} />
             ) : (
               /* Sin cartas todavía no es un error: es que aún no ha abierto
                  ningún sobre. Se le dice qué hacer en vez de dejar un hueco. */
