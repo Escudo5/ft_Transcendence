@@ -274,6 +274,57 @@ class Command(BaseCommand):
         #
         # Si alguien vuelve a añadir un filtro aquí, que sea a sabiendas.
 
+        # 🚫 NIVEL 0: NO SE HACE CARTA (decisión del equipo, 21/09)
+        #
+        # POR QUÉ: en el álbum apareció `madridqa3`, que no es una persona.
+        # Es una cuenta de pruebas del campus (qa = quality assurance), con el
+        # logo de 42 de foto. Se coló porque pasa los tres filtros de arriba:
+        # no lleva "bot" en el nombre, tiene coalición de cursus (Marventis) y
+        # la Intra NO la marca como cuenta de staff. Para la API es un alumno
+        # normal.
+        #
+        # POR QUÉ ESTE CORTE Y NO UNA LISTA NEGRA: una lista con los logins
+        # conocidos hay que ir manteniéndola a mano y siempre se escapa el
+        # siguiente (madridqa4...). El nivel 0 los caza a todos y se mantiene
+        # solo.
+        #
+        # Y NO DEJA FUERA A NADIE DE VERDAD: quien acaba de entrar al tronco
+        # común tendrá su carta en la siguiente carga, en cuanto entregue su
+        # primer proyecto y suba de 0. Es lo mismo que ya se decidió con los
+        # recién salidos de la piscina: una carta de quien no ha empezado no
+        # cuenta nada.
+        #
+        # COMPROBADO antes de ponerlo: de las 824 cartas del catálogo, la
+        # ÚNICA con nivel 0 era madridqa3. Este filtro no se lleva a nadie más
+        # por delante.
+        #
+        # Va aquí y no más arriba a propósito: después del borrado de los que
+        # ya no están (para que a esos se les siga limpiando la carta) y ANTES
+        # de `_consultar_perfil_extendido`, que es una petición a la API. Así
+        # cada cuenta que se salta también ahorra una petición.
+        if nivel_cursus <= 0:
+            self.stdout.write(self.style.WARNING(
+                f"   ⏩ Saltando a {login_alumno} (nivel 0: aún no ha empezado "
+                f"o es una cuenta de pruebas)"))
+
+            # Y si ya tenía carta de una carga anterior, se le quita. Mismo
+            # criterio que el borrado de arriba (Pablo, 16/09): al borrarla
+            # desaparece también de los álbumes y de los intercambios, por las
+            # relaciones en cascada. Por eso se cuenta ANTES a cuánta gente
+            # afecta y se dice en voz alta.
+            #
+            # ⚠️ Esto solo puede pasarle a una cuenta que YA estaba a nivel 0
+            # cuando se cargó, porque el nivel no baja nunca. O sea: a las
+            # cuentas de pruebas, no a un alumno que fuera avanzando.
+            carta = Card.objects.filter(login=login_alumno).first()
+            if carta:
+                cuantos = carta.poseedores.count()
+                carta.delete()
+                self.stdout.write(self.style.ERROR(
+                    f"    🗑️  Se ha eliminado la carta previa de {login_alumno} "
+                    f"de la base de datos"
+                    + (f" · la tenían {cuantos} personas" if cuantos else "")))
+            return
 
         url_foto = d["foto"]
         puntos_eval = d["puntos"]
