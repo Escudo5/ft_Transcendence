@@ -117,6 +117,42 @@ async function obtenerCsrfToken(apiBaseUrl) {
   return data.csrfToken;
 }
 
+/*
+🔗 EL BOTÓN QUE LLEVA A SU PERFIL DE LA INTRA (Nacho, 21/09)
+
+La dirección se arma con el login, que es exactamente el nombre de usuario
+de quien entró con 42: https://profile.intra.42.fr/users/<login>
+
+⚠️ SOLO SALE SI ESA CUENTA VINO DE 42 (`es_de_42`, que manda el backend).
+Quien se registra con correo tiene un nombre inventado por nosotros, y ese
+perfil no existe en la Intra: el botón llevaría a un 404. Antes que un botón
+que engaña, ninguno.
+
+Va como <a> y no como <button> a propósito: así funciona el clic central, el
+"abrir en pestaña nueva" y el teclado, que es lo que la gente espera de un
+enlace. Lleva las clases de botón del sistema de diseño para que se vea
+igual que sus vecinos.
+
+`rel="noopener noreferrer"` no es decoración: sin `noopener`, la página que
+se abre puede manipular la nuestra a través de window.opener.
+*/
+function BotonIntra({ login, esDe42 }) {
+  if (!esDe42 || !login) return null;
+
+  return (
+    <a
+      className="ui-button ui-button-secondary"
+      href={`https://profile.intra.42.fr/users/${encodeURIComponent(login)}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={`Abrir el perfil de ${login} en la Intra de 42`}
+      style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+    >
+      Intra42 ↗
+    </a>
+  );
+}
+
 // LÓGICA DE CARGA: Pide la información del usuario al servidor
 function usePerfilData(login, apiBaseUrl) {
   const [perfil, setPerfil] = useState(null);
@@ -420,6 +456,9 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
               Eliminar amigo
             </SecondaryButton>
           )}
+
+          {/* 🔗 Al lado del de amistad, el que lleva a su Intra. */}
+          <BotonIntra login={perfil.username} esDe42={perfil.es_de_42} />
         </div>
       )}
 
@@ -431,7 +470,11 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
               <SecondaryButton onClick={() => setEditando(false)} disabled={guardando}>Cancelar</SecondaryButton>
             </>
           ) : (
-            <Button onClick={iniciarEdicion}>✏️ Editar perfil</Button>
+            <>
+              <Button onClick={iniciarEdicion}>✏️ Editar perfil</Button>
+              {/* 🔗 En tu propio perfil también: es tu Intra. */}
+              <BotonIntra login={perfil.username} esDe42={perfil.es_de_42} />
+            </>
           )}
         </div>
       )}

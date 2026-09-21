@@ -343,6 +343,18 @@ def _perfil_publico(usuario):
         'puntos': stats['puntos'],
         'estado': usuario.estado_real,
         'is_alumni': usuario.is_alumni,
+        # 🔗 Nacho, 21/09: ¿esta cuenta entró con 42?
+        #
+        # Hace falta para el botón que lleva a su perfil de la Intra: esa
+        # dirección se arma con el login, y SOLO vale para quien entró por
+        # 42, porque ahí el username ES su login de la Intra. Quien se
+        # registra con correo tiene un nombre inventado por nosotros
+        # (_generar_username), y ese perfil no existe en la Intra.
+        #
+        # Va el sí/no y NO el id_42: el número es dato privado y por eso no
+        # sale de aquí. Saber que alguien entró con 42 no revela nada que no
+        # se vea ya en su propio nombre de usuario.
+        'es_de_42': usuario.id_42 is not None,
         'miembro_desde': usuario.date_joined.date().isoformat(),
         'coleccion': stats,
         'logros': _logros(usuario, stats),
