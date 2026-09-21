@@ -832,6 +832,12 @@ button, a, select {
 .rarity-rare .card-artwork { background: var(--rarity-rare-bg); }
 .rarity-epic .card-artwork { background: var(--rarity-epic-bg); }
 .rarity-legendary .card-artwork { background: var(--rarity-legendary-bg); }
+/* Nacho, 21/09: faltaba la de Staff, igual que pasaba con .ui-badge-staff.
+ * La variable --rarity-staff-bg ya existía desde el 15/09 (línea 69), pero
+ * no había ninguna regla que la usara, así que el fondo de la foto en las
+ * cartas de Staff se quedaba sin color mientras las otras cuatro sí lo
+ * tenían. No daba error: simplemente no se aplicaba nada. */
+.rarity-staff .card-artwork { background: var(--rarity-staff-bg); }
 
 .artwork-id {
   position: absolute;
