@@ -128,6 +128,10 @@ function CartaMini({ carta }) {
           {carta.tier}
         </div>
         <div style={{ fontSize: '0.8rem' }}>nivel {carta.nivel}</div>
+        {/* ⚠️ Nacho, 21/09: aquí llegó a salir la coalición y el equipo
+            decidió quitarla de las dos cartas del tablón. Se pinta con este
+            componente y no en cada columna a mano, así que las dos enseñan
+            lo mismo por construcción y no se pueden descuadrar. */}
       </div>
     </div>
   );
@@ -390,12 +394,7 @@ function Home() {
 
           {/* ── 2. LA MEJOR CARTA QUE EXISTE ──────────────────────────── */}
           <ColumnaTablon color="var(--rarity-legendary)" titulo="La carta más alta que existe">
-            {tablon?.cartaMasAlta ? (
-              <>
-                <CartaMini carta={tablon.cartaMasAlta} />
-                <p style={{ marginTop: '0.4rem' }}>{tablon.cartaMasAlta.coalition}</p>
-              </>
-            ) : <p>…</p>}
+            {tablon?.cartaMasAlta ? <CartaMini carta={tablon.cartaMasAlta} /> : <p>…</p>}
           </ColumnaTablon>
 
           {/* ── 3. LA MEJOR QUE TIENES TÚ ─────────────────────────────── */}
