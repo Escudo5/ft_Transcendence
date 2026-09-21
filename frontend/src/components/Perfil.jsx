@@ -378,16 +378,48 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
         <p style={estilos.bioVacia}>Todavía no has escrito nada sobre ti.</p>
       ) : null}
 
+      {/* 🤝 EL BOTÓN DE AMISTAD, SEGÚN CÓMO ESTÉIS (Nacho, 21/09)
+        *
+        * El backend devuelve en `amistad` uno de estos cuatro (el quinto,
+        * 'yo', no llega aquí porque este bloque solo sale en perfiles
+        * ajenos). Están LOS CUATRO a propósito: si falta alguno, el botón
+        * desaparece sin explicación y parece que la web se ha roto.
+        *
+        *   ninguna   -> no hay nada: se le puede pedir
+        *   enviada   -> se la mandaste tú y está esperando respuesta
+        *   recibida  -> te la mandó él: aceptar o rechazar
+        *   amigos    -> ya lo sois: se puede deshacer
+        *
+        * ⚠️ El caso 'enviada' NO pintaba nada hasta el 21/09. Pedías
+        * amistad, el botón desaparecía y no salía nada en su lugar: parecía
+        * que no se había enviado y la gente lo intentaba otra vez. Ahora
+        * sale apagado y dice que está esperando. */}
       {!perfil.es_mi_perfil && perfil.amistad && (
-        <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.3rem' }}>
-          {perfil.amistad === 'ninguna' && <Button onClick={() => accionAmistad('pedir')} disabled={enviandoAmistad}>🤝 Añadir amigo</Button>}
+        <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.3rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {perfil.amistad === 'ninguna' && (
+            <Button onClick={() => accionAmistad('pedir')} disabled={enviandoAmistad}>
+              🤝 Solicitar amistad
+            </Button>
+          )}
+          {perfil.amistad === 'enviada' && (
+            <>
+              <SecondaryButton disabled>⏳ Solicitud enviada</SecondaryButton>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                Esperando a que la acepte.
+              </span>
+            </>
+          )}
           {perfil.amistad === 'recibida' && (
             <>
               <Button onClick={() => accionAmistad('aceptar')} disabled={enviandoAmistad}>Aceptar</Button>
               <SecondaryButton onClick={() => accionAmistad('rechazar')} disabled={enviandoAmistad}>Rechazar</SecondaryButton>
             </>
           )}
-          {perfil.amistad === 'amigos' && <SecondaryButton onClick={() => accionAmistad('eliminar')} disabled={enviandoAmistad}>Eliminar amigo</SecondaryButton>}
+          {perfil.amistad === 'amigos' && (
+            <SecondaryButton onClick={() => accionAmistad('eliminar')} disabled={enviandoAmistad}>
+              Eliminar amigo
+            </SecondaryButton>
+          )}
         </div>
       )}
 
