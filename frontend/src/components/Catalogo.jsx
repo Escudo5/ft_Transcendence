@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Badge, TextField } from "./ui";
+import { Badge, Button, Modal, SecondaryButton, TextField } from "./ui";
 import ModalContratos, { BotonContratos } from "./Contratos";
 import BotonAbrirSobres from "./BotonAbrirSobres";
 import { CLASE_RAREZA, RAREZAS } from "./rarezas";
@@ -39,6 +39,129 @@ Invierte el array exportado de rarezas sin alterar la referencia original,
 utilizado para poblar el selector de filtros y el criterio de ordenación.
 */
 const TIERS = [...RAREZAS].reverse();
+
+/*
+🔍 EL DETALLE DE UNA CARTA (Nacho, 21/09)
+
+Se abre al pinchar una carta del álbum y enseña sus datos en grande, con un
+botón para ir al perfil de esa persona en la web.
+
+Reutiliza el <Modal> del sistema de diseño (ui.jsx) en vez de hacer uno
+nuevo: ese ya cierra con Escape y al pinchar fuera, y lleva los avisos para
+lectores de pantalla. Hacer otro sería repetir trabajo y quedarían dos
+ventanas que se comportan distinto.
+
+⚠️ POR QUÉ EL BOTÓN DE PERFIL NO SIEMPRE SE PUEDE PULSAR:
+
+El catálogo son TODOS los alumnos del campus (~824 cartas), pero perfil en
+nuestra web solo tiene quien se haya registrado. O sea que para casi todas
+las cartas ese perfil no existe, y el botón llevaría a un "no existe ningún
+usuario llamado X".
+
+Así que se mira antes quién está registrado (`registrados`) y, si no lo
+está, en vez del botón se dice que esa persona todavía no está en la web.
+Es más honesto que dejar pulsar algo que no lleva a ningún sitio.
+*/
+function ModalCarta({ carta, registrados, onCerrar }) {
+  const navigate = useNavigate();
+
+  if (!carta) return null;
+
+  // El mismo salto que usa el chat para ir a un perfil (ChatSocial.jsx:392).
+  // No es un endpoint del backend: es una ruta de la propia web, la que
+  // declara App.jsx como "/perfil/:login".
+  const visitarPerfil = () => navigate(`/perfil/${carta.login}`);
+
+  // `registrados` puede llegar vacío mientras se está cargando; en ese caso
+  // no se promete nada y el botón queda apagado hasta que llegue la lista.
+  const tienePerfil = registrados.has(carta.login);
+  const logoCoalicion = LOGOS_COALICIONES[carta.coalicion.toLowerCase()];
+
+  return (
+    <Modal open onClose={onCerrar} labelledBy="titulo-carta">
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          {logoCoalicion && (
+            <img
+              src={logoCoalicion}
+              alt={carta.coalicion}
+              title={carta.coalicion}
+              style={{ width: "34px", height: "34px", objectFit: "contain" }}
+            />
+          )}
+          <h2 id="titulo-carta" style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: "1.4rem" }}>
+            {carta.login}
+          </h2>
+          <Badge tone={carta.rareza}>{carta.tier.toUpperCase()}</Badge>
+        </div>
+
+        {carta.foto ? (
+          <img
+            src={carta.foto}
+            alt={`Foto de ${carta.login}`}
+            style={{
+              width: "100%", maxHeight: "260px", objectFit: "cover",
+              borderRadius: "12px", border: "2px solid var(--border-default)",
+            }}
+          />
+        ) : (
+          <div style={{ fontSize: "4rem", textAlign: "center" }}>👤</div>
+        )}
+
+        {/* El título solo se enseña si es de verdad: cuando alguien no ha
+            elegido ninguno, el backend guarda el login, y repetirlo aquí
+            debajo del nombre sería ruido. */}
+        {carta.titulo && carta.titulo !== carta.login && (
+          <p style={{ margin: 0, color: "var(--text-secondary)", fontStyle: "italic" }}>
+            {carta.titulo}
+          </p>
+        )}
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
+          <Dato etiqueta="Nivel" valor={carta.nivel} />
+          <Dato etiqueta="Coalición" valor={carta.coalicion} />
+          <Dato etiqueta="Evaluaciones" valor={carta.evaluaciones} />
+          <Dato etiqueta="Altarians" valor={carta.altarians} />
+        </div>
+
+        {carta.cantidad > 1 && (
+          <p style={{ margin: 0, textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+            Tienes <strong>{carta.cantidad}</strong> copias de esta carta
+          </p>
+        )}
+
+        <div style={{ display: "flex", gap: "0.7rem", justifyContent: "center", flexWrap: "wrap" }}>
+          <SecondaryButton onClick={onCerrar}>Cerrar</SecondaryButton>
+          {tienePerfil ? (
+            <Button onClick={visitarPerfil}>Ver su perfil</Button>
+          ) : (
+            <span style={{ alignSelf: "center", color: "var(--text-secondary)", fontSize: "0.82rem" }}>
+              Todavía no se ha registrado en la web
+            </span>
+          )}
+        </div>
+
+      </div>
+    </Modal>
+  );
+}
+
+/* Una cifra con su etiqueta, para la rejilla de datos del pop-up. */
+function Dato({ etiqueta, valor }) {
+  return (
+    <div style={{
+      background: "var(--surface-overlay)",
+      border: "1px solid var(--border-default)",
+      borderRadius: "10px",
+      padding: "0.6rem",
+      textAlign: "center",
+    }}>
+      <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, color: "var(--accent)" }}>{valor}</div>
+      <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", textTransform: "uppercase" }}>{etiqueta}</div>
+    </div>
+  );
+}
 
 export default function Catalogo() {
   /*
@@ -81,6 +204,16 @@ export default function Catalogo() {
   */
   const [contratosAbierto, setContratosAbierto] = useState(false);
   const [refrescoAlbum, setRefrescoAlbum] = useState(0);
+
+  /*
+  🔍 El pop-up del detalle de una carta (Nacho, 21/09)
+
+  `cartaAbierta` guarda la carta que se está mirando, o null si no hay
+  ninguna. `registrados` son los logins que SÍ tienen perfil en nuestra web:
+  hace falta para saber si el botón "Ver su perfil" lleva a algún sitio.
+  */
+  const [cartaAbierta, setCartaAbierta] = useState(null);
+  const [registrados, setRegistrados] = useState(new Set());
 
   /*
   Petición remota para la carga del álbum de cartas
@@ -129,6 +262,42 @@ export default function Catalogo() {
     }
     cargarAlbum();
   }, [apiBaseUrl, refrescoAlbum]);
+
+  /*
+  ¿Cuáles de las personas de tu álbum están registradas en la web?
+
+  Se pregunta UNA vez, cuando el álbum ya está cargado, y se pregunta solo
+  por los logins que tienes: /users/list/ acepta filtrarlos, así que no se
+  trae la lista entera de usuarios para nada.
+
+  Si esto falla no se rompe la pantalla: `registrados` se queda vacío y el
+  pop-up simplemente no ofrece el botón de perfil. Es peor no poder ir al
+  perfil que quedarse sin catálogo.
+  */
+  useEffect(() => {
+    if (album.length === 0) return;
+    let cancelado = false;
+
+    async function mirarQuienEstaEnLaWeb() {
+      try {
+        const logins = [...new Set(album.map((c) => c.login))].filter(Boolean);
+        const res = await fetch(
+          `${apiBaseUrl}/users/list/?logins=${encodeURIComponent(logins.join(","))}`,
+          { credentials: "include" },
+        );
+        if (!res.ok) return;
+        const datos = await res.json();
+        if (cancelado) return;
+        setRegistrados(new Set((datos.users || []).map((u) => u.username)));
+      } catch (e) {
+        console.error("No se ha podido saber quién está registrado:", e);
+      }
+    }
+    mirarQuienEstaEnLaWeb();
+
+    // Si sales del catálogo antes de que conteste, no intentamos pintar nada.
+    return () => { cancelado = true; };
+  }, [album, apiBaseUrl]);
 
   /*
   Restablecimiento de página en búsquedas activas
@@ -216,6 +385,23 @@ export default function Catalogo() {
       <motion.article
         key={card.id}
         className={`card-item rarity-${card.rareza}`}
+        /* 🔍 Nacho, 21/09: pinchar la carta abre su detalle.
+         *
+         * Va con role, tabIndex y onKeyDown a propósito: un <article> no se
+         * puede enfocar ni pulsar con el teclado, así que sin esto la
+         * función solo existiría para quien use el ratón. Enter y Espacio
+         * son las dos teclas que el navegador usa para "pulsar". */
+        role="button"
+        tabIndex={0}
+        aria-label={`Ver el detalle de la carta de ${card.login}`}
+        style={{ cursor: "pointer" }}
+        onClick={() => setCartaAbierta(card)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();   // si no, el Espacio hace bajar la página
+            setCartaAbierta(card);
+          }
+        }}
         initial={{ opacity: 0, y: 24, scale: 0.94 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.38, type: "spring", stiffness: 190, damping: 17 }}
@@ -477,6 +663,14 @@ export default function Catalogo() {
       )}
 
       {/* Modal global del sistema de contratos */}
+      {/* 🔍 El detalle de la carta que se haya pinchado. Se pinta siempre y
+          él decide si sale o no: si no hay carta abierta, devuelve null. */}
+      <ModalCarta
+        carta={cartaAbierta}
+        registrados={registrados}
+        onCerrar={() => setCartaAbierta(null)}
+      />
+
       <ModalContratos
         isOpen={contratosAbierto}
         onClose={() => setContratosAbierto(false)}
