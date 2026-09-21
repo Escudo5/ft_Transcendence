@@ -68,6 +68,33 @@ class Command(BaseCommand):
         grade = d["grade"]
         blackhole = d["fin"] is not None
 
+        # 🚫 NIVEL 0: NO SE HACE CARTA (decisión del equipo, 21/09)
+        #
+        # El mismo corte que hay en fill_db, y tiene que estar en los DOS: si
+        # solo estuviera allí, la misma cuenta que el volcado masivo descarta
+        # entraría por aquí en cuanto alguien iniciara sesión, y el catálogo
+        # diría una cosa distinta según por dónde hubiera entrado cada carta.
+        #
+        # El caso que lo motivó: `madridqa3`, una cuenta de pruebas del campus
+        # (qa = quality assurance) con el logo de 42 de foto. Pasa todos los
+        # demás filtros porque para la Intra es un alumno normal: tiene cursus,
+        # tiene coalición de verdad y no está marcada con `staff?`.
+        #
+        # ⚠️ LO QUE ESTO SIGNIFICA, para que nadie se sorprenda: alguien que
+        # acaba de entrar al tronco común y todavía está a nivel 0 se queda
+        # SIN carta hasta que entregue su primer proyecto. Es a propósito y es
+        # el mismo criterio que ya se tomó con los recién salidos de la
+        # piscina: una carta de quien no ha empezado no cuenta nada. En cuanto
+        # suba de 0, la siguiente pasada se la crea.
+        #
+        # Va antes de pedir las coaliciones, que es una petición a la API: así
+        # cada cuenta que se salta también ahorra una petición.
+        if lvl <= 0:
+            self.stdout.write(self.style.WARNING(
+                f"   ⏩ la cuenta de {login} está a nivel 0 (aún no ha empezado "
+                f"o es una cuenta de pruebas): no se le hace carta."))
+            return
+
         # 🎴 CAMBIO (Nacho, 15/09): la rareza sale del grade Y del nivel.
         # Antes salía solo del nivel, y había cadetes de nivel 11 saliendo
         # como Transcender sin haber pasado el tronco común (acastrov). El
