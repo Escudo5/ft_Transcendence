@@ -18,6 +18,30 @@ function getUserImage(userData) {
   return userData?.profile_image || userData?.photo || userData?.avatar || null;
 }
 
+/* 📊 Una columna del tablón de estadísticas: el filete de color, el título y
+ * lo que le metas dentro. Está aparte para que las cuatro se vean iguales y
+ * cambiar el aspecto sea tocar un sitio, no cuatro. */
+const estilosTablon = {
+  columna: { borderLeft: '2px solid', paddingLeft: '0.75rem' },
+  titulo: { color: 'var(--text-primary)', marginBottom: '0.5rem' },
+  cifra: {
+    fontFamily: 'var(--font-heading)',
+    fontSize: '1.35rem',
+    fontWeight: 800,
+    color: 'var(--text-primary)',
+    margin: '0 0 0.25rem',
+  },
+};
+
+function ColumnaTablon({ color, titulo, children }) {
+  return (
+    <div style={{ ...estilosTablon.columna, borderLeftColor: color }}>
+      <h4 style={estilosTablon.titulo}>{titulo}</h4>
+      {children}
+    </div>
+  );
+}
+
 function Home() {
   const navigate = useNavigate();
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
@@ -27,6 +51,15 @@ function Home() {
   // indiceSeleccionado guardará un número (0 a 4) si hay una carta abierta, o null si están todas cerradas.
   const [indiceSeleccionado, setIndiceSeleccionado] = useState(null);
   const [integrantes, setIntegrantes] = useState(INTEGRANTES_BASE);
+
+  /*
+  📊 LOS DATOS DEL TABLÓN (Nacho, 21/09)
+
+  `tablon` es null mientras se cargan, y entonces las columnas enseñan un
+  "…" en vez de un cero. Un cero mentiría: no es que tengas 0 puntos, es que
+  todavía no lo sabemos.
+  */
+  const [tablon, setTablon] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -66,6 +99,70 @@ function Home() {
 
     return () => controller.abort();
   }, [cardsEndpoint]);
+
+  /*
+  📊 Carga de los datos del tablón de estadísticas.
+
+  Son TRES peticiones y no una porque cada dato ya vive en su sitio, y
+  duplicarlo en un endpoint nuevo sería tener la misma cifra en dos lugares
+  (que es como se quedan viejas a trozos):
+
+    /users/me/            -> quién soy (hace falta para pedir mi perfil)
+    /users/<yo>/          -> mi progreso y mi carta más rara
+    /cards/ranking/       -> mi posición y la mejor carta del catálogo
+    /social/amigos/       -> mis amigos con su estado de verdad
+
+  Van con Promise.all, así que tardan lo que la más lenta, no la suma.
+
+  Si algo falla NO se rompe la portada: cada trozo se queda a null y su
+  columna dice que no se ha podido cargar. La portada es lo primero que se
+  ve, y prefiero una columna vacía a una pantalla en blanco.
+  */
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function cargarTablon() {
+      try {
+        const opciones = { credentials: 'include', signal: controller.signal };
+
+        const resYo = await fetch(`${apiBaseUrl}/users/me/`, opciones);
+        if (!resYo.ok) return;                 // sin sesión no hay tablón
+        const yo = await resYo.json();
+
+        const [perfil, ranking, amigos] = await Promise.all([
+          fetch(`${apiBaseUrl}/users/${encodeURIComponent(yo.username)}/`, opciones)
+            .then((r) => (r.ok ? r.json() : null)).catch(() => null),
+          fetch(`${apiBaseUrl}/cards/ranking/`, opciones)
+            .then((r) => (r.ok ? r.json() : null)).catch(() => null),
+          fetch(`${apiBaseUrl}/social/amigos/`, opciones)
+            .then((r) => (r.ok ? r.json() : [])).catch(() => []),
+        ]);
+
+        if (controller.signal.aborted) return;
+
+        const miFila = (ranking?.clasificacion || []).find((u) => u.soy_yo);
+
+        setTablon({
+          coleccion: perfil?.coleccion || null,
+          puntos: perfil?.puntos ?? null,
+          miCartaMasAlta: perfil?.coleccion?.carta_mas_rara || null,
+          posicion: miFila?.posicion ?? null,
+          cartaMasAlta: ranking?.carta_mas_alta || null,
+          // El endpoint de amigos devuelve una lista; 'estado' ya es el
+          // estado_real (mira la última señal de vida), así que aquí no hay
+          // que volver a decidir nada.
+          amigos: Array.isArray(amigos) ? amigos : [],
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('No se pudo cargar el tablón:', error);
+        }
+      }
+    }
+
+    cargarTablon();
+    return () => controller.abort();
+  }, [apiBaseUrl]);
 
   useEffect(() => {
     if (indiceSeleccionado === null) return undefined;
@@ -186,29 +283,67 @@ function Home() {
           fontSize: '0.9rem'
         }}>
           
-          {/* Columna 1 (Sección provisional) */}
-          <div style={{ borderLeft: '2px solid var(--accent)', paddingLeft: '0.75rem' }}>
-            <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Ya se vera el titulo</h4>
-            <p>• Datos por añadir</p>
-          </div>
+          {/* ── 1. TU PROGRESO ───────────────────────────────────────── */}
+          <ColumnaTablon color="var(--accent)" titulo="Tu progreso">
+            {tablon?.coleccion ? (
+              <>
+                <p style={estilosTablon.cifra}>{tablon.coleccion.porcentaje} %</p>
+                <p>{tablon.coleccion.cartas_distintas} de {tablon.coleccion.cartas_en_catalogo} cartas</p>
+                <p>{(tablon.puntos ?? 0).toLocaleString('es-ES')} puntos</p>
+                {tablon.posicion && <p>Vas el <strong>#{tablon.posicion}</strong> del ranking</p>}
+              </>
+            ) : <p>…</p>}
+          </ColumnaTablon>
 
-          {/* Columna 2 (Sección provisional) */}
-          <div style={{ borderLeft: '2px solid var(--rarity-epic)', paddingLeft: '0.75rem' }}>
-            <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Ya se vera el titulo</h4>
-            <p>• Datos por añadir</p>
-          </div>
+          {/* ── 2. LA MEJOR CARTA QUE EXISTE ──────────────────────────── */}
+          <ColumnaTablon color="var(--rarity-legendary)" titulo="La carta más alta que existe">
+            {tablon?.cartaMasAlta ? (
+              <>
+                <p style={estilosTablon.cifra}>{tablon.cartaMasAlta.login}</p>
+                <p>{tablon.cartaMasAlta.tier} · nivel {tablon.cartaMasAlta.nivel}</p>
+                <p>{tablon.cartaMasAlta.coalition}</p>
+              </>
+            ) : <p>…</p>}
+          </ColumnaTablon>
 
-          {/* Columna 3 (Sección provisional) */}
-          <div style={{ borderLeft: '2px solid var(--rarity-legendary)', paddingLeft: '0.75rem' }}>
-            <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Ya se vera el titulo</h4>
-            <p>• Datos por añadir</p>
-          </div>
+          {/* ── 3. LA MEJOR QUE TIENES TÚ ─────────────────────────────── */}
+          <ColumnaTablon color="var(--rarity-epic)" titulo="La más alta que tienes">
+            {tablon?.miCartaMasAlta ? (
+              <>
+                <p style={estilosTablon.cifra}>{tablon.miCartaMasAlta.login}</p>
+                <p>{tablon.miCartaMasAlta.tier} · nivel {tablon.miCartaMasAlta.nivel}</p>
+              </>
+            ) : (
+              /* Sin cartas todavía no es un error: es que aún no ha abierto
+                 ningún sobre. Se le dice qué hacer en vez de dejar un hueco. */
+              <p>{tablon ? 'Abre un sobre para conseguir tu primera carta.' : '…'}</p>
+            )}
+          </ColumnaTablon>
 
-          {/* Columna 4 (Sección provisional para añadir más cosas) */}
-          <div style={{ borderLeft: '2px solid var(--border-default)', paddingLeft: '0.75rem' }}>
-            <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Ya se vera el titulo</h4>
-            <p>• Datos por añadir</p>
-          </div>
+          {/* ── 4. AMIGOS CONECTADOS ──────────────────────────────────── */}
+          <ColumnaTablon color="var(--rarity-rare)" titulo="Amigos conectados">
+            {!tablon ? <p>…</p> : tablon.amigos.length === 0 ? (
+              <p>Todavía no tienes amigos. Búscalos en el chat.</p>
+            ) : (
+              <>
+                <p style={estilosTablon.cifra}>
+                  {tablon.amigos.filter((a) => a.estado !== 'offline').length} en línea
+                </p>
+                {/* Los conectados primero, y como mucho cinco: esto es un
+                    resumen, la lista entera está en el chat. */}
+                {[...tablon.amigos]
+                  .sort((a, b) => (a.estado !== 'offline' ? -1 : 1) - (b.estado !== 'offline' ? -1 : 1))
+                  .slice(0, 5)
+                  .map((a) => (
+                    <p key={a.id}>
+                      <span style={{ color: a.estado !== 'offline' ? '#4ade80' : '#94a3b8' }}>●</span>
+                      {' '}{a.nombre || a.username}
+                    </p>
+                  ))}
+                {tablon.amigos.length > 5 && <p>y {tablon.amigos.length - 5} más…</p>}
+              </>
+            )}
+          </ColumnaTablon>
 
         </div>
       </section>
