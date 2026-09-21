@@ -346,7 +346,52 @@ def ranking(request):
         'cartas_en_catalogo': total_catalogo,
         'orden': orden,
         'clasificacion': clasificacion,
+        # 🏆 Nacho, 21/09: la mejor carta que EXISTE en el catálogo, para el
+        # tablón de la portada.
+        #
+        # Va aquí y no en un endpoint aparte para no añadir una cuarta
+        # petición a la portada: el ranking ya recorre el catálogo (de hecho
+        # ya devuelve cuántas cartas hay), así que el dato sale casi gratis.
+        #
+        # Usa el MISMO criterio que "tu carta más rara" del perfil: primero
+        # la rareza y, dentro de la misma, el nivel más alto. Si cada sitio
+        # ordenara a su manera, la portada y el perfil podrían decir cosas
+        # distintas de la misma colección.
+        'carta_mas_alta': _mejor_carta_del_catalogo(),
     })
+
+
+def _mejor_carta_del_catalogo():
+    """
+    La carta más rara de todo el catálogo, con el nivel como desempate.
+
+    Devuelve None si el catálogo está vacío: la portada tiene que aguantar
+    una base recién creada sin reventar.
+    """
+    # El orden de TODAS va de menos a más rara, así que su posición sirve de
+    # nota: cuanto más alta, mejor carta. Se traduce dentro de la consulta
+    # para que ordene PostgreSQL y no nosotros en Python.
+    nota_por_rareza = Case(
+        *[When(tier=rareza, then=Value(posicion))
+          for posicion, rareza in enumerate(TODAS)],
+        default=Value(-1),
+        output_field=IntegerField(),
+    )
+
+    carta = (Card.objects
+             .annotate(nota=nota_por_rareza)
+             .order_by('-nota', '-cursus_lvl', 'login')
+             .first())
+    if carta is None:
+        return None
+
+    return {
+        'login': carta.login,
+        'tier': carta.tier,
+        'nivel': carta.cursus_lvl,
+        'photo': carta.photo,
+        'coalition': carta.coalition,
+    }
 
 
 @api_view(['GET'])
