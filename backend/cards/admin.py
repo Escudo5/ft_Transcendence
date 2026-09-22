@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django import forms
 from .models import Card, Intercambio, UserCard, UserPack
 
 
@@ -22,29 +23,51 @@ class UserPackAdmin(admin.ModelAdmin):
     list_editable = ('cantidad',) # Permite cambiar el número de sobres directamente desde la lista
 
 
+class UserCardAdminForm(forms.ModelForm):
+    class Meta:
+        model = UserCard
+        fields = '__all__'
+
+    def validate_unique(self):
+        # Ignoramos la validación de unicidad al CREAR para permitir sumar la cantidad en save_model
+        if self.instance.pk:
+            super().validate_unique()
+
+
+# 2. DESPUÉS REGISTRAS Y CONFIGURAS EL ADMIN
 @admin.register(UserCard)
 class UserCardAdmin(admin.ModelAdmin):
-    # 1. Añadimos los métodos personalizados a list_display
+    form = UserCardAdminForm  # Ahora Python ya reconoce la clase
+
     list_display = (
         'id', 
-        'user_id_display',  # Muestra la ID del usuario
+        'user_id_display', 
         'user', 
-        'card_id_display',  # Muestra la ID de la carta
+        'card_id_display', 
         'card', 
         'cantidad', 
         'fecha_obtencion'
     )
     
+    list_editable = ('cantidad',)  # Permite editar la cantidad directamente en la tabla
     list_filter = ('card__tier', 'card__coalition')
     search_fields = ('user__username', 'card__login', 'user__id', 'card__id')
     raw_id_fields = ('user', 'card')
 
-    # 2. Método para la ID del usuario
+    def save_model(self, request, obj, form, change):
+        if not change:
+            existente = UserCard.objects.filter(user=obj.user, card=obj.card).first()
+            if existente:
+                existente.cantidad += obj.cantidad
+                existente.save()
+                return
+
+        super().save_model(request, obj, form, change)
+
     @admin.display(ordering='user__id', description='User ID')
     def user_id_display(self, obj):
         return obj.user.id if obj.user else '-'
 
-    # 3. Método para la ID de la carta
     @admin.display(ordering='card__id', description='Card ID')
     def card_id_display(self, obj):
         return obj.card.id if obj.card else '-'
