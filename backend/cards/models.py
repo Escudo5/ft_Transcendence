@@ -56,6 +56,10 @@ class UserCard(models.Model):
     cantidad = models.PositiveIntegerField(default=1)
 
     fecha_obtencion = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        unique_together = ('user', 'card')
+        verbose_name = 'Carta de usuario'
+        verbose_name_plural = 'Álbumes (Cartas de usuarios)'
 
     def __str__(self):
         return f"{self.user.username} tiene {self.cantidad}x {self.card.login}"
