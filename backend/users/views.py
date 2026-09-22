@@ -617,8 +617,18 @@ def mi_avatar(request):
 @require_http_methods(["GET", "POST"])
 def descargar_mis_datos(request):
     """
-    Recopila TODO lo que guardamos de esta persona y se lo envía
-    en un archivo JSON adjunto a su correo electrónico.
+    Devuelve TODO lo que guardamos de esta persona, en un fichero JSON que se
+    descarga, y ADEMÁS le manda una copia por correo si tiene uno.
+
+    Las dos cosas a la vez y no una u otra, a propósito (Nacho, 22/09):
+
+      - La descarga es el derecho de acceso del RGPD y tiene que funcionar
+        siempre, también para quien no tenga correo.
+      - El correo es la confirmación: sirve para que te enteres si alguien
+        que no eres tú se ha bajado tus datos.
+
+    El correo va con fail_silently: si el servidor de correo está caído, te
+    descargas los datos igual.
     """
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
@@ -627,12 +637,12 @@ def descargar_mis_datos(request):
 
     u = request.user
 
-    # Comprobamos que el usuario tenga un correo configurado
-    if not u.email:
-        return JsonResponse({
-            'error': 'Sin correo electrónico.',
-            'detalle': 'Tu cuenta no tiene una dirección de correo asociada para recibir el archivo.'
-        }, status=400)
+    # ⚠️ Nacho, 22/09: aquí había un corte que devolvía un 400 si la cuenta no
+    # tenía correo. Se quita: ahora los datos se descargan igual y el correo
+    # es un extra para quien lo tenga (ver el paso 3). Quedarse sin poder
+    # sacar tus propios datos por no tener correo es justo lo que el RGPD no
+    # permite, y pasa de verdad: el login de 42 deja el email a None cuando
+    # la Intra no devuelve ninguno.
 
     # 1. Recopilamos todos sus datos
     datos = {
@@ -673,34 +683,45 @@ def descargar_mis_datos(request):
     contenido_json = json.dumps(datos, indent=2, ensure_ascii=False)
     nombre_archivo = f"mis-datos-{u.username}.json"
 
-    # 3. Construimos el correo con el adjunto
-    email = EmailMessage(
-        subject='Tus datos de Transcendence',
-        body=(
-            f'Hola {u.username},\n\n'
-            'Adjunto a este correo encontrarás el archivo JSON con toda la información '
-            'asociada a tu cuenta, de acuerdo con nuestro compromiso de transparencia y el RGPD.\n\n'
-            'Un saludo,\nEl equipo de Transcendence.'
-        ),
-        from_email=None,  # Utiliza DEFAULT_FROM_EMAIL definido en settings.py
-        to=[u.email],
-    )
+    # 3. 📧 EL CORREO CON LOS DATOS ADJUNTOS.
+    #
+    # ⚠️ Nacho, 22/09: el correo SE SUMA a la descarga, no la sustituye.
+    #
+    # Tal como estaba, los datos SOLO llegaban por correo, y eso tenía dos
+    # problemas serios:
+    #
+    #   1. Quien no tiene correo se quedaba sin sus datos. Y eso puede
+    #      pasar: el campo admite vacío y el login de 42 lo deja a None si
+    #      la Intra no devuelve correo. Para esa persona, el derecho de
+    #      acceso del RGPD dejaba de existir.
+    #   2. Si el servidor de correo fallaba, la respuesta era un 500 y no
+    #      había forma de conseguir los datos.
+    #
+    # Así que ahora se hacen las dos cosas: el fichero se descarga siempre,
+    # y además llega una copia por correo a quien tenga. Si el correo falla,
+    # la descarga sigue funcionando: por eso fail_silently=True.
+    if u.email:
+        correo = EmailMessage(
+            subject='Tus datos de Transcendence',
+            body=(
+                f'Hola {u.username},\n\n'
+                'Adjunto a este correo encontrarás el archivo JSON con toda la información '
+                'asociada a tu cuenta, de acuerdo con nuestro compromiso de transparencia y el RGPD.\n\n'
+                'Si no has sido tú quien ha pedido esta copia, avísanos.\n\n'
+                'Un saludo,\nEl equipo de Transcendence.'
+            ),
+            from_email=None,  # Utiliza DEFAULT_FROM_EMAIL definido en settings.py
+            to=[u.email],
+        )
+        correo.attach(nombre_archivo, contenido_json, 'application/json')
+        correo.send(fail_silently=True)
 
-    # Adjuntamos el archivo (Nombre, Contenido, Tipo MIME)
-    email.attach(nombre_archivo, contenido_json, 'application/json')
-
-    # 4. Enviamos el correo
-    try:
-        email.send(fail_silently=False)
-        return JsonResponse({
-            'mensaje': f'Se ha enviado un correo a {u.email} con la copia de tus datos.'
-        })
-    except Exception as e:
-        print(f"Error al enviar correo de datos a {u.email}: {e}")
-        return JsonResponse({
-            'error': 'Error de envío',
-            'detalle': 'No se pudo enviar el correo en este momento. Inténtalo de nuevo más tarde.'
-        }, status=500)
+    # 4. Y la descarga de siempre, que es la que el front pide con un enlace
+    #    (Perfil.jsx). Devolver aquí otra cosa dejaba al usuario mirando un
+    #    JSON en una pestaña en blanco, fuera de la web.
+    respuesta = JsonResponse(datos, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+    respuesta['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    return respuesta
 
 @require_POST
 def borrar_mi_cuenta(request):
@@ -715,22 +736,51 @@ def borrar_mi_cuenta(request):
     nombre = usuario.username
     email_usuario = usuario.email  # Guardamos el email antes de borrar nada
 
-    # 1. Enviar el correo informativo (o enlace de confirmación)
+    # 1. 🖼️ EL FICHERO DEL AVATAR, A MANO.
+    #
+    # ⚠️ Nacho, 22/09: esto estaba desde el principio y se perdió al meter los
+    # correos. Lo recupero porque es justo lo que todo el mundo se deja:
+    # al borrar el usuario, Django quita la fila de la base de datos pero NO
+    # TOCA EL FICHERO DEL DISCO, así que la foto se quedaría ahí para siempre.
+    # Y en la Política de Privacidad prometemos que al borrar la cuenta no
+    # queda nada, así que hay que cumplirlo.
+    #
+    # Va lo primero, antes que nada: si fallara, la cuenta no se borra y no
+    # nos quedamos con una cuenta ida y una foto huérfana.
+    if usuario.avatar:
+        usuario.avatar.delete(save=False)
+
+    # 2. Borrar en la base de datos (álbum, sobres, mensajes, amigos y
+    #    bloqueos se van en cascada).
+    with transaction.atomic():
+        usuario.delete()
+
+    # 3. Hacer logout DESPUÉS de haber eliminado el usuario en BD
+    logout(request)
+
+    # 4. 📧 Y AHORA el correo de confirmación, cuando ya está todo hecho.
+    #
+    # ⚠️ Nacho, 22/09: dos cambios sobre lo que había, y los dos por el mismo
+    # motivo: que un problema del servidor de correo NO impida borrar una
+    # cuenta.
+    #
+    #   - Va DESPUÉS del borrado, no antes. Así el correo dice la verdad
+    #     ("se han eliminado") en vez de prometerlo antes de hacerlo.
+    #   - Va con fail_silently=True. Antes era False: si el servidor de
+    #     correo estaba caído, saltaba la excepción, la cuenta NO se borraba
+    #     y el usuario recibía un error 500. O sea que el derecho a borrar tus
+    #     datos se quedaba bloqueado por algo que no tiene nada que ver.
+    #
+    # El RGPD es el borrado; el correo es cortesía. Si falla la cortesía, no
+    # se cae el derecho.
     if email_usuario:
         send_mail(
             subject='Tu cuenta ha sido eliminada',
             message=f'Hola {nombre},\n\nConfirmamos que tu cuenta y todos tus datos han sido eliminados correctamente.',
             from_email=None,
             recipient_list=[email_usuario],
-            fail_silently=False,
+            fail_silently=True,
         )
-
-    # 2. Borrar primero en la Base de Datos
-    with transaction.atomic():
-        usuario.delete()
-
-    # 3. Hacer logout DESPUÉS de haber eliminado el usuario en BD
-    logout(request)
 
     return JsonResponse({'mensaje': f'La cuenta de {nombre} se ha borrado correctamente.'})
 def list_users(request):
