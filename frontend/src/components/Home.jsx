@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import PieLegal from './PieLegal';
 import ContadorMensajes from './ContadorMensajes';
 import { Avatar, Badge, Button, Card, Modal } from './ui';
+import { useI18n } from '../i18n';
 
 // 👥 Tarjetas base de presentación del equipo de desarrollo
 const INTEGRANTES_BASE = [
@@ -19,6 +20,7 @@ function getUserImage(userData) {
 }
 
 function Home() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
   const cardsEndpoint = import.meta.env.VITE_CARDS_ENDPOINT || `${apiBaseUrl}/cards`;
@@ -104,7 +106,7 @@ function Home() {
           <h1>ft_transcendence</h1>
         </div>
         <p className="subtitle" style={{ fontSize: '1.2rem', opacity: 0.8, marginTop: '0.5rem' }}>
-          Creadores del Proyecto
+          {t('projectCreators')}
         </p>
       </header>
 
@@ -154,19 +156,19 @@ function Home() {
           así añadir o quitar alguno no descuadra la fila. */}
       <nav className="action-grid" aria-label="Acciones principales">
         <Link to="/catalogo" className="back-btn-link" style={{ textAlign: 'center', padding: '1.5rem', fontSize: '1.25rem', display: 'block', background: '#00BABC', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
-          📂 Ver Álbum
+          {t('viewAlbum')}
         </Link>
         <Link to="/perfil" className="back-btn-link" style={{ textAlign: 'center', padding: '1.5rem', fontSize: '1.25rem', display: 'block', background: '#333', color: 'white', textDecoration: 'none', border: '1px solid #555', borderRadius: '8px', fontWeight: 'bold' }}>
-          👤 Mi Perfil
+          {t('myProfile')}
         </Link>
         <Link to="/ranking" className="back-btn-link" style={{ textAlign: 'center', padding: '1.5rem', fontSize: '1.25rem', display: 'block', background: '#333', color: 'white', textDecoration: 'none', border: '1px solid #555', borderRadius: '8px', fontWeight: 'bold' }}>
-          🏆 Clasificación
+          {t('ranking')}
         </Link>
         {/* El botón del chat lleva encima la bolita de mensajes sin leer.
             El 'position: relative' es lo que hace que la bolita se coloque
             respecto a este botón y no respecto a la página entera. */}
         <button className="back-btn-link" style={{ padding: '1.5rem', fontSize: '1.25rem', cursor: 'pointer', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', fontWeight: 'bold', position: 'relative' }} onClick={() => navigate('/chatsocial')}>
-          ChatSocial
+          {t('chat')}
           <ContadorMensajes />
         </button>
       </nav>
@@ -175,7 +177,7 @@ function Home() {
       {/* PARTE 3: ABAJO (Tablón de anuncios rectangular con 4 columnas) */}
       <section className="control-panel" style={{ marginTop: '2rem', display: 'block' }}>
         <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--accent)' }}>
-           Tablón de estadisticas
+           {t('statisticsBoard')}
         </h2>
         
         {/* Rejilla interna de 4 columnas (Grid) preparada para los futuros datos del Backend */}

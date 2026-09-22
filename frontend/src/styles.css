@@ -121,6 +121,48 @@ body {
   overflow-x: hidden;
 }
 
+.language-selector {
+  position: fixed;
+  top: 1rem;
+  inset-inline-end: 1rem;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-btn);
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  color: var(--text-primary);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(10px);
+}
+
+.language-selector select {
+  min-height: 2rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.language-selector option {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 button, input, select {
   font: inherit;
 }
@@ -997,7 +1039,7 @@ button, a, select {
 
 .floating-navigation {
   position: fixed;
-  top: 0.75rem;
+  top: 4.5rem;
   left: 50%;
   width: min(calc(100vw - 2rem), 1200px);
   z-index: 20;
@@ -1013,7 +1055,7 @@ button, a, select {
 }
 
 .app-header:has(.floating-navigation) {
-  padding-top: 4.5rem;
+  padding-top: 8.25rem;
 }
 
 .floating-pack-back-button {
@@ -1046,6 +1088,7 @@ button, a, select {
 
 @media (max-width: 640px) {
   .floating-navigation {
+    top: 4rem;
     flex-wrap: wrap;
     justify-content: center;
     width: calc(100vw - 1rem);

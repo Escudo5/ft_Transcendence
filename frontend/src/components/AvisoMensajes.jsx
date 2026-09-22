@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useI18n } from '../i18n';
 
 /**
  * AVISO DE LO QUE TE ESPERA EN EL CHAT
@@ -33,6 +34,7 @@ import { useEffect, useState } from 'react';
 const CADA_CUANTO = 10000; // 10 segundos
 
 export default function AvisoMensajes() {
+  const { t } = useI18n();
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
   const [total, setTotal] = useState(0);
   // 🔄 Propuestas de intercambio sin responder. Van aparte del total de
@@ -101,8 +103,8 @@ export default function AvisoMensajes() {
   // El texto se arma con lo que haya de verdad, para que no ponga
   // "0 mensajes" cuando lo único pendiente es un intercambio.
   const trozos = [];
-  if (total) trozos.push(`${total} ${total === 1 ? 'mensaje' : 'mensajes'}`);
-  if (intercambios) trozos.push(`${intercambios} ${intercambios === 1 ? 'intercambio' : 'intercambios'}`);
+  if (total) trozos.push(t('unreadMessages', { count: total, s: total === 1 ? '' : 's' }));
+  if (intercambios) trozos.push(t('pendingTrades', { count: intercambios, s: intercambios === 1 ? '' : 's' }));
   // Si SOLO hay intercambios, el icono cambia a las dos flechas: así se
   // sabe de qué es el aviso antes de pulsarlo.
   const soloIntercambios = total === 0 && intercambios > 0;
@@ -121,7 +123,7 @@ export default function AvisoMensajes() {
           + (deQuien.length ? `?con=${encodeURIComponent(deQuien[0])}` : '');
       }}
       title={
-        `Tienes ${trozos.join(' y ')} sin responder`
+        t('pendingTitle', { items: trozos.join(' y ') })
         + (deQuien.length ? ` de ${deQuien.join(', ')}` : '')
       }
       style={{

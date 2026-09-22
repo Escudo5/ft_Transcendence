@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
+import { useI18n } from '../i18n';
 
 /* ===========================================================================
    ✨ BOTÓN DE ABRIR SOBRES
@@ -32,13 +33,14 @@ import { motion, useReducedMotion } from 'framer-motion';
    un adorno, es lo correcto y además cuenta en la evaluación.
    =========================================================================== */
 
-export default function BotonAbrirSobres({ to = '/tienda-sobre', children = 'Abrir sobres' }) {
+export default function BotonAbrirSobres({ to = '/tienda-sobre', children }) {
   const sinMovimiento = useReducedMotion();
+  const { t } = useI18n();
 
   return (
     <Link
       to={to}
-      aria-label="Abrir sobres de cartas"
+      aria-label={t('openPacks')}
       style={{
         position: 'relative',
         overflow: 'hidden',
@@ -125,7 +127,7 @@ export default function BotonAbrirSobres({ to = '/tienda-sobre', children = 'Abr
           WebkitTextFillColor: 'transparent',
         }}
       >
-        {children}
+        {children ?? t('openPacks')}
       </span>
     </Link>
   );

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PieLegal from './PieLegal';
 import { Alert, Button, Card, SecondaryButton, TextField } from './ui';
+import { useI18n } from '../i18n';
 
 /**
  * PANTALLA DE ACCESO
@@ -162,14 +163,14 @@ const estilos = {
 // llega del navegador), pero comprobarlas aquí evita viajes innecesarios y
 // le da respuesta inmediata a la persona. El subject las pide en ambos lados.
 // ==========================================================================
-function validarRegistro({ nombre, email, password, password2 }) {
+function validarRegistro({ nombre, email, password, password2 }, t) {
   const errores = {};
-  if (!nombre.trim()) errores.nombre = 'Escribe un nombre.';
-  if (!email.trim()) errores.email = 'Escribe tu correo.';
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errores.email = 'Ese correo no parece válido.';
-  if (!password) errores.password = 'Escribe una contraseña.';
-  else if (password.length < 8) errores.password = 'Mínimo 8 caracteres.';
-  if (password && password2 !== password) errores.password2 = 'Las contraseñas no coinciden.';
+  if (!nombre.trim()) errores.nombre = t('enterName');
+  if (!email.trim()) errores.email = t('enterEmail');
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errores.email = t('invalidEmail');
+  if (!password) errores.password = t('enterPassword');
+  else if (password.length < 8) errores.password = t('minimumPassword');
+  if (password && password2 !== password) errores.password2 = t('passwordsMismatch');
   return errores;
 }
 
@@ -197,6 +198,7 @@ function Campo({ id, etiqueta, tipo = 'text', valor, onChange, error, autoComple
 // COMPONENTE
 // ==========================================================================
 function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
+  const { t } = useI18n();
   // Qué se está viendo: la elección inicial, el login o el registro
   const [vista, setVista] = useState('elegir');
   const [enviando, setEnviando] = useState(false);
@@ -237,14 +239,14 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
       if (!res.ok) {
         // El backend nos dice qué campo concreto falla; si no, mensaje general
         if (respuesta.campos) setErrores(respuesta.campos);
-        setAvisoGeneral(respuesta.campos ? '' : respuesta.error || 'No se ha podido completar.');
+        setAvisoGeneral(respuesta.campos ? '' : respuesta.error || t('unableToComplete'));
         return;
       }
 
       onAutenticado(respuesta);
     } catch (error) {
       console.error('Error al hablar con el backend:', error);
-      setAvisoGeneral('No se ha podido conectar con el servidor.');
+      setAvisoGeneral(t('serverConnectionError'));
     } finally {
       setEnviando(false);
     }
@@ -252,7 +254,7 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
 
   const enviarRegistro = (e) => {
     e.preventDefault();
-    const fallos = validarRegistro(datos);
+    const fallos = validarRegistro(datos, t);
     if (Object.keys(fallos).length) return setErrores(fallos);
     enviar('register', { nombre: datos.nombre, email: datos.email, password: datos.password });
   };
@@ -261,8 +263,8 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
     e.preventDefault();
     if (!datos.email.trim() || !datos.password) {
       return setErrores({
-        email: !datos.email.trim() ? 'Escribe tu correo.' : undefined,
-        password: !datos.password ? 'Escribe tu contraseña.' : undefined,
+        email: !datos.email.trim() ? t('enterEmail') : undefined,
+        password: !datos.password ? t('enterPassword') : undefined,
       });
     }
     enviar('login', { email: datos.email, password: datos.password });
@@ -272,7 +274,7 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
     <div style={estilos.pantalla}>
       <Card className="acceso-card">
         <h1 style={estilos.titulo}>ft_transcendence</h1>
-        <p style={estilos.subtitulo}>El álbum de cromos de 42</p>
+        <p style={estilos.subtitulo}>{t('albumOf42')}</p>
 
         {/* ---------- VISTA 1: elegir cómo entrar ---------- */}
         {vista === 'elegir' && (
@@ -281,21 +283,21 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
               type="button"
               onClick={() => { window.location.href = urlLogin42; }}
             >
-              Entrar con mi cuenta de 42
+              {t('loginWith42')}
             </Button>
 
             <div style={estilos.separador}>
-              <span style={estilos.lineaSeparador} />o<span style={estilos.lineaSeparador} />
+              <span style={estilos.lineaSeparador} />{t('or')}<span style={estilos.lineaSeparador} />
             </div>
 
             <SecondaryButton type="button" onClick={() => irA('login')}>
-              Entrar con email y contraseña
+              {t('loginWithEmail')}
             </SecondaryButton>
 
             <p style={estilos.pie}>
-              ¿No tienes cuenta?{' '}
+              {t('noAccount')}{' '}
               <button type="button" className="ui-link" onClick={() => irA('registro')}>
-                Regístrate
+                {t('signUp')}
               </button>
             </p>
           </>
@@ -306,21 +308,21 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
           <form onSubmit={enviarLogin} noValidate>
             {avisoGeneral && <Alert>{avisoGeneral}</Alert>}
 
-            <Campo id="email" etiqueta="Correo" tipo="email" autoComplete="email"
+            <Campo id="email" etiqueta={t('email')} tipo="email" autoComplete="email"
                    valor={datos.email} onChange={cambiar('email')} error={errores.email} />
-            <Campo id="password" etiqueta="Contraseña" tipo="password" autoComplete="current-password"
+            <Campo id="password" etiqueta={t('password')} tipo="password" autoComplete="current-password"
                    valor={datos.password} onChange={cambiar('password')} error={errores.password} />
 
             <Button type="submit" disabled={enviando}>
-              {enviando ? 'Entrando…' : 'Entrar'}
+              {enviando ? t('loggingIn') : t('login')}
             </Button>
 
             <p style={estilos.pie}>
-              ¿No tienes cuenta?{' '}
-              <button type="button" className="ui-link" onClick={() => irA('registro')}>Regístrate</button>
+              {t('noAccount')}{' '}
+              <button type="button" className="ui-link" onClick={() => irA('registro')}>{t('signUp')}</button>
               <br />
               <button type="button" className="ui-link ui-link-spaced" onClick={() => irA('elegir')}>
-                ← Volver
+                {t('back')}
               </button>
             </p>
           </form>
@@ -331,25 +333,25 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
           <form onSubmit={enviarRegistro} noValidate>
             {avisoGeneral && <Alert>{avisoGeneral}</Alert>}
 
-            <Campo id="nombre" etiqueta="Nombre" autoComplete="nickname"
+            <Campo id="nombre" etiqueta={t('name')} autoComplete="nickname"
                    valor={datos.nombre} onChange={cambiar('nombre')} error={errores.nombre} />
-            <Campo id="email-reg" etiqueta="Correo" tipo="email" autoComplete="email"
+            <Campo id="email-reg" etiqueta={t('email')} tipo="email" autoComplete="email"
                    valor={datos.email} onChange={cambiar('email')} error={errores.email} />
-            <Campo id="password-reg" etiqueta="Contraseña" tipo="password" autoComplete="new-password"
+            <Campo id="password-reg" etiqueta={t('password')} tipo="password" autoComplete="new-password"
                    valor={datos.password} onChange={cambiar('password')} error={errores.password} />
-            <Campo id="password2" etiqueta="Repite la contraseña" tipo="password" autoComplete="new-password"
+            <Campo id="password2" etiqueta={t('repeatPassword')} tipo="password" autoComplete="new-password"
                    valor={datos.password2} onChange={cambiar('password2')} error={errores.password2} />
 
             <Button type="submit" disabled={enviando}>
-              {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
+              {enviando ? t('creatingAccount') : t('createAccount')}
             </Button>
 
             <p style={estilos.pie}>
-              ¿Ya tienes cuenta?{' '}
-              <button type="button" className="ui-link" onClick={() => irA('login')}>Inicia sesión</button>
+              {t('haveAccount')}{' '}
+              <button type="button" className="ui-link" onClick={() => irA('login')}>{t('signIn')}</button>
               <br />
               <button type="button" className="ui-link ui-link-spaced" onClick={() => irA('elegir')}>
-                ← Volver
+                {t('back')}
               </button>
             </p>
           </form>

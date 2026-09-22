@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar, Card, ProgressBar } from './ui';
+import { useI18n } from '../i18n';
 
 /**
  * CLASIFICACIÓN DE COLECCIONISTAS
@@ -100,6 +101,7 @@ const estilos = {
 const MEDALLA = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
 export default function Ranking() {
+  const { t, languageInfo } = useI18n();
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
 
   const [datos, setDatos] = useState(null);
@@ -111,48 +113,48 @@ export default function Ranking() {
       try {
         const res = await fetch(`${apiBaseUrl}/cards/ranking/`, { credentials: 'include' });
         if (res.status === 401 || res.status === 403) {
-          setError('Tienes que iniciar sesión para ver la clasificación.');
+          setError(t('rankingLoginRequired'));
           return;
         }
         if (!res.ok) {
-          setError('No se ha podido cargar la clasificación.');
+          setError(t('rankingLoadError'));
           return;
         }
         setDatos(await res.json());
       } catch (e) {
         console.error('Error al cargar el ranking:', e);
-        setError('No se ha podido conectar con el servidor.');
+        setError(t('serverError'));
       } finally {
         setCargando(false);
       }
     }
     cargar();
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, t]);
 
   return (
     <main className="app-container">
       <header className="app-header">
         <div className="header-navigation floating-navigation">
-          <Link to="/home" className="back-btn-link">← Volver al Inicio</Link>
-          <Link to="/catalogo" className="back-btn-link">📂 Ver Álbum</Link>
+          <Link to="/home" className="back-btn-link">{t('catalogBack')}</Link>
+          <Link to="/catalogo" className="back-btn-link">{t('viewAlbum')}</Link>
         </div>
         <div className="logo-section" style={{ marginTop: '1rem' }}>
           <span className="logo-icon">🏆</span>
-          <h1>Clasificación</h1>
+          <h1>{t('rankingTitle')}</h1>
         </div>
         <p className="subtitle">
-          Los mejores coleccionistas del campus
-          {datos && `, sobre ${datos.cartas_en_catalogo} cartas posibles`}
+          {t('rankingSubtitle')}
+          {datos && t('rankingPossible', { count: datos.cartas_en_catalogo })}
         </p>
       </header>
 
       <Card>
         {cargando ? (
-          <p style={{ color: 'var(--text-secondary)' }}>Cargando clasificación…</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('rankingLoading')}</p>
         ) : error ? (
           <p style={{ color: '#fca5a5', fontWeight: 600 }}>{error}</p>
         ) : datos.clasificacion.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)' }}>Todavía no hay coleccionistas.</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('rankingEmpty')}</p>
         ) : (
           datos.clasificacion.map((u) => (
             <Link key={u.username} to={`/perfil/${u.username}`} style={estilos.fila(u.soy_yo)}>
@@ -164,7 +166,7 @@ export default function Ranking() {
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={estilos.nombre}>
-                  {u.nombre} {u.soy_yo && <span style={{ color: 'var(--accent)' }}>· tú</span>}
+                  {u.nombre} {u.soy_yo && <span style={{ color: 'var(--accent)' }}>· {t('you')}</span>}
                 </div>
                 <div style={estilos.login}>@{u.username}</div>
                 <ProgressBar value={u.porcentaje} />
@@ -172,12 +174,12 @@ export default function Ranking() {
 
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <div style={estilos.cifra}>{u.cartas_distintas}</div>
-                <div style={estilos.cifraEtiqueta}>cartas</div>
+                <div style={estilos.cifraEtiqueta}>{t('cards')}</div>
                 {/* 🏆 Los puntos por rareza. Dos personas con las mismas
                     cartas pueden tener puntos muy distintos: una legendaria
                     vale 25 comunes. */}
                 <div style={{ ...estilos.cifraEtiqueta, marginTop: '0.35rem' }}>
-                  {(u.puntos ?? 0).toLocaleString('es-ES')} pts
+                  {new Intl.NumberFormat(languageInfo.locale).format(u.puntos ?? 0)} {t('points')}
                 </div>
               </div>
             </Link>
