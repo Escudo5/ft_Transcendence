@@ -1,3 +1,5 @@
+import { useI18n } from '../i18n';
+
 import { useEffect, useState } from 'react';
 
 /**
@@ -20,6 +22,7 @@ import { useEffect, useState } from 'react';
  * alrededor, o la bolita se irá a la esquina de la página.
  */
 export default function ContadorMensajes() {
+  const { t } = useI18n();
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
   const [total, setTotal] = useState(0);
   const [intercambios, setIntercambios] = useState(0);
@@ -52,12 +55,12 @@ export default function ContadorMensajes() {
   // El texto se arma con lo que haya de verdad, para que no diga "0 mensajes"
   // cuando lo único pendiente es una propuesta de intercambio.
   const trozos = [];
-  if (total) trozos.push(`${total} ${total === 1 ? 'mensaje' : 'mensajes'}`);
-  if (intercambios) trozos.push(`${intercambios} ${intercambios === 1 ? 'intercambio' : 'intercambios'}`);
+  if (total) trozos.push(t('unreadMessages', { count: total, s: total === 1 ? '' : 's' }));
+  if (intercambios) trozos.push(t('pendingTrades', { count: intercambios, s: intercambios === 1 ? '' : 's' }));
 
   return (
     <span
-      title={`Tienes ${trozos.join(' y ')} sin responder`}
+      title={t('pendingTitle', { items: trozos.join(' y ') })}
       style={{
         position: 'absolute',
         top: '-8px',

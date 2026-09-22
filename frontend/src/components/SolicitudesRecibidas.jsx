@@ -1,3 +1,5 @@
+import { useI18n } from '../i18n';
+
 /**
  * SOLICITUDES DE AMISTAD RECIBIDAS
  * --------------------------------
@@ -9,6 +11,7 @@
  */
 
 function SolicitudesRecibidas({ isOpen, onClose, solicitudes, responderSolicitud }) {
+  const { t } = useI18n();
   if (!isOpen) return null;
 
   return (
@@ -34,7 +37,7 @@ function SolicitudesRecibidas({ isOpen, onClose, solicitudes, responderSolicitud
         boxShadow: '0 0 20px rgba(255, 0, 127, 0.25)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
-          <h3 style={{ margin: 0, color: '#ff007f' }}>📩 Solicitudes Pendientes</h3>
+          <h3 style={{ margin: 0, color: '#ff007f' }}>📩 {t('pendingRequests')}</h3>
           <button 
             onClick={onClose}
             style={{ background: 'none', border: 'none', color: '#8b92b0', fontSize: '1.5rem', cursor: 'pointer' }}
@@ -47,7 +50,7 @@ function SolicitudesRecibidas({ isOpen, onClose, solicitudes, responderSolicitud
           {solicitudes.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem 0', color: '#6c728f' }}>
               <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.5rem' }}>📬</span>
-              <p style={{ margin: 0, fontSize: '0.9rem' }}>No tienes ninguna solicitud pendiente.</p>
+              <p style={{ margin: 0, fontSize: '0.9rem' }}>{t('noPendingRequests')}</p>
             </div>
           ) : (
             solicitudes.map((sol) => (
@@ -75,7 +78,7 @@ function SolicitudesRecibidas({ isOpen, onClose, solicitudes, responderSolicitud
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
                   <button
                     onClick={() => responderSolicitud(sol.id, 'aceptar')}
-                    title="Aceptar solicitud"
+                    title={t('acceptRequest')}
                     style={{
                       backgroundColor: 'rgba(0, 255, 204, 0.15)',
                       color: '#00ffcc',
@@ -87,12 +90,12 @@ function SolicitudesRecibidas({ isOpen, onClose, solicitudes, responderSolicitud
                       fontWeight: 'bold'
                     }}
                   >
-                    ✓ Aceptar
+                    ✓ {t('acceptRequest')}
                   </button>
 
                   <button
                     onClick={() => responderSolicitud(sol.id, 'rechazar')}
-                    title="Rechazar solicitud"
+                    title={t('rejectRequest')}
                     style={{
                       backgroundColor: 'rgba(255, 77, 77, 0.15)',
                       color: '#ff4d4d',

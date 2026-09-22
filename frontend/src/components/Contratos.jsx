@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { COLOR_RAREZA } from './rarezas';
+import { useI18n } from '../i18n';
 
 const API = import.meta.env.VITE_API_URL || '/api';
 
@@ -28,11 +29,12 @@ const API = import.meta.env.VITE_API_URL || '/api';
 // Los colores salen de rarezas.js, que es el único sitio donde están.
 
 export function BotonContratos({ onClick }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
       onClick={onClick}
-      title="Cambiar 4 cartas repetidas por una mejor"
+      title={t('contractButtonTitle')}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -52,12 +54,13 @@ export function BotonContratos({ onClick }) {
         <path d="M12 19V5" />
         <path d="M5 12l7-7 7 7" />
       </svg>
-      Contratos
+      {t('contracts')}
     </button>
   );
 }
 
 export default function ModalContratos({ isOpen, onClose, alTerminar }) {
+  const { t } = useI18n();
   const [rarezas, setRarezas] = useState([]);
   const [porContrato, setPorContrato] = useState(4);
   const [rarezaElegida, setRarezaElegida] = useState(null);
@@ -73,14 +76,14 @@ export default function ModalContratos({ isOpen, onClose, alTerminar }) {
     try {
       const res = await fetch(`${API}/cards/contratos/`, { credentials: 'include' });
       if (!res.ok) {
-        setAviso('No se han podido cargar tus cartas.');
+        setAviso(t('albumLoadError'));
         return;
       }
       const datos = await res.json();
       setRarezas(datos.rarezas || []);
       setPorContrato(datos.cartas_por_contrato ?? 4);
     } catch {
-      setAviso('No se ha podido conectar con el servidor.');
+      setAviso(t('serverError'));
     } finally {
       setCargando(false);
     }
@@ -138,7 +141,7 @@ export default function ModalContratos({ isOpen, onClose, alTerminar }) {
       if (!res.ok) {
         // Lo que dice el servidor, tal cual: los motivos son de verdad
         // ("tienes que quedarte al menos con una", "ya es la más alta"...)
-        setAviso(datos.detail || 'No se ha podido hacer el contrato.');
+        setAviso(datos.detail || t('serverError'));
         return;
       }
       setPremio(datos);
@@ -146,7 +149,7 @@ export default function ModalContratos({ isOpen, onClose, alTerminar }) {
       cargar();                 // el álbum ha cambiado: se vuelve a pedir
       alTerminar?.();           // para que el catálogo de detrás se refresque
     } catch {
-      setAviso('No se ha podido conectar con el servidor.');
+      setAviso(t('serverError'));
     } finally {
       setEnviando(false);
     }
@@ -169,13 +172,12 @@ export default function ModalContratos({ isOpen, onClose, alTerminar }) {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
           <div>
-            <h3 style={{ margin: 0, color: '#ffaa00' }}>Contratos</h3>
+            <h3 style={{ margin: 0, color: '#ffaa00' }}>{t('contractTitle')}</h3>
             <p style={{ margin: '0.3rem 0 0', fontSize: '0.85rem', color: '#8b92b0' }}>
-              Entrega {porContrato} cartas repetidas de la misma rareza y llévate una mejor.
-              De cada una te quedas siempre con al menos una copia.
+              {t('contractDescription', { count: porContrato })}
             </p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Cerrar"
+          <button type="button" onClick={onClose} aria-label={t('close')}
                   style={{ background: 'none', border: 'none', color: '#8b92b0',
                            fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
@@ -209,7 +211,7 @@ export default function ModalContratos({ isOpen, onClose, alTerminar }) {
                 {premio.era_nueva && (
                   <span style={{ marginLeft: '0.5rem', fontSize: '0.72rem', color: '#00ffcc',
                                  border: '1px solid #00ffcc', borderRadius: '999px',
-                                 padding: '0.1rem 0.5rem' }}>¡NUEVA!</span>
+                                 padding: '0.1rem 0.5rem' }}>{t('newCard')}</span>
                 )}
               </div>
               <div style={{ fontSize: '0.82rem', color: '#8b92b0' }}>{premio.mensaje}</div>
@@ -218,7 +220,7 @@ export default function ModalContratos({ isOpen, onClose, alTerminar }) {
         )}
 
         {cargando ? (
-          <p style={{ textAlign: 'center', padding: '2rem', color: '#8b92b0' }}>Cargando tus cartas…</p>
+          <p style={{ textAlign: 'center', padding: '2rem', color: '#8b92b0' }}>{t('contractLoading')}</p>
         ) : !rarezaElegida ? (
           /* ---------- PASO 1: elegir rareza ---------- */
           <div style={{ marginTop: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
@@ -243,11 +245,11 @@ export default function ModalContratos({ isOpen, onClose, alTerminar }) {
                   <strong style={{ color: COLOR_RAREZA[r.rareza] }}>{r.rareza}</strong>
                   {r.sube_a
                     ? <span style={{ color: '#8b92b0' }}> → {r.sube_a}</span>
-                    : <span style={{ color: '#8b92b0' }}> · es la más alta</span>}
+                    : <span style={{ color: '#8b92b0' }}> · {t('highestRarity')}</span>}
                 </span>
                 <span style={{ fontSize: '0.82rem', color: '#8b92b0' }}>
-                  {r.sobrantes} repetida{r.sobrantes === 1 ? '' : 's'}
-                  {r.sube_a && !r.se_puede && ` · te faltan ${porContrato - r.sobrantes}`}
+                  {t('duplicates', { count: r.sobrantes, s: r.sobrantes === 1 ? '' : 's' })}
+                  {r.sube_a && !r.se_puede && ` · ${t('missingCards', { count: porContrato - r.sobrantes })}`}
                 </span>
               </button>
             ))}
@@ -260,7 +262,7 @@ export default function ModalContratos({ isOpen, onClose, alTerminar }) {
               <button type="button" onClick={() => { setRarezaElegida(null); setSeleccion({}); }}
                       style={{ background: 'none', border: 'none', color: '#8b92b0',
                                cursor: 'pointer', padding: 0, fontSize: '0.85rem' }}>
-                ← Cambiar de rareza
+                {t('changeRarity')}
               </button>
               <span style={{ fontSize: '0.9rem' }}>
                 <strong style={{ color: elegidas === porContrato ? '#00ffcc' : '#ffaa00' }}>
@@ -289,16 +291,16 @@ export default function ModalContratos({ isOpen, onClose, alTerminar }) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700 }}>{c.login}</div>
                       <div style={{ fontSize: '0.75rem', color: '#8b92b0' }}>
-                        {c.copias} copias · puedes dar {c.sobrantes}
+                        {t('copiesCanGive', { copies: c.copias, give: c.sobrantes })}
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <button type="button" onClick={() => cambiar(c, -1)} disabled={!cogidas || enviando}
-                              aria-label={`Quitar una copia de ${c.login}`}
+                              aria-label={t('removeCopy', { login: c.login })}
                               style={botonPaso(!cogidas)}>−</button>
                       <span style={{ minWidth: '18px', textAlign: 'center', fontWeight: 700 }}>{cogidas}</span>
                       <button type="button" onClick={() => cambiar(c, 1)} disabled={!puedeSubir(c) || enviando}
-                              aria-label={`Añadir una copia de ${c.login}`}
+                              aria-label={t('addCopy', { login: c.login })}
                               style={botonPaso(!puedeSubir(c))}>+</button>
                     </div>
                   </div>
@@ -311,7 +313,7 @@ export default function ModalContratos({ isOpen, onClose, alTerminar }) {
                       style={{ padding: '0.6rem 1.1rem', borderRadius: '8px',
                                border: '1px solid #2a2e3d', backgroundColor: 'transparent',
                                color: '#8b92b0', cursor: 'pointer' }}>
-                Cerrar
+                {t('close')}
               </button>
               <button type="button" onClick={confirmar}
                       disabled={enviando || elegidas !== porContrato}
@@ -323,7 +325,7 @@ export default function ModalContratos({ isOpen, onClose, alTerminar }) {
                         cursor: elegidas === porContrato && !enviando ? 'pointer' : 'not-allowed',
                         opacity: elegidas === porContrato ? 1 : 0.5,
                       }}>
-                {enviando ? 'Cerrando el trato…' : `Hacer contrato (${elegidas}/${porContrato})`}
+                {enviando ? t('dealClosing') : t('makeContract', { selected: elegidas, total: porContrato })}
               </button>
             </div>
           </>

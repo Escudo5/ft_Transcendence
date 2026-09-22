@@ -288,6 +288,7 @@ import Legal from './components/Legal';
 import PieLegal from './components/PieLegal';
 import TiendaSobres from './components/TiendaSobres';
 import ChatSocial from './components/ChatSocial';
+import { I18nProvider, LanguageSelector, useI18n } from './i18n';
 
 const router = createBrowserRouter([
   {
@@ -349,7 +350,8 @@ const router = createBrowserRouter([
 // registrarte no sirve de nada (y el subject pide que sean accesibles).
 const RUTAS_PUBLICAS = ["/privacidad", "/terminos"];
 
-function App() {
+function AppContent() {
+  const { t } = useI18n();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -413,9 +415,12 @@ function App() {
 
   if (loading) {
     return (
-      <main className="session-loading" aria-live="polite">
-        <h2>Verificando sesión...</h2>
-      </main>
+      <>
+        <LanguageSelector />
+        <main className="session-loading" aria-live="polite">
+          <h2>{t('checkingSession')}</h2>
+        </main>
+      </>
     );
   }
 
@@ -429,6 +434,7 @@ function App() {
   if (!isAuthenticated && !enRutaPublica) {
     return (
       <MotionConfig reducedMotion="user">
+        <LanguageSelector />
         <DotField style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
         <Acceso
           apiBaseUrl={apiBaseUrl}
@@ -444,6 +450,7 @@ function App() {
 
   return (
     <MotionConfig reducedMotion="user">
+      <LanguageSelector />
       <DotField style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
       {/* 🎁 Flota por encima de todas las pantallas: el regalo debe poder
           recogerse estés donde estés, no solo en la portada */}
@@ -457,4 +464,10 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
+  );
+}
