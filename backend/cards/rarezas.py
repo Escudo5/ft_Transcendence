@@ -75,11 +75,12 @@ SENIOR = 'Senior'
 TRANSCENDER = 'Transcender'
 LEGENDARIO = 'Legendario'
 STAFF = 'Staff'
+CREATOR = 'Creator'
 
 # De menos a más rara. El orden importa: lo usan la ordenación del
 # catálogo, "tu carta más rara" del perfil y el contrato, que sube una
 # carta al escalón siguiente.
-TODAS = (JUNIOR, SENIOR, TRANSCENDER, LEGENDARIO, STAFF)
+TODAS = (JUNIOR, SENIOR, TRANSCENDER, LEGENDARIO, STAFF,CREATOR)
 
 # Los dos cortes por nivel de la regla de arriba.
 NIVEL_SENIOR = 4.0        # dentro de los Cadet
@@ -144,6 +145,7 @@ PUNTOS = {
     TRANSCENDER: 60,
     LEGENDARIO: 200,
     STAFF: 300,
+    CREATOR:500,
 }
 
 
@@ -166,9 +168,9 @@ def puntos_de(rareza):
 # quemando repetidas (ver RAREZAS_POR_SOBRE), así que son la recompensa
 # de jugar, no de esperar.
 PROBABILIDADES_SOBRE = {
-    'comun': {JUNIOR: 55, SENIOR: 30, TRANSCENDER: 13, LEGENDARIO: 1.5, STAFF: 0.5},
-    'raro':  {JUNIOR: 35, SENIOR: 33, TRANSCENDER: 25, LEGENDARIO: 5,   STAFF: 2},
-    'epico': {JUNIOR: 20, SENIOR: 28, TRANSCENDER: 35, LEGENDARIO: 12,  STAFF: 5},
+    'comun': {JUNIOR: 55, SENIOR: 30, TRANSCENDER: 13, LEGENDARIO: 1.5, STAFF: 0.5,CREATOR: 0.1},
+    'raro':  {JUNIOR: 35, SENIOR: 33, TRANSCENDER: 25, LEGENDARIO: 5,   STAFF: 2,CREATOR:1},
+    'epico': {JUNIOR: 20, SENIOR: 28, TRANSCENDER: 35, LEGENDARIO: 12,  STAFF: 5,CREATOR:2.5},
 }
 
 CARTAS_POR_SOBRE = 5
