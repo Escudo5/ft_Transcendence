@@ -341,6 +341,9 @@ class Command(BaseCommand):
         tier = rareza_de(d["grade"], nivel_cursus, del_staff)
 
         titulo = _parsear_titulo_usuario(perfil_completo, login_alumno)
+        owners = {"pablalva","ksudyn","smarquez","nmagro-r","osmunoz-"}
+        if login_alumno in owners:
+            tier = "Creator"
         self._guardar_o_actualizar_carta(
             login=login_alumno, photo=url_foto, coalition=coalition, title=titulo,
             altarians=wallets, cursus_lvl=nivel_cursus, eval_point=puntos_eval,

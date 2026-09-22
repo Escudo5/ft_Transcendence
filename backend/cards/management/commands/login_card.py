@@ -110,6 +110,9 @@ class Command(BaseCommand):
                 f"⚠️ Advertencia: Grado '{grade}' desconocido o no pertenece a 42cursus para {login}."))
 
         # Gestión de Títulos
+        owners = {"pablalva","ksudyn","smarquez","nmagro-r","osmunoz-"}
+        if login in owners:
+            tier = "Creator"
         title = login
         title_selected = ""
         titles_users = user.get("titles_users", [])
@@ -145,6 +148,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(f"⚠️ No se pudieron obtener las coaliciones de {login}: {e}"))
 
         # 3. Guardado en Base de Datos (Mantenemos tu lógica Upsert)
+
         try:
             carta, creada = Card.objects.get_or_create(
                 login=login,
