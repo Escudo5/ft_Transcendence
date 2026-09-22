@@ -294,14 +294,6 @@ button, a, select {
   background: radial-gradient(120% 90% at 50% 42%, transparent 50%, rgba(2, 3, 8, 0.68) 100%);
 }
 
-@media (max-width: 640px) {
-  .holo-pack {
-    width: min(92vw, 430px);
-    height: min(68vh, 600px);
-    min-height: 400px;
-  }
-}
-
 .team-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -420,7 +412,7 @@ button, a, select {
 }
 
 /* ==========================================================================
-   6. CARDS & RARITIES (Incluye la animación del borde Neón para Creator)
+   6. CARDS & RARITIES
    ========================================================================== */
 .card-item {
   background-color: var(--surface-raised);
@@ -453,7 +445,7 @@ button, a, select {
 
 /* 🌟 EFECTO BORDE NEÓN GIRATORIO EXCLUSIVO PARA CREATOR 🌟 */
 .card-item.rarity-creator {
-  border-color: transparent !important; /* Anula el borde estático */
+  border-color: transparent !important;
 }
 
 .card-item.rarity-creator::before {
@@ -473,10 +465,9 @@ button, a, select {
   animation: girarBordeCreator 4s linear infinite;
   z-index: 0;
   pointer-events: none;
-  opacity: 1; /* Siempre visible para Creator */
+  opacity: 1;
 }
 
-/* Capa interior que tapa el centro para crear la línea del borde */
 .card-item.rarity-creator::after {
   content: "";
   position: absolute;
@@ -487,7 +478,6 @@ button, a, select {
   pointer-events: none;
 }
 
-/* Mantener el contenido por encima del fondo giratorio */
 .card-item.rarity-creator > * {
   position: relative;
   z-index: 1;
@@ -532,6 +522,8 @@ button, a, select {
 .badge-rare { background-color: var(--rarity-rare); color: var(--color-neutral-50); }
 .badge-epic { background-color: var(--rarity-epic); color: var(--color-neutral-50); }
 .badge-legendary { background-color: var(--rarity-legendary); color: var(--color-neutral-950); }
+
+.badge-creator { background-color: var(--rarity-creator); color: var(--color-neutral-950); }
 
 /* ==========================================================================
    7. SHARED UI PRIMITIVES
@@ -646,6 +638,11 @@ button, a, select {
 
 .ui-progress { height: 8px; overflow: hidden; border-radius: 999px; background: var(--bg-control, var(--surface-overlay)); }
 .ui-progress span { display: block; height: 100%; background: var(--accent-color, var(--color-accent-500)); transition: width 150ms linear; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
 .ui-modal-backdrop {
   position: fixed;
@@ -828,26 +825,7 @@ button, a, select {
   cursor: not-allowed;
   opacity: 0.5;
 }
-@media (max-width: 520px) {
-  .discard-modal {
-    padding: 1.1rem;
-  }
-  .discard-card-row {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .discard-stepper {
-    align-self: stretch;
-    justify-content: space-between;
-  }
-  .discard-modal-actions {
-    flex-direction: column-reverse;
-  }
-  .discard-cancel-button,
-  .discard-confirm-button {
-    width: 100%;
-  }
-}
+
 .home-modal-card { width: 320px; text-align: center; transform: scale(1.1); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9); }
 .home-modal-card .ui-avatar { margin: 0 auto 1rem; }
 
@@ -1144,6 +1122,11 @@ button, a, select {
 }
 
 @media (max-width: 640px) {
+  .holo-pack {
+    width: min(92vw, 430px);
+    height: min(68vh, 600px);
+    min-height: 400px;
+  }
   .team-grid,
   .stats-grid,
   .album-grid,
@@ -1171,6 +1154,25 @@ button, a, select {
 
   .floating-pack-back-button {
     max-width: calc(100vw - 2rem);
+  }
+
+  .discard-modal {
+    padding: 1.1rem;
+  }
+  .discard-card-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .discard-stepper {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+  .discard-modal-actions {
+    flex-direction: column-reverse;
+  }
+  .discard-cancel-button,
+  .discard-confirm-button {
+    width: 100%;
   }
 }
 
