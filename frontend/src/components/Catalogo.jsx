@@ -34,6 +34,7 @@ const TIERS = [...RAREZAS].reverse();
 🔍 DETALLE DE UNA CARTA EN POP-UP
 */
 function ModalCarta({ carta, registrados, onCerrar }) {
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   if (!carta) return null;
@@ -81,25 +82,25 @@ function ModalCarta({ carta, registrados, onCerrar }) {
         )}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
-          <Dato etiqueta="Nivel" valor={carta.nivel} />
-          <Dato etiqueta="Coalición" valor={carta.coalicion} />
-          <Dato etiqueta="Evaluaciones" valor={carta.evaluaciones} />
-          <Dato etiqueta="Wallet" valor={carta.altarians} />
+          <Dato etiqueta={t("level")} valor={carta.nivel} />
+          <Dato etiqueta={t("coalition")} valor={carta.coalicion} />
+          <Dato etiqueta={t("evaluations")} valor={carta.evaluaciones} />
+          <Dato etiqueta={t("wallet")} valor={carta.altarians} />
         </div>
 
         {carta.cantidad > 1 && (
           <p style={{ margin: 0, textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
-            Tienes <strong>{carta.cantidad}</strong> copias de esta carta
+            {t("copiesOfCard", { count: carta.cantidad })}
           </p>
         )}
 
         <div style={{ display: "flex", gap: "0.7rem", justifyContent: "center", flexWrap: "wrap", marginTop: "0.5rem" }}>
-          <SecondaryButton onClick={onCerrar}>Cerrar</SecondaryButton>
+          <SecondaryButton onClick={onCerrar}>{t("close")}</SecondaryButton>
           {tienePerfil ? (
-            <Button onClick={visitarPerfil}>Ver su perfil</Button>
+            <Button onClick={visitarPerfil}>{t("viewTheirProfile")}</Button>
           ) : (
             <span style={{ alignSelf: "center", color: "var(--text-secondary)", fontSize: "0.82rem" }}>
-              Todavía no se ha registrado en la web
+              {t("notRegisteredYet")}
             </span>
           )}
         </div>

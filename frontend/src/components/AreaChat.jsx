@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { useI18n } from '../i18n';
 import { BotonIntercambio, ModalPropuestaIntercambio, MensajeIntercambio } from './Intercambio';
 
 const LARGO_MAXIMO = 1000;
@@ -45,6 +46,7 @@ function AreaChat({
   // esperar a la siguiente vuelta del refresco de 3 segundos.
   recargarIntercambios,
 }) {
+  const { t } = useI18n();
   const finDeLaListaRef = useRef(null);
   const [modalIntercambioAbierto, setModalIntercambioAbierto] = useState(false);
 
@@ -71,24 +73,24 @@ function AreaChat({
       <div className="chat-area">
         <div className="no-chat-selected">
           {cargando ? (
-            <p>Cargando tus amigos…</p>
+            <p>{t('loadingFriends')}</p>
           ) : error ? (
             <>
               <span style={{ fontSize: '4rem' }}>⚠️</span>
-              <h3>Algo ha ido mal</h3>
+              <h3>{t('somethingWentWrong')}</h3>
               <p style={{ color: '#ff9b9b' }}>{error}</p>
             </>
           ) : amigos.length === 0 ? (
             <>
               <span style={{ fontSize: '4rem' }}>👋</span>
-              <h3>Todavía no tienes amigos</h3>
-              <p>Entra en la sección de búsqueda para añadir a tus compañeros de 42.</p>
+              <h3>{t('noFriendsYet')}</h3>
+              <p>{t('noFriendsHint')}</p>
             </>
           ) : (
             <>
               <span style={{ fontSize: '4rem' }}>🌐</span>
-              <h3>Módulo Social 42</h3>
-              <p>Selecciona un amigo de la lista izquierda para chatear.</p>
+              <h3>{t('socialModule')}</h3>
+              <p>{t('pickAFriend')}</p>
             </>
           )}
         </div>
@@ -168,7 +170,7 @@ function AreaChat({
           type="button"
           className="mobile-chat-back"
           onClick={() => setChatSeleccionado(null)}
-          aria-label="Volver a la lista de conversaciones"
+          aria-label={t('backToChats')}
         >
           ←
         </button>
@@ -196,8 +198,8 @@ function AreaChat({
       <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
         {mensajes.length === 0 ? (
           <div style={{ textAlign: 'center', marginTop: '3rem', color: '#8b92b0' }}>
-            <p>Todavía no os habéis escrito nada.</p>
-            <p style={{ fontSize: '0.9rem' }}>Escribe algo abajo o propone un intercambio.</p>
+            <p>{t('noMessagesYet')}</p>
+            <p style={{ fontSize: '0.9rem' }}>{t('writeSomething')}</p>
           </div>
         ) : (
           mensajes.map((mensajeActual, indice) => {
@@ -293,7 +295,7 @@ function AreaChat({
             className="btn-volver"
             style={{ fontSize: '0.8rem', padding: '0.3rem 0.8rem' }}
           >
-            Desbloquear
+            {t('unblock')}
           </button>
         </div>
       ) : meHaBloqueadoAEstudiando ? (

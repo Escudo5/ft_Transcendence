@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useI18n } from '../i18n';
 
 const API = import.meta.env.VITE_API_URL || '/api';
 
@@ -71,12 +72,13 @@ export function adaptarPropuesta(i) {
    1. BOTÓN DE INTERCAMBIO (Icono tipo carta/Uno para poner junto al botón enviar)
    =========================================================================== */
 export function BotonIntercambio({ onClick, disabled }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      title="Proponer intercambio de cartas"
+      title={t('proposeTrade')}
       style={{
         padding: '0.7rem',
         borderRadius: '50%',
@@ -111,6 +113,7 @@ export function BotonIntercambio({ onClick, disabled }) {
    2. MODAL DE SELECCIÓN DE CARTAS (Ofrecer vs Pedir)
    =========================================================================== */
 export function ModalPropuestaIntercambio({ isOpen, onClose, usuarioDestino, onEnviarPropuesta }) {
+  const { t } = useI18n();
   const [misRepetidas, setMisRepetidas] = useState([]);
   const [susRepetidas, setSusRepetidas] = useState([]);
   const [cartaOfrecida, setCartaOfrecida] = useState(null);
@@ -202,14 +205,14 @@ export function ModalPropuestaIntercambio({ isOpen, onClose, usuarioDestino, onE
         </h3>
 
         {cargando ? (
-          <p style={{ textAlign: 'center', padding: '2rem' }}>Cargando tus cartas y las de tu compañero…</p>
+          <p style={{ textAlign: 'center', padding: '2rem' }}>{t('loadingBothCards')}</p>
         ) : (
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', margin: '1.5rem 0' }}>
               {/* COLUMNA 1: LO QUE TÚ OFRECES */}
               <div>
                 <label style={{ fontSize: '0.85rem', color: '#8b92b0', display: 'block', marginBottom: '0.5rem' }}>
-                  Ofreces (Tus repetidas): <b style={{ color: '#00ffcc' }}>{misRepetidas.length}</b>
+                  {t('youOfferLabel')} <b style={{ color: '#00ffcc' }}>{misRepetidas.length}</b>
                 </label>
                 {/* Nacho, 10/09: la caja medía 200px de alto, que dan para unas
                     4 cartas. Con 29 repetidas parecía que solo tenías 4, porque
@@ -217,7 +220,7 @@ export function ModalPropuestaIntercambio({ isOpen, onClose, usuarioDestino, onE
                     Ahora entran más y el número de arriba dice cuántas hay. */}
                 <div style={{ ...estiloLista }}>
                   {misRepetidas.length === 0 ? (
-                    <span style={{ fontSize: '0.8rem', color: '#ff4d4d' }}>No tienes repetidas.</span>
+                    <span style={{ fontSize: '0.8rem', color: '#ff4d4d' }}>{t('youHaveNoDuplicates')}</span>
                   ) : (
                     misRepetidas.map((carta) => (
                       <button
@@ -245,11 +248,11 @@ export function ModalPropuestaIntercambio({ isOpen, onClose, usuarioDestino, onE
               {/* COLUMNA 2: LO QUE TÚ PIDES */}
               <div>
                 <label style={{ fontSize: '0.85rem', color: '#8b92b0', display: 'block', marginBottom: '0.5rem' }}>
-                  Pides (Sus repetidas): <b style={{ color: '#ffaa00' }}>{susRepetidas.length}</b>
+                  {t('youAskLabel')} <b style={{ color: '#ffaa00' }}>{susRepetidas.length}</b>
                 </label>
                 <div style={{ ...estiloLista }}>
                   {susRepetidas.length === 0 ? (
-                    <span style={{ fontSize: '0.8rem', color: '#ff4d4d' }}>El usuario no tiene repetidas.</span>
+                    <span style={{ fontSize: '0.8rem', color: '#ff4d4d' }}>{t('theyHaveNoDuplicates')}</span>
                   ) : (
                     susRepetidas.map((carta) => (
                       <button
@@ -288,7 +291,7 @@ export function ModalPropuestaIntercambio({ isOpen, onClose, usuarioDestino, onE
                   cursor: 'pointer',
                 }}
               >
-                Cancelar
+                {t('cancel')}
               </button>
               <button
                 type="submit"
@@ -304,7 +307,7 @@ export function ModalPropuestaIntercambio({ isOpen, onClose, usuarioDestino, onE
                   opacity: !cartaOfrecida || !cartaPedida ? 0.5 : 1,
                 }}
               >
-                Enviar Propuesta
+                {t('sendProposal')}
               </button>
             </div>
           </form>
@@ -318,6 +321,7 @@ export function ModalPropuestaIntercambio({ isOpen, onClose, usuarioDestino, onE
    3. TARJETA EN EL CHAT (Globo con contador y botones de responder)
    =========================================================================== */
 export function MensajeIntercambio({ propuesta, esMio, onResponder }) {
+  const { t } = useI18n();
   const [tiempoRestante, setTiempoRestante] = useState('');
   const [expirado, setExpirado] = useState(false);
 
@@ -379,7 +383,7 @@ export function MensajeIntercambio({ propuesta, esMio, onResponder }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '0.5rem', textAlign: 'center', fontSize: '0.85rem' }}>
         <div style={{ backgroundColor: '#1f2433', padding: '0.5rem', borderRadius: '8px' }}>
-          <small style={{ color: '#8b92b0', display: 'block' }}>{esMio ? 'Ofreces' : 'Te ofrece'}</small>
+          <small style={{ color: '#8b92b0', display: 'block' }}>{esMio ? t('youOffer') : t('theyOffer')}</small>
           <div style={{ fontSize: '1.2rem' }}>{propuesta.cartaOfrecida.imagen}</div>
           <strong>{propuesta.cartaOfrecida.nombre}</strong>
         </div>
@@ -387,7 +391,7 @@ export function MensajeIntercambio({ propuesta, esMio, onResponder }) {
         <span style={{ color: '#8b92b0', fontWeight: 'bold' }}>➔</span>
 
         <div style={{ backgroundColor: '#1f2433', padding: '0.5rem', borderRadius: '8px' }}>
-          <small style={{ color: '#8b92b0', display: 'block' }}>{esMio ? 'Pides' : 'Te pide'}</small>
+          <small style={{ color: '#8b92b0', display: 'block' }}>{esMio ? t('youAsk') : t('theyAsk')}</small>
           <div style={{ fontSize: '1.2rem' }}>{propuesta.cartaPedida.imagen}</div>
           <strong>{propuesta.cartaPedida.nombre}</strong>
         </div>
@@ -404,7 +408,7 @@ export function MensajeIntercambio({ propuesta, esMio, onResponder }) {
                 backgroundColor: 'rgba(255,77,77,0.1)', color: '#ff4d4d', cursor: 'pointer', fontSize: '0.8rem'
               }}
             >
-              Rechazar
+              {t('reject')}
             </button>
             <button
               onClick={() => onResponder(propuesta.id, 'aceptar')}
@@ -413,7 +417,7 @@ export function MensajeIntercambio({ propuesta, esMio, onResponder }) {
                 backgroundColor: 'rgba(0,255,204,0.15)', color: '#00ffcc', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem'
               }}
             >
-              Aceptar
+              {t('accept')}
             </button>
           </div>
         )}
