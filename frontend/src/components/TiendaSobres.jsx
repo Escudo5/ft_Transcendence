@@ -82,7 +82,7 @@ function TiendaSobres() {
   const SOBRES = [
     { id: 'comun', nombre: 'Sobre común', rarezas: ['Junior'], color: 'var(--rarity-common)' },
     { id: 'raro', nombre: 'Sobre raro', rarezas: ['Senior'], color: 'var(--rarity-rare)' },
-    { id: 'legendario', backendType: 'epico', nombre: 'Sobre legendario', rarezas: ['Transcender', 'Legendario', 'Staff'], color: 'var(--rarity-legendary)' },
+    { id: 'legendario', backendType: 'epico', nombre: 'Sobre legendario', rarezas: ['Transcender', 'Legendario', 'Staff', 'Creator'], color: 'var(--rarity-legendary)' },
   ];
 
   // Las rarezas del backend (tier) no se llaman igual que los estilos de esta
@@ -312,6 +312,12 @@ function TiendaSobres() {
   // Si algún día se cambia un color, hay que cambiar también su rgba.
   const obtenerEstiloRareza = (rareza) => {
     switch (rareza) {
+      case 'creator': // La más exclusiva (Verde Esmeralda Radiante / Neón)
+        return {
+          color: 'var(--rarity-creator)',
+          border: '3px solid var(--rarity-creator)',
+          shadow: '0 0 30px rgba(0, 255, 135, 0.8), 0 0 10px rgba(96, 239, 255, 0.5)'
+        };
       case 'staff': // 5. La más exclusiva
         return {
           color: 'var(--rarity-staff)',

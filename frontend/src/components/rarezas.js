@@ -33,7 +33,7 @@
    =========================================================================== */
 
 // De menos rara a más rara. El orden importa: lo usa la ordenación por rareza.
-export const RAREZAS = ['Junior', 'Senior', 'Transcender', 'Legendario', 'Staff'];
+export const RAREZAS = ['Junior', 'Senior', 'Transcender', 'Legendario', 'Staff', 'Creator'];
 
 /* El color de cada rareza, sacado de las variables de styles.css.
  *
@@ -51,6 +51,7 @@ export const COLOR_RAREZA = {
   'Transcender': 'var(--rarity-epic)',
   'Legendario': 'var(--rarity-legendary)',
   'Staff': 'var(--rarity-staff)',
+  'Creator': 'var(--rarity-creator)',
 };
 
 /* El mismo dato pero como nombre de clase, para los sitios que usan las
@@ -61,4 +62,5 @@ export const CLASE_RAREZA = {
   'Transcender': 'epic',
   'Legendario': 'legendary',
   'Staff': 'staff',
+  'Creator': 'creator',
 };

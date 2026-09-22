@@ -22,6 +22,7 @@ const EMOJI_POR_RAREZA = {
   'Transcender': '👾',
   'Legendario': '👑',
   'Staff': '👔',
+  'Creator': '🎨',
 };
 
 // Las dos columnas de cartas del modal. Alto generoso pero limitado a lo que
