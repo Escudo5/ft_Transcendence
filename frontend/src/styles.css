@@ -36,32 +36,23 @@
   --border-strong: var(--color-neutral-600);
   --border-accent: var(--color-accent-500);
 
-  /* El color de acento cuando NO es un borde: fondos de boton, cifras
-     destacadas, enlaces. Se usa en 32 sitios de 9 pantallas: si falta,
-     el perfil, el ranking, el acceso y el album se quedan sin acentos. */
+  /* El color de acento cuando NO es un borde */
   --accent: var(--color-accent-500);
   --accent-strong: var(--color-accent-700);
 
-  /* Guino de la casa: el degradado de los titulos grandes. Dentro de la
-     familia del acento a proposito: el de antes iba de azul a morado, y la
-     guia de calidad marca ese degradado como el delator numero uno de una
-     web hecha con IA. */
+  /* Guiño de la casa: degradado de títulos */
   --degradado-titulo: linear-gradient(100deg, var(--color-accent-500), #5eead4);
 
-  /* Rarity Colors (Desaturated slightly to avoid slop) */
+  /* Rarity Colors */
   --rarity-common: #94a3b8;
   --rarity-rare: #0284c7;
   --rarity-epic: #a855f7;
   --rarity-legendary: #d97706;
-  /* 👔 Nacho, 15/09: quinto color, para las cartas del staff. El sistema
-     de diseño traía cuatro y ahora las rarezas son cinco.
-     Magenta porque es el único hueco que queda libre de verdad: gris,
-     azul, morado y dorado ya son rarezas; el verde azulado es el color de
-     acento de toda la app (botones y cifras), y el rojo es el de los
-     errores. Si se reutilizara cualquiera de esos, la carta más rara del
-     juego se confundiria con un boton o con un aviso. */
   --rarity-staff: #ec4899;
   
+  --rarity-creator: #00FF87;
+  --rarity-creator-bg: linear-gradient(135deg, rgba(0, 255, 135, 0.25), rgba(96, 239, 255, 0.15));
+
   --rarity-common-bg: linear-gradient(135deg, #1e293b, #0f172a);
   --rarity-rare-bg: linear-gradient(135deg, #0c4a6e, #0c1c30);
   --rarity-epic-bg: linear-gradient(135deg, #581c87, #1e1135);
@@ -102,7 +93,7 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
-/* Clase para el guino: se pone en los titulos grandes y ya esta. */
+/* Clase para títulos con degradado */
 .titulo-degradado {
   background: var(--degradado-titulo);
   -webkit-background-clip: text;
@@ -144,7 +135,7 @@ button, a, select {
 }
 
 /* ==========================================================================
-   3. LAYOUT & GRIDS (web-layout-patterns)
+   3. LAYOUT & GRIDS
    ========================================================================== */
 .app-container {
   width: 100%;
@@ -289,7 +280,9 @@ button, a, select {
 }
 
 .stats-grid {
+  display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
 }
 
 .album-grid-wrapper {
@@ -298,17 +291,6 @@ button, a, select {
   gap: var(--space-4);
 }
 
-/* Nacho, 18/09 (lo pidió Konrad, arreglado aquí en vez de en el JSX).
- *
- * Antes: repeat(auto-fit, minmax(250px, 1fr)). El problema que encontró
- * Konrad es real: con auto-fit, si solo tienes UNA carta se estira hasta
- * ocupar toda la pantalla y queda ridícula.
- *
- * Su arreglo iba en el style={{}} del JSX, y eso rompía el móvil: un
- * estilo en línea gana a cualquier regla del CSS, así que la media query
- * de abajo dejaba de aplicarse y las cartas se quedaban en 220px pegadas
- * a la izquierda. Aquí se consigue lo mismo y las media queries siguen
- * mandando. */
 .album-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -396,7 +378,7 @@ button, a, select {
 }
 
 /* ==========================================================================
-   6. CARDS (web-quality-audit)
+   6. CARDS & RARITIES (Incluye la animación del borde Neón para Creator)
    ========================================================================== */
 .card-item {
   background-color: var(--surface-raised);
@@ -408,7 +390,6 @@ button, a, select {
   gap: var(--space-4);
   position: relative;
   overflow: hidden;
-  /* Only animate transform (scale) on interaction for hardware acceleration */
   transition: transform 180ms var(--ease-out);
 }
 
@@ -421,27 +402,59 @@ button, a, select {
   transform: scale(0.97);
 }
 
-/* Instead of animating borders and shadows directly, we use pseudo-elements for glows */
-.card-item::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 300ms var(--ease-out);
-}
-
-.card-item:hover::before {
-  opacity: 1;
-}
-
-/* Rarity specific styles - simplified to avoid AI slop */
+/* Estilos de bordes por rareza */
 .card-item.rarity-common { border-color: var(--rarity-common); }
 .card-item.rarity-rare { border-color: var(--rarity-rare); }
 .card-item.rarity-epic { border-color: var(--rarity-epic); }
 .card-item.rarity-legendary { border-color: var(--rarity-legendary); }
 .card-item.rarity-staff { border-color: var(--rarity-staff); }
+
+/* 🌟 EFECTO BORDE NEÓN GIRATORIO EXCLUSIVO PARA CREATOR 🌟 */
+.card-item.rarity-creator {
+  border-color: transparent !important; /* Anula el borde estático */
+}
+
+.card-item.rarity-creator::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    #00FF87 25%,
+    #60EFFF 50%,
+    transparent 75%
+  );
+  animation: girarBordeCreator 4s linear infinite;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 1; /* Siempre visible para Creator */
+}
+
+/* Capa interior que tapa el centro para crear la línea del borde */
+.card-item.rarity-creator::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: var(--surface-raised);
+  border-radius: calc(var(--radius-card) - 3px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Mantener el contenido por encima del fondo giratorio */
+.card-item.rarity-creator > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes girarBordeCreator {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
 .card-header {
   display: flex;
@@ -571,12 +584,8 @@ button, a, select {
 .ui-badge-rare { background: var(--rarity-rare); color: var(--color-neutral-50); }
 .ui-badge-epic { background: var(--rarity-epic); color: var(--color-neutral-50); }
 .ui-badge-legendary { background: var(--rarity-legendary); color: var(--color-neutral-950); }
-/* Nacho, 21/09: faltaba la de Staff. Al meter la quinta rareza el 15/09 se
- * añadió su color (--rarity-staff) y el borde de la carta
- * (.card-item.rarity-staff), pero no esta etiqueta, así que las cartas de
- * Staff salían con el texto sobre nada. No daba ningún error: simplemente
- * no había regla que aplicar. Texto claro, como rare y epic. */
 .ui-badge-staff { background: var(--rarity-staff); color: var(--color-neutral-50); }
+.ui-badge-creator { background: var(--rarity-creator); color: var(--color-neutral-950); }
 
 .ui-avatar {
   display: inline-flex;
@@ -804,10 +813,6 @@ button, a, select {
 .ui-status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--color-neutral-400); }
 .ui-status-online { color: #4ade80; }
 .ui-status-online .ui-status-dot { background: #4ade80; }
-/* Nacho, 18/09 (con el visto bueno de Konrad): aquí estaban las dos reglas
-   de .ui-status-ingame. Se quitan porque ese estado ya no existe: el backend
-   no lo escribía nunca y el 18/09 salió también del modelo. Nada más de este
-   fichero se ha tocado. */
 .ui-status-offline { color: #94a3b8; }
 
 .card-artwork {
@@ -832,12 +837,8 @@ button, a, select {
 .rarity-rare .card-artwork { background: var(--rarity-rare-bg); }
 .rarity-epic .card-artwork { background: var(--rarity-epic-bg); }
 .rarity-legendary .card-artwork { background: var(--rarity-legendary-bg); }
-/* Nacho, 21/09: faltaba la de Staff, igual que pasaba con .ui-badge-staff.
- * La variable --rarity-staff-bg ya existía desde el 15/09 (línea 69), pero
- * no había ninguna regla que la usara, así que el fondo de la foto en las
- * cartas de Staff se quedaba sin color mientras las otras cuatro sí lo
- * tenían. No daba error: simplemente no se aplicaba nada. */
 .rarity-staff .card-artwork { background: var(--rarity-staff-bg); }
+.rarity-creator .card-artwork { background: var(--rarity-creator-bg); }
 
 .artwork-id {
   position: absolute;
@@ -939,7 +940,7 @@ button, a, select {
 }
 
 /* ==========================================================================
-   7. PAGINATION & UTILS
+   8. PAGINATION & UTILS
    ========================================================================== */
 .pagination-container {
   display: flex;
@@ -1079,31 +1080,10 @@ button, a, select {
   transform: scale(0.97);
 }
 
-@media (max-width: 640px) {
-  .floating-navigation {
-    flex-wrap: wrap;
-    justify-content: center;
-    width: calc(100vw - 1rem);
-  }
-
-  .floating-navigation .back-btn-link {
-    flex: 1 1 auto;
-    text-align: center;
-  }
-
-  .floating-pack-back-button {
-    max-width: calc(100vw - 2rem);
-  }
-}
-
 /* ==========================================================================
-   8. MEDIA QUERIES (web-layout-patterns)
+   9. MEDIA QUERIES
    ========================================================================== */
 @media (max-width: 1024px) {
-  /* Nacho, 18/09: se añade .album-grid a estos dos escalones. Antes no
-   * hacía falta porque auto-fit se apañaba solo; ahora que son 4 columnas
-   * fijas, sin esto saldrían 4 columnas apretadísimas en tablet. Mismo
-   * patrón que .team-grid, que ya bajaba 4 -> 3 -> 2 -> 1. */
   .team-grid,
   .album-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1122,7 +1102,6 @@ button, a, select {
 }
 
 @media (max-width: 640px) {
-  /* Complete collapse on mobile as per web-layout-patterns rule 8.C */
   .team-grid,
   .stats-grid,
   .album-grid,
@@ -1135,6 +1114,20 @@ button, a, select {
   }
   .arrow-btn {
     width: 100%;
+  }
+  .floating-navigation {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: calc(100vw - 1rem);
+  }
+
+  .floating-navigation .back-btn-link {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+
+  .floating-pack-back-button {
+    max-width: calc(100vw - 2rem);
   }
 }
 
