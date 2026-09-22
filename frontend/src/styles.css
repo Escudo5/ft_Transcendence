@@ -446,6 +446,9 @@ button, a, select {
 /* 🌟 EFECTO BORDE NEÓN GIRATORIO EXCLUSIVO PARA CREATOR 🌟 */
 .card-item.rarity-creator {
   border-color: transparent !important;
+  position: relative;
+  /* Aseguramos que el contenido hijo no rompa las esquinas redondeadas */
+  background-clip: padding-box;
 }
 
 .card-item.rarity-creator::before {
@@ -465,22 +468,23 @@ button, a, select {
   animation: girarBordeCreator 4s linear infinite;
   z-index: 0;
   pointer-events: none;
-  opacity: 1;
 }
 
+/* Tapa interior para crear la ilusión del borde fino (3px) */
 .card-item.rarity-creator::after {
   content: "";
   position: absolute;
-  inset: 3px;
+  inset: 3px; /* Grosor del borde */
   background: var(--surface-raised);
   border-radius: calc(var(--radius-card) - 3px);
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
 }
 
+/* Sube todo el contenido real de la carta por encima del ::after */
 .card-item.rarity-creator > * {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 @keyframes girarBordeCreator {
