@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useI18n } from '../i18n';
 
 /**
  * REGALO DIARIO
@@ -83,6 +84,7 @@ const estilos = {
 };
 
 function RegaloDiario() {
+  const { t } = useI18n();
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
 
   const [disponible, setDisponible] = useState(false);
@@ -164,7 +166,7 @@ function RegaloDiario() {
         type="button"
         onClick={recoger}
         disabled={reclamando}
-        title={disponible ? 'Recoge tus 2 sobres del día' : 'Ya has recogido el regalo de hoy'}
+        title={disponible ? t('claimDailyGift') : t('giftAlreadyClaimed')}
         style={{ ...estilos.boton, ...(disponible ? estilos.botonConRegalo : {}) }}
       >
         {reclamando ? '⏳' : '🎁'}

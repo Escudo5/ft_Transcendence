@@ -5,6 +5,7 @@ import FondoTiendaSobres from './FondoTiendaSobres';
 import SobreHolografico from './SobreHolografico';
 import { Alert, Modal } from './ui';
 import { CLASE_RAREZA } from './rarezas';
+import { useI18n } from '../i18n';
 
 // 1. IMPORTA LAS 3 IMÁGENES DE TUS SOBRES
 
@@ -55,6 +56,7 @@ const subtituloSeccion = {
 };
 
 function TiendaSobres() {
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   const [fase, setFase] = useState('SELECCION');
@@ -80,9 +82,9 @@ function TiendaSobres() {
   // SERGIO: son 3 sobres y 4 rarezas, así que las dos de arriba comparten el
   // sobre épico, igual que hacías tú antes con Alumni y Transcender.
   const SOBRES = [
-    { id: 'comun', nombre: 'Sobre común', rarezas: ['Junior'], color: 'var(--rarity-common)' },
-    { id: 'raro', nombre: 'Sobre raro', rarezas: ['Senior'], color: 'var(--rarity-rare)' },
-    { id: 'legendario', backendType: 'epico', nombre: 'Sobre legendario', rarezas: ['Transcender', 'Legendario', 'Staff', 'Creator'], color: 'var(--rarity-legendary)' },
+    { id: 'comun', nombre: t('packCommon'), rarezas: ['Junior'], color: 'var(--rarity-common)' },
+    { id: 'raro', nombre: t('packRare'), rarezas: ['Senior'], color: 'var(--rarity-rare)' },
+    { id: 'legendario', backendType: 'epico', nombre: t('packLegendary'), rarezas: ['Transcender', 'Legendario', 'Staff', 'Creator'], color: 'var(--rarity-legendary)' },
   ];
 
   // Las rarezas del backend (tier) no se llaman igual que los estilos de esta
@@ -189,11 +191,11 @@ function TiendaSobres() {
   const seleccionarTipoSobre = (tipo) => {
     const disponibles = sobresDisponibles[tipo];
     if (disponibles === null) {
-      setError('Estamos consultando tus sobres disponibles.');
+      setError(t('packsChecking'));
       return;
     }
     if (disponibles < 1) {
-      setError(`No te quedan sobres ${tipo}.`);
+      setError(t('noPacksLeft', { type: tipo }));
       return;
     }
     setTipoSobreActivo(tipo);
@@ -253,7 +255,7 @@ function TiendaSobres() {
     // 🔒 Si no le quedan sobres, ni siquiera empieza a romperse: seria abrir un
     // regalo para encontrarlo vacio.
     if (sobresDisponibles[tipoSobreActivo] !== null && sobresDisponibles[tipoSobreActivo] < 1) {
-      setError(`No te quedan sobres ${tipoSobreActivo}.`);
+      setError(t('noPacksLeft', { type: tipoSobreActivo }));
       return;
     }
 
@@ -577,7 +579,7 @@ function TiendaSobres() {
               textAlign: 'center'
             }}
           >
-            SALIR DE ESTA APERTURA
+            {t('exitOpening')}
           </motion.button>
         )}
       </div>
@@ -614,8 +616,8 @@ function TiendaSobres() {
 
         {fase === 'SELECCION' && <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '4rem auto 2rem' }} aria-labelledby="crear-sobres-titulo">
           <div className="grid-meta">
-            <h2 id="crear-sobres-titulo" style={tituloSeccion}>Consigue sobres con repetidas</h2>
-            <span style={subtituloSeccion}>Quema 4 repetidas y quédate con una</span>
+            <h2 id="crear-sobres-titulo" style={tituloSeccion}>{t('getPacksWithDuplicates')}</h2>
+            <span style={subtituloSeccion}>{t('burn4KeepOne')}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
             {SOBRES.map((sobre) => (
@@ -636,7 +638,7 @@ function TiendaSobres() {
                   textAlign: 'center',
                   lineHeight: 1.35,
                 }}>
-                  quemando 4 repetidas de<br />
+                  {t('burnsDuplicatesOf')}<br />
                   {sobre.rarezas.join(' o ')}
                 </span>
               </button>
@@ -648,12 +650,12 @@ function TiendaSobres() {
           <Modal onClose={() => !procesandoDescarte && setSobreSeleccionado(null)} labelledBy="selector-sobre-titulo" className="discard-modal">
             <div className="discard-modal-header">
               <div>
-                <span className="discard-modal-kicker">Canje de repetidas</span>
+                <span className="discard-modal-kicker">{t('duplicatesExchange')}</span>
                 <h2 id="selector-sobre-titulo">{sobreSeleccionado.nombre}</h2>
               </div>
-              <button type="button" className="discard-modal-close" onClick={() => setSobreSeleccionado(null)} aria-label="Cerrar selector" disabled={procesandoDescarte}>×</button>
+              <button type="button" className="discard-modal-close" onClick={() => setSobreSeleccionado(null)} aria-label={t('closeSelector')} disabled={procesandoDescarte}>×</button>
             </div>
-            <p className="discard-modal-intro">Elige grupos de 4 copias de la misma carta. De cada una te queda siempre una, así que no pierdes ninguna carta del álbum.</p>
+            <p className="discard-modal-intro">{t('discardIntro')}</p>
             <div className="discard-card-list">
               {/* ⚠️ Nacho, 10/09: era `>= 4`, y con 4 copias justas la pantalla
                   te dejaba elegirla pero el servidor la rechazaba. Ahora hacen
@@ -680,13 +682,13 @@ function TiendaSobres() {
               })}
             </div>
             {album.filter((card) => sobreSeleccionado.rarezas.includes(card.tier) && card.cantidad >= 5).length === 0 && (
-              <p className="discard-empty">No tienes 5 copias de ninguna carta de esta calidad. Hacen falta 5: se queman 4 y te queda una.</p>
+              <p className="discard-empty">{t('discardEmpty')}</p>
             )}
             {mensajeDescarte && <p role="status">{mensajeDescarte}</p>}
             <div className="discard-modal-actions">
-              <button type="button" className="discard-cancel-button" onClick={() => setSobreSeleccionado(null)} disabled={procesandoDescarte}>Cancelar</button>
+              <button type="button" className="discard-cancel-button" onClick={() => setSobreSeleccionado(null)} disabled={procesandoDescarte}>{t('cancel')}</button>
               <button type="button" className="discard-confirm-button" onClick={confirmarDescarte} disabled={procesandoDescarte || !Object.keys(seleccionDescarte).length}>
-                {procesandoDescarte ? 'Quemando…' : 'Confirmar y quemar'}
+                {procesandoDescarte ? t('burning') : t('confirmAndBurn')}
               </button>
             </div>
           </Modal>
@@ -694,8 +696,8 @@ function TiendaSobres() {
 
         {fase === 'SELECCION' && <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '2rem auto' }} aria-labelledby="abrir-sobres-titulo">
           <div className="grid-meta">
-            <h2 id="abrir-sobres-titulo" style={tituloSeccion}>Sobres disponibles</h2>
-            <span style={subtituloSeccion}>Elige la calidad del sobre que quieres abrir</span>
+            <h2 id="abrir-sobres-titulo" style={tituloSeccion}>{t('availablePacks')}</h2>
+            <span style={subtituloSeccion}>{t('choosePackQuality')}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
             {SOBRES.map((sobre) => {

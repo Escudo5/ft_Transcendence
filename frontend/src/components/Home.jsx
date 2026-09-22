@@ -61,7 +61,7 @@ como la gente espera leer un progreso.
 Va con role y aria-label porque un dibujo no lo lee nadie con un lector de
 pantalla: sin eso, para quien no ve la imagen esta columna estaría vacía.
 */
-function AnilloProgreso({ porcentaje, color = 'var(--accent)', tamano = 92 }) {
+function AnilloProgreso({ porcentaje, etiqueta, color = 'var(--accent)', tamano = 92 }) {
   const seguro = Math.max(0, Math.min(100, Number(porcentaje) || 0));
   const grosor = 9;
   const radio = (tamano - grosor) / 2;
@@ -74,7 +74,7 @@ function AnilloProgreso({ porcentaje, color = 'var(--accent)', tamano = 92 }) {
       height={tamano}
       viewBox={`0 0 ${tamano} ${tamano}`}
       role="img"
-      aria-label={`Llevas el ${seguro}% del álbum`}
+      aria-label={etiqueta}
       style={{ display: 'block' }}
     >
       {/* El carril de atrás: la vuelta entera, apagada */}
@@ -108,7 +108,7 @@ la rareza en su color) para que las dos pantallas se parezcan. El color sale
 de COLOR_RAREZA, que es el diccionario de rarezas.js: no se escribe aquí
 ningún color a mano.
 */
-function CartaMini({ carta }) {
+function CartaMini({ carta, t }) {
   if (!carta) return null;
 
   return (
@@ -128,7 +128,7 @@ function CartaMini({ carta }) {
         <div style={{ color: COLOR_RAREZA[carta.tier] || 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 700 }}>
           {carta.tier}
         </div>
-        <div style={{ fontSize: '0.8rem' }}>nivel {carta.nivel}</div>
+        <div style={{ fontSize: '0.8rem' }}>{t("boardLevel", { level: carta.nivel })}</div>
         {/* ⚠️ Nacho, 21/09: aquí llegó a salir la coalición y el equipo
             decidió quitarla de las dos cartas del tablón. Se pinta con este
             componente y no en cada columna a mano, así que las dos enseñan
@@ -139,7 +139,10 @@ function CartaMini({ carta }) {
 }
 
 function Home() {
-  const { t } = useI18n();
+  // languageInfo ademas de t: el separador de miles cambia con el idioma
+  // (2.495 en español, 2,495 en ingles). Formatearlo siempre 'es-ES'
+  // seria dejar la cifra a medio traducir.
+  const { t, languageInfo } = useI18n();
   const navigate = useNavigate();
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
   const cardsEndpoint = import.meta.env.VITE_CARDS_ENDPOINT || `${apiBaseUrl}/cards`;
@@ -381,43 +384,43 @@ function Home() {
         }}>
           
           {/* ── 1. TU PROGRESO ───────────────────────────────────────── */}
-          <ColumnaTablon color="var(--accent)" titulo="Tu progreso">
+          <ColumnaTablon color="var(--accent)" titulo={t("boardProgress")}>
             {tablon?.coleccion ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-                <AnilloProgreso porcentaje={tablon.coleccion.porcentaje} />
+                <AnilloProgreso porcentaje={tablon.coleccion.porcentaje} etiqueta={t("boardRingLabel", { percent: tablon.coleccion.porcentaje })} />
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: 0 }}>{tablon.coleccion.cartas_distintas} de {tablon.coleccion.cartas_en_catalogo}</p>
-                  <p style={{ margin: 0 }}>{(tablon.puntos ?? 0).toLocaleString('es-ES')} puntos</p>
-                  {tablon.posicion && <p style={{ margin: 0 }}>Vas el <strong>#{tablon.posicion}</strong></p>}
+                  <p style={{ margin: 0 }}>{t("boardCardsOf", { have: tablon.coleccion.cartas_distintas, total: tablon.coleccion.cartas_en_catalogo })}</p>
+                  <p style={{ margin: 0 }}>{t("boardPoints", { points: (tablon.puntos ?? 0).toLocaleString(languageInfo.locale) })}</p>
+                  {tablon.posicion && <p style={{ margin: 0 }}>{t("boardRankPosition")} <strong>#{tablon.posicion}</strong></p>}
                 </div>
               </div>
             ) : <p>…</p>}
           </ColumnaTablon>
 
           {/* ── 2. LA MEJOR CARTA QUE EXISTE ──────────────────────────── */}
-          <ColumnaTablon color="var(--rarity-legendary)" titulo="La carta más alta que existe">
-            {tablon?.cartaMasAlta ? <CartaMini carta={tablon.cartaMasAlta} /> : <p>…</p>}
+          <ColumnaTablon color="var(--rarity-legendary)" titulo={t("boardTopCardAll")}>
+            {tablon?.cartaMasAlta ? <CartaMini carta={tablon.cartaMasAlta} t={t} /> : <p>…</p>}
           </ColumnaTablon>
 
           {/* ── 3. LA MEJOR QUE TIENES TÚ ─────────────────────────────── */}
-          <ColumnaTablon color="var(--rarity-epic)" titulo="La más alta que tienes">
+          <ColumnaTablon color="var(--rarity-epic)" titulo={t("boardTopCardMine")}>
             {tablon?.miCartaMasAlta ? (
-              <CartaMini carta={tablon.miCartaMasAlta} />
+              <CartaMini carta={tablon.miCartaMasAlta} t={t} />
             ) : (
               /* Sin cartas todavía no es un error: es que aún no ha abierto
                  ningún sobre. Se le dice qué hacer en vez de dejar un hueco. */
-              <p>{tablon ? 'Abre un sobre para conseguir tu primera carta.' : '…'}</p>
+              <p>{tablon ? t("boardNoCards") : '…'}</p>
             )}
           </ColumnaTablon>
 
           {/* ── 4. AMIGOS CONECTADOS ──────────────────────────────────── */}
-          <ColumnaTablon color="var(--rarity-rare)" titulo="Amigos conectados">
+          <ColumnaTablon color="var(--rarity-rare)" titulo={t("boardFriendsOnline")}>
             {!tablon ? <p>…</p> : tablon.amigos.length === 0 ? (
-              <p>Todavía no tienes amigos. Búscalos en el chat.</p>
+              <p>{t("boardNoFriends")}</p>
             ) : (
               <>
                 <p style={estilosTablon.cifra}>
-                  {tablon.amigos.filter((a) => a.estado !== 'offline').length} en línea
+                  {t("boardOnlineCount", { count: tablon.amigos.filter((a) => a.estado !== 'offline').length })}
                 </p>
                 {/* Los conectados primero, y como mucho cinco: esto es un
                     resumen, la lista entera está en el chat. */}
@@ -430,7 +433,7 @@ function Home() {
                       {' '}{a.nombre || a.username}
                     </p>
                   ))}
-                {tablon.amigos.length > 5 && <p>y {tablon.amigos.length - 5} más…</p>}
+                {tablon.amigos.length > 5 && <p>{t("boardAndMore", { count: tablon.amigos.length - 5 })}</p>}
               </>
             )}
           </ColumnaTablon>
