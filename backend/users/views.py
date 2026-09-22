@@ -16,8 +16,11 @@ from django.core.validators import validate_email
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.middleware.csrf import get_token
+from django.http import JsonResponse
+from django.db import transaction
 from .models import CustomUser
-
+from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 # 🔑 Credenciales de la aplicación registrada en la Intra (vienen del .env)
 CLIENT_ID = os.environ.get('CLIENT_ID_NACHO')
 CLIENT_SECRET = os.environ.get('CLIENT_SECRET_NACHO')
@@ -611,11 +614,11 @@ def mi_avatar(request):
 # credenciales en el .env) y avisar al descargar datos y al borrar la cuenta.
 # =====================================================================
 
-@require_GET
+@require_http_methods(["GET", "POST"])
 def descargar_mis_datos(request):
     """
-    Devuelve TODO lo que guardamos de esta persona, en un fichero JSON que se
-    descarga. Formato legible y completo, como exige el RGPD.
+    Recopila TODO lo que guardamos de esta persona y se lo envía
+    en un archivo JSON adjunto a su correo electrónico.
     """
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
@@ -623,6 +626,15 @@ def descargar_mis_datos(request):
     from cards.models import UserCard, UserPack
 
     u = request.user
+
+    # Comprobamos que el usuario tenga un correo configurado
+    if not u.email:
+        return JsonResponse({
+            'error': 'Sin correo electrónico.',
+            'detalle': 'Tu cuenta no tiene una dirección de correo asociada para recibir el archivo.'
+        }, status=400)
+
+    # 1. Recopilamos todos sus datos
     datos = {
         'exportado_el': timezone.now().isoformat(),
         'cuenta': {
@@ -636,18 +648,11 @@ def descargar_mis_datos(request):
             'foto_subida_por_ti': u.avatar.url if u.avatar else None,
             'id_42': u.id_42,
             'es_alumni': u.is_alumni,
-            # 🏆 Su puntuación de verdad, la de la colección. Antes aquí iba
-            # 'puntuacion_elo', que era un 1000 igual para todo el mundo: se
-            # exportaba un dato que no decía nada de esta persona y no se
-            # exportaba el único que sí. Sale de la misma función que el
-            # perfil, para que no haya dos cuentas distintas.
             'puntos': _estadisticas_coleccion(u)['puntos'],
             'estado': u.estado_real,
             'alta': u.date_joined.isoformat(),
             'ultimo_acceso': u.last_login.isoformat() if u.last_login else None,
             'ultimo_regalo_diario': u.ultimo_regalo_diario.isoformat() if u.ultimo_regalo_diario else None,
-            # La contraseña NO se incluye: está cifrada de forma irreversible y
-            # ni nosotros podemos leerla.
         },
         'album': [
             {
@@ -664,45 +669,70 @@ def descargar_mis_datos(request):
         ],
     }
 
-    respuesta = JsonResponse(datos, json_dumps_params={'indent': 2, 'ensure_ascii': False})
-    respuesta['Content-Disposition'] = f'attachment; filename="mis-datos-{u.username}.json"'
-    return respuesta
+    # 2. Generamos el contenido JSON en memoria como una cadena formateada
+    contenido_json = json.dumps(datos, indent=2, ensure_ascii=False)
+    nombre_archivo = f"mis-datos-{u.username}.json"
 
+    # 3. Construimos el correo con el adjunto
+    email = EmailMessage(
+        subject='Tus datos de Transcendence',
+        body=(
+            f'Hola {u.username},\n\n'
+            'Adjunto a este correo encontrarás el archivo JSON con toda la información '
+            'asociada a tu cuenta, de acuerdo con nuestro compromiso de transparencia y el RGPD.\n\n'
+            'Un saludo,\nEl equipo de Transcendence.'
+        ),
+        from_email=None,  # Utiliza DEFAULT_FROM_EMAIL definido en settings.py
+        to=[u.email],
+    )
+
+    # Adjuntamos el archivo (Nombre, Contenido, Tipo MIME)
+    email.attach(nombre_archivo, contenido_json, 'application/json')
+
+    # 4. Enviamos el correo
+    try:
+        email.send(fail_silently=False)
+        return JsonResponse({
+            'mensaje': f'Se ha enviado un correo a {u.email} con la copia de tus datos.'
+        })
+    except Exception as e:
+        print(f"Error al enviar correo de datos a {u.email}: {e}")
+        return JsonResponse({
+            'error': 'Error de envío',
+            'detalle': 'No se pudo enviar el correo en este momento. Inténtalo de nuevo más tarde.'
+        }, status=500)
 
 @require_POST
 def borrar_mi_cuenta(request):
-    """
-    Borra la cuenta y todo lo asociado (álbum y sobres se van en cascada).
-    Pide confirmación explícita en el cuerpo para que un clic accidental o una
-    petición suelta no borre la cuenta de nadie.
-    """
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
 
     datos = _leer_json(request)
-    if datos.get('confirmacion') != 'BORRAR MI CUENTA':
-        return JsonResponse({
-            'error': 'Falta la confirmación.',
-            'detalle': 'Para borrar la cuenta hay que enviar la confirmación exacta.',
-        }, status=400)
+    if not datos or datos.get('confirmacion') != 'BORRAR MI CUENTA':
+        return JsonResponse({'error': 'Falta la confirmación.'}, status=400)
 
     usuario = request.user
     nombre = usuario.username
+    email_usuario = usuario.email  # Guardamos el email antes de borrar nada
 
-    # ⚠️ El avatar hay que borrarlo A MANO. Al borrar el usuario, Django quita
-    # la fila de la base de datos pero NO toca el fichero del disco: la foto se
-    # quedaría ahí para siempre. Y en la Política de Privacidad prometemos que
-    # al borrar la cuenta no queda nada, así que hay que cumplirlo.
-    if usuario.avatar:
-        usuario.avatar.delete(save=False)
+    # 1. Enviar el correo informativo (o enlace de confirmación)
+    if email_usuario:
+        send_mail(
+            subject='Tu cuenta ha sido eliminada',
+            message=f'Hola {nombre},\n\nConfirmamos que tu cuenta y todos tus datos han sido eliminados correctamente.',
+            from_email=None,
+            recipient_list=[email_usuario],
+            fail_silently=False,
+        )
 
-    logout(request)   # cerramos la sesión antes de borrar
-    usuario.delete()  # el álbum y los sobres se borran en cascada
+    # 2. Borrar primero en la Base de Datos
+    with transaction.atomic():
+        usuario.delete()
 
-    return JsonResponse({'mensaje': f'La cuenta de {nombre} y todos sus datos se han borrado.'})
+    # 3. Hacer logout DESPUÉS de haber eliminado el usuario en BD
+    logout(request)
 
-
-@require_GET
+    return JsonResponse({'mensaje': f'La cuenta de {nombre} se ha borrado correctamente.'})
 def list_users(request):
     """Devuelve usuarios de la base de datos para pintarlos en el front."""
     users = CustomUser.objects.all().order_by('username')
@@ -734,11 +764,13 @@ def list_users(request):
 # =====================================================================
 
 def _leer_json(request):
-    """Lee el cuerpo de la peticion como JSON. Devuelve {} si viene vacio o mal."""
+    """Lee y decodifica el cuerpo JSON de la petición de forma segura."""
     try:
-        return json.loads(request.body or '{}')
-    except (ValueError, TypeError):
-        return {}
+        if not request.body:
+            return {}
+        return json.loads(request.body.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
 
 
 def _generar_username(nombre, email):
