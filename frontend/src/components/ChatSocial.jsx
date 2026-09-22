@@ -7,6 +7,7 @@ import BuscarAmigos from './BuscarAmigos';
 import SolicitudesRecibidas from './SolicitudesRecibidas';
 import AreaChat from './AreaChat';
 import { adaptarPropuesta } from './Intercambio';
+import { useI18n } from '../i18n';
 import './Chat.css';
 
 const API = import.meta.env.VITE_API_URL || '/api';
@@ -14,8 +15,8 @@ const API = import.meta.env.VITE_API_URL || '/api';
 // ⚠️ Nacho, 18/09 (con el visto bueno de Konrad): quitado 'ingame', que el
 // backend no escribía nunca. Es la única línea que se toca de este fichero.
 const TEXTO_ESTADO = {
-  online: 'En línea',
-  offline: 'Desconectado',
+  online: 'statusOnline',
+  offline: 'statusOffline',
 };
 
 const LARGO_MAXIMO = 1000;
@@ -68,6 +69,7 @@ async function pedirTokenCSRF() {
 }
 
 function ChatSocial() {
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   const [chatSeleccionado, setChatSeleccionado] = useState(null);
@@ -90,7 +92,7 @@ function ChatSocial() {
       ]);
 
       if (resAmigos.status === 401 || resAmigos.status === 403) {
-        setError('Tienes que iniciar sesión para ver tus amigos.');
+        setError(t('friendsLoginRequired'));
         return;
       }
 
@@ -99,7 +101,7 @@ function ChatSocial() {
         // fallaba. Se quita, como dejó dicho Konrad al escribirlo: si algo va
         // mal hay que verlo, no taparlo con datos falsos. En una evaluación,
         // una pantalla que finge funcionar es peor que una que da error.
-        setError('No se han podido cargar tus amigos. Inténtalo en un momento.');
+        setError(t('friendsLoadError'));
         return;
       }
 
@@ -130,7 +132,7 @@ function ChatSocial() {
     } catch (err) {
       console.error('Error al cargar amigos y solicitudes:', err);
       // Lo que Konrad dejó dicho que había que descomentar al juntarlo.
-      setError('No se ha podido conectar con el servidor.');
+      setError(t('serverError'));
     } finally {
       setCargando(false);
     }
@@ -246,7 +248,7 @@ function ChatSocial() {
           // el servidor fallaba. Fuera. Se deja lo que hubiera y se avisa: la
           // conversación se sigue pidiendo cada 3 segundos, así que si el
           // servidor vuelve, se arregla solo.
-          setError('No se han podido cargar los mensajes.');
+          setError(t('messagesLoadError'));
           return;
         }
         setError('');
@@ -261,7 +263,7 @@ function ChatSocial() {
         );
       } catch (err) {
         console.error('Error al cargar la conversación:', err);
-        setError('No se ha podido conectar con el servidor.');
+        setError(t('serverError'));
       }
     }
 
@@ -382,7 +384,7 @@ function ChatSocial() {
       console.error('Error al enviar el mensaje:', err);
       // Igual que arriba: no se finge que se ha enviado, y el texto se queda
       // escrito para poder reintentarlo.
-      setError('No se ha podido enviar el mensaje. Revisa la conexión.');
+      setError(t('messageSendError'));
     } finally {
       setEnviando(false);
     }
@@ -456,7 +458,7 @@ function ChatSocial() {
       setCandidatos((prev) => prev.filter((candidato) => candidato.id !== usuarioObjetivo.id));
     } catch (err) {
       console.error('Error al enviar la solicitud:', err);
-      alert('No se ha podido conectar con el servidor.');
+      alert(t('serverError'));
     }
   };
 
@@ -476,7 +478,7 @@ function ChatSocial() {
       await recargarDatosSociales();
     } catch (err) {
       console.error('Error al responder la solicitud:', err);
-      alert('No se ha podido conectar con el servidor.');
+      alert(t('serverError'));
     }
   };
 

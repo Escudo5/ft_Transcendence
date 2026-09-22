@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n';
 /**
  * PIE DE PÁGINA CON LOS ENLACES LEGALES
  * -------------------------------------
@@ -15,6 +16,7 @@
  * da igual.
  */
 export default function PieLegal({ estilo }) {
+  const { t } = useI18n();
   const enlace = { color: 'var(--text-secondary)' };
 
   return (
@@ -27,9 +29,9 @@ export default function PieLegal({ estilo }) {
         ...estilo,
       }}
     >
-      <a href="/privacidad" style={enlace}>Política de Privacidad</a>
+      <a href="/privacidad" style={enlace}>{t('privacyPolicy')}</a>
       <span style={{ margin: '0 0.6rem', opacity: 0.5 }}>·</span>
-      <a href="/terminos" style={enlace}>Términos de Servicio</a>
+      <a href="/terminos" style={enlace}>{t('termsOfService')}</a>
       <p style={{ marginTop: '0.6rem', opacity: 0.7 }}>
         Proyecto académico de estudiantes de 42 Madrid · Sin afiliación oficial con 42
       </p>
