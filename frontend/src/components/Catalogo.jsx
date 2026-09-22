@@ -5,6 +5,7 @@ import { Badge, TextField } from "./ui";
 import ModalContratos, { BotonContratos } from "./Contratos";
 import BotonAbrirSobres from "./BotonAbrirSobres";
 import { CLASE_RAREZA, RAREZAS } from "./rarezas";
+import { useI18n } from "../i18n";
 
 /**
  * EL ÁLBUM
@@ -39,7 +40,15 @@ const LOGOS_COALICIONES = {
 // a una COPIA, porque reverse() modifica el array original.
 const TIERS = [...RAREZAS].reverse();
 
+const RAREZA_TRADUCCIONES = {
+  "Común": "rarityCommon",
+  "Épica": "rarityEpic",
+  "Transcender": "rarityTranscender",
+  "Legendaria": "rarityLegendary",
+};
+
 export default function Catalogo() {
+  const { t } = useI18n();
   const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
 
   // Datos que vienen del backend
@@ -67,11 +76,11 @@ export default function Catalogo() {
         const res = await fetch(`${apiBaseUrl}/cards/album/`, { credentials: "include" });
 
         if (res.status === 401 || res.status === 403) {
-          setError("Tienes que iniciar sesión para ver tu álbum.");
+          setError(t("loginRequired"));
           return;
         }
         if (!res.ok) {
-          setError("No se ha podido cargar tu álbum.");
+          setError(t("albumLoadError"));
           return;
         }
 
@@ -85,7 +94,7 @@ export default function Catalogo() {
             cantidad: item.cantidad ?? 1,
             login: item.card?.login || "",
             titulo: item.card?.title || item.card?.login || "",
-            coalicion: item.card?.coalition || "Sin coalición",
+            coalicion: item.card?.coalition || t("noCoalition"),
             foto: item.card?.photo,
             tier: item.card?.tier || "Común",
             rareza: TIER_A_RAREZA[item.card?.tier] || "common",
@@ -96,13 +105,13 @@ export default function Catalogo() {
         );
       } catch (e) {
         console.error("Error al cargar el álbum:", e);
-        setError("No se ha podido conectar con el servidor.");
+        setError(t("serverError"));
       } finally {
         setCargando(false);
       }
     }
     cargarAlbum();
-  }, [apiBaseUrl, refrescoAlbum]);
+  }, [apiBaseUrl, refrescoAlbum, t]);
 
   // Reiniciar a la primera página si cambian los filtros
   useEffect(() => {
@@ -154,19 +163,19 @@ export default function Catalogo() {
       <header className="app-header">
         <div className="header-navigation floating-navigation">
           <Link to="/home" className="back-btn-link">
-            ← Volver al Inicio
+            {t("catalogBack")}
           </Link>
           <BotonAbrirSobres />
           <BotonContratos onClick={() => setContratosAbierto(true)} />
         </div>
         <div className="logo-section" style={{ marginTop: "1rem" }}>
           <span className="logo-icon">✨</span>
-          <h1>42 Card Album</h1>
+          <h1>{t("catalogTitle")}</h1>
         </div>
         <p className="subtitle">
           {cargando
-            ? "Cargando tu colección…"
-            : `Tienes ${album.length} cartas distintas (${totalConRepetidas} contando repetidas)`}
+            ? t("catalogLoadingCollection")
+            : t("catalogCollectionCount", { distinct: album.length, total: totalConRepetidas })}
         </p>
       </header>
 
@@ -177,29 +186,29 @@ export default function Catalogo() {
         <TextField
           id="search"
           type="text"
-          label="Buscar carta"
-          placeholder="Por login, título o coalición…"
+          label={t("catalogSearch")}
+          placeholder={t("catalogSearchPlaceholder")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
 
         <div className="control-group">
-          <label htmlFor="rarity">Rareza</label>
+          <label htmlFor="rarity">{t("rarity")}</label>
           <select id="rarity" value={rarityFilter} onChange={(e) => setRarityFilter(e.target.value)}>
-            <option value="all">Todas las rarezas</option>
-            {TIERS.map((t) => (
-              <option key={t} value={t}>{t}</option>
+            <option value="all">{t("allRarities")}</option>
+            {TIERS.map((tier) => (
+              <option key={tier} value={tier}>{t(RAREZA_TRADUCCIONES[tier])}</option>
             ))}
           </select>
         </div>
 
         <div className="control-group">
-          <label htmlFor="sort">Ordenar por</label>
+          <label htmlFor="sort">{t("sortBy")}</label>
           <select id="sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-            <option value="login">Login (A-Z)</option>
-            <option value="rareza">Rareza</option>
-            <option value="nivel">Nivel</option>
-            <option value="repetidas">Repetidas</option>
+            <option value="login">{t("sortLogin")}</option>
+            <option value="rareza">{t("sortRarity")}</option>
+            <option value="nivel">{t("sortLevel")}</option>
+            <option value="repetidas">{t("sortDuplicates")}</option>
           </select>
         </div>
       </section>
@@ -207,14 +216,14 @@ export default function Catalogo() {
       {/* Cuadrícula de Cartas (Grid) */}
       <section className="album-grid-wrapper">
         <div className="grid-meta">
-          <span>Cartas encontradas: <strong>{totalCards}</strong></span>
-          <span>Página <strong>{activePage}</strong> de <strong>{totalPages}</strong></span>
+          <span>{t("cardsFound")}: <strong>{totalCards}</strong></span>
+          <span>{t("pageOf", { page: activePage, total: totalPages })}</span>
         </div>
 
         {cargando ? (
           <div className="empty-state">
             <span className="empty-icon">⏳</span>
-            <p>Cargando tu álbum…</p>
+            <p>{t("catalogLoading")}</p>
           </div>
         ) : error ? (
           <div className="empty-state">
@@ -224,17 +233,17 @@ export default function Catalogo() {
         ) : album.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon">📂</span>
-            <p>Tu álbum está vacío. Abre sobres en la tienda para conseguir cartas.</p>
+            <p>{t("catalogEmpty")}</p>
             {/* El mismo botón que arriba: si el álbum está vacío, este es
                 justo el sitio donde más apetece que llame la atención. */}
             <div style={{ marginTop: "1rem" }}>
-              <BotonAbrirSobres>Ir a abrir sobres</BotonAbrirSobres>
+              <BotonAbrirSobres>{t("goOpenPacks")}</BotonAbrirSobres>
             </div>
           </div>
         ) : currentCards.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon">🔍</span>
-            <p>Ninguna carta de tu álbum coincide con la búsqueda.</p>
+            <p>{t("catalogNoMatch")}</p>
           </div>
         ) : (
           <div className="album-grid">
@@ -271,7 +280,7 @@ export default function Catalogo() {
                     <span className="card-type">{card.coalicion}</span>
                   )}
                   <Badge tone={card.rareza}>
-                    {card.tier.toUpperCase()}
+                    {t(RAREZA_TRADUCCIONES[card.tier]).toUpperCase()}
                   </Badge>
                 </div>
 
@@ -282,11 +291,11 @@ export default function Catalogo() {
                       esa se pinta al 30% de opacidad y sobre una foto no se ve. */}
                   {card.cantidad > 1 && (
                     <span
-                      title={`Tienes ${card.cantidad} copias de esta carta`}
+                        title={t("copiesOfCard", { count: card.cantidad })}
                       style={{
                         position: "absolute",
                         top: "8px",
-                        right: "8px",
+                        insetInlineEnd: "8px",
                         zIndex: 3,
                         background: "rgba(12, 15, 22, 0.85)",
                         border: "2px solid var(--accent)",
@@ -320,17 +329,17 @@ export default function Catalogo() {
 
                 <div className="card-stats">
                   <div className="stat">
-                    <span className="stat-label"> NIVEL</span>
+                    <span className="stat-label"> {t("level")}</span>
                     <span className="stat-value">{card.nivel}</span>
                   </div>
                   <div className="stat-divider"></div>
                   <div className="stat">
-                    <span className="stat-label"> EVALS</span>
+                    <span className="stat-label"> {t("evaluations")}</span>
                     <span className="stat-value">{card.evaluaciones}</span>
                   </div>
                   <div className="stat-divider"></div>
                   <div className="stat">
-                    <span className="stat-label">WALLET</span>
+                    <span className="stat-label">{t("wallet")}</span>
                     <span className="stat-value stat-wallet-value">
                       {card.altarians}
                       <img className="stat-logo" src="/icons/Altarians_logo.png" alt="" aria-hidden="true" />
@@ -345,14 +354,14 @@ export default function Catalogo() {
 
       {/* Controles de paginación */}
       {totalPages > 1 && (
-        <nav className="pagination-container" aria-label="Selector de páginas del álbum">
+        <nav className="pagination-container" aria-label={t("pageSelector")}>
           <button
             className="pagination-btn arrow-btn"
             onClick={goToPrevPage}
             disabled={activePage === 1}
-            title="Página Anterior"
+            title={t("previousPage")}
           >
-            &larr; Anterior
+            &larr; {t("previous")}
           </button>
 
           <div className="page-numbers">
@@ -374,9 +383,9 @@ export default function Catalogo() {
             className="pagination-btn arrow-btn"
             onClick={goToNextPage}
             disabled={activePage === totalPages}
-            title="Página Siguiente"
+            title={t("nextPage")}
           >
-            Siguiente &rarr;
+            {t("next")} &rarr;
           </button>
         </nav>
       )}

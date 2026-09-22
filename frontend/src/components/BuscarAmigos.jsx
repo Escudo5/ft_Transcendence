@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useI18n } from '../i18n';
 
 function BuscarAmigos({ isOpen, onClose, usuarios = [], agregarAmigo }) {
+  const { t } = useI18n();
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
 
   // 🔌 La lista ya no está escrita aquí: llega desde ChatSocial.jsx, que se la
@@ -38,7 +40,7 @@ function BuscarAmigos({ isOpen, onClose, usuarios = [], agregarAmigo }) {
         boxShadow: '0 0 20px rgba(0, 191, 255, 0.3)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ margin: 0, color: '#00bfff' }}>🌐 Buscar en Red 42</h3>
+          <h3 style={{ margin: 0, color: '#00bfff' }}>🌐 {t('searchNetwork')}</h3>
           <button 
             onClick={onClose}
             style={{ background: 'none', border: 'none', color: '#8b92b0', fontSize: '1.5rem', cursor: 'pointer' }}
@@ -49,7 +51,7 @@ function BuscarAmigos({ isOpen, onClose, usuarios = [], agregarAmigo }) {
 
         <input
           type="text"
-          placeholder="Escribe el login (ej: mgarcia)..."
+          placeholder={t('searchLoginPlaceholder')}
           value={busquedaUsuario}
           onChange={(e) => setBusquedaUsuario(e.target.value)}
           style={{
@@ -67,7 +69,7 @@ function BuscarAmigos({ isOpen, onClose, usuarios = [], agregarAmigo }) {
         <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
           {usuariosFiltrados.length === 0 ? (
             <p style={{ color: '#6c728f', textAlign: 'center', fontSize: '0.9rem' }}>
-              No se encontraron estudiantes
+              {t('noStudents')}
             </p>
           ) : (
             usuariosFiltrados.map((usuario) => (
@@ -107,7 +109,7 @@ function BuscarAmigos({ isOpen, onClose, usuarios = [], agregarAmigo }) {
                     fontSize: '0.8rem'
                   }}
                 >
-                  + Añadir
+                  + {t('add')}
                 </button>
               </div>
             ))
