@@ -2,13 +2,28 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Alert, Avatar, Button, Card, ProgressBar, StatusDot, TextField, SecondaryButton } from './ui';
 import { COLOR_RAREZA } from './rarezas';
+import { useI18n } from '../i18n';
 
 // CONSTANTES Y ESTILOS
+/* ⚠️ ESTA FRASE NO SE TRADUCE NUNCA, EN NINGÚN IDIOMA (Nacho, 22/09).
+ *
+ * Es la contraseña de seguridad del borrado de cuenta: el usuario la escribe
+ * a mano y el backend comprueba que llega EXACTAMENTE así (users/views.py,
+ * borrar_mi_cuenta). Si se tradujese, quien tenga la web en inglés
+ * escribiría "DELETE MY ACCOUNT", no coincidiría, y el botón no se
+ * activaría nunca: nadie podría borrar su cuenta.
+ *
+ * Lo que SÍ se traduce es la frase que la rodea ("escribe X para
+ * confirmar"), y la palabra va dentro como un hueco. */
+const FRASE_BORRADO = 'BORRAR MI CUENTA';
+
 const AVATAR_MAX_MB = 2;
 const AVATAR_TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
 
 const COLOR_ESTADO = { online: '#4ade80', offline: '#94a3b8' };
-const TEXTO_ESTADO = { online: 'En línea', offline: 'Desconectado' };
+// Nacho, 22/09: los textos del estado salen ahora de i18n (statusOnline /
+// statusOffline). Este diccionario se queda solo con las CLAVES.
+const TEXTO_ESTADO = { online: 'statusOnline', offline: 'statusOffline' };
 
 const estilos = {
   cabecera: {
@@ -137,6 +152,7 @@ igual que sus vecinos.
 se abre puede manipular la nuestra a través de window.opener.
 */
 function BotonIntra({ login, esDe42 }) {
+  const { t } = useI18n();
   if (!esDe42 || !login) return null;
 
   return (
@@ -145,16 +161,17 @@ function BotonIntra({ login, esDe42 }) {
       href={`https://profile.intra.42.fr/users/${encodeURIComponent(login)}`}
       target="_blank"
       rel="noopener noreferrer"
-      title={`Abrir el perfil de ${login} en la Intra de 42`}
+      title={t('intraProfileTitle', { user: login })}
       style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
     >
-      Intra42 ↗
+      {t('intraProfile')}
     </a>
   );
 }
 
 // LÓGICA DE CARGA: Pide la información del usuario al servidor
 function usePerfilData(login, apiBaseUrl) {
+  const { t } = useI18n();
   const [perfil, setPerfil] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -169,7 +186,7 @@ function usePerfilData(login, apiBaseUrl) {
         if (!quien) {
           const resYo = await fetch(`${apiBaseUrl}/users/me/`, { credentials: 'include' });
           if (!resYo.ok) {
-            setError('Tienes que iniciar sesión para ver tu perfil.');
+            setError(t('profileLoginRequired'));
             return;
           }
           quien = (await resYo.json()).username;
@@ -177,11 +194,11 @@ function usePerfilData(login, apiBaseUrl) {
 
         const res = await fetch(`${apiBaseUrl}/users/${encodeURIComponent(quien)}/`, { credentials: 'include' });
         if (res.status === 404) {
-          setError(`No existe ningún usuario llamado "${quien}".`);
+          setError(t('profileNoSuchUser', { user: quien }));
           return;
         }
         if (!res.ok) {
-          setError('No se ha podido cargar el perfil.');
+          setError(t('profileLoadError'));
           return;
         }
 
@@ -189,7 +206,7 @@ function usePerfilData(login, apiBaseUrl) {
         setPerfil(datos);
       } catch (e) {
         console.error('Error al cargar perfil:', e);
-        setError('No se ha podido conectar con el servidor.');
+        setError(t('serverError'));
       } finally {
         setCargando(false);
       }
@@ -204,6 +221,7 @@ function usePerfilData(login, apiBaseUrl) {
 
 // Cabecera con datos de usuario y botones de acción
 function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
+  const { t } = useI18n();
   const [editando, setEditando] = useState(false);
   const [borrador, setBorrador] = useState({ nombre_mostrado: '', bio: '' });
   const [guardando, setGuardando] = useState(false);
@@ -236,15 +254,15 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
 
       if (!res.ok) {
         const detalle = datos.campos ? Object.values(datos.campos).join(' ') : datos.error;
-        setAviso({ texto: detalle || 'No se ha podido guardar.', ok: false });
+        setAviso({ texto: detalle || t('profileSaveError'), ok: false });
         return;
       }
 
       setPerfil({ ...perfil, nombre: datos.nombre, bio: datos.bio });
       setEditando(false);
-      setAviso({ texto: 'Perfil actualizado.', ok: true });
+      setAviso({ texto: t('profileUpdated'), ok: true });
     } catch (e) {
-      setAviso({ texto: 'No se ha podido conectar con el servidor.', ok: false });
+      setAviso({ texto: t('serverError'), ok: false });
     } finally {
       setGuardando(false);
     }
@@ -257,7 +275,7 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
 
     setAviso(null);
     if (!AVATAR_TIPOS.includes(fichero.type)) {
-      setAviso({ texto: 'Solo se admiten imágenes JPG, PNG o WEBP.', ok: false });
+      setAviso({ texto: t('avatarWrongType'), ok: false });
       return;
     }
     if (fichero.size > AVATAR_MAX_MB * 1024 * 1024) {
@@ -292,14 +310,14 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
           if (peticion.status >= 200 && peticion.status < 300) resolver(cuerpo);
           else rechazar(new Error(cuerpo.error || 'No se ha podido subir la foto.'));
         };
-        peticion.onerror = () => rechazar(new Error('Error de conexión.'));
+        peticion.onerror = () => rechazar(new Error(t('connectionError')));
         peticion.send(formulario);
       });
 
       setPerfil({ ...perfil, profile_image: datos.foto, tiene_avatar: true });
       setAviso({ texto: datos.mensaje, ok: true });
     } catch (e) {
-      setAviso({ texto: e.message || 'Error de conexión.', ok: false });
+      setAviso({ texto: e.message || t('connectionError'), ok: false });
     } finally {
       setSubiendoFoto(false);
       setProgreso(0);
@@ -329,7 +347,7 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
       setPerfil({ ...perfil, profile_image: datos.foto, tiene_avatar: false });
       setAviso({ texto: datos.mensaje, ok: true });
     } catch (e) {
-      setAviso({ texto: 'No se ha podido conectar con el servidor.', ok: false });
+      setAviso({ texto: t('serverError'), ok: false });
     } finally {
       setSubiendoFoto(false);
     }
@@ -352,14 +370,14 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
       }
 
       if (!res.ok) {
-        setAviso({ texto: 'No se ha podido completar la acción de amistad.', ok: false });
+        setAviso({ texto: t('friendActionError'), ok: false });
         return;
       }
 
       const refresco = await fetch(`${apiBaseUrl}/users/${encodeURIComponent(perfil.username)}/`, { credentials: 'include' });
       if (refresco.ok) setPerfil(await refresco.json());
     } catch (e) {
-      setAviso({ texto: 'Error de conexión.', ok: false });
+      setAviso({ texto: t('connectionError'), ok: false });
     } finally {
       setEnviandoAmistad(false);
     }
@@ -375,11 +393,11 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
             <>
               <input ref={inputFoto} type="file" accept="image/jpeg,image/png,image/webp" onChange={subirFoto} style={{ display: 'none' }} />
               <button style={estilos.botonFoto} onClick={() => inputFoto.current?.click()} disabled={subiendoFoto}>
-                {subiendoFoto ? 'Subiendo…' : '📷 Cambiar foto'}
+                {subiendoFoto ? t('uploading') : t('changePhoto')}
               </button>
               {perfil.tiene_avatar && (
                 <button style={{ ...estilos.botonFoto, border: 'none', background: 'transparent' }} onClick={quitarFoto} disabled={subiendoFoto}>
-                  Quitar
+                  {t('remove')}
                 </button>
               )}
             </>
@@ -388,7 +406,7 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
 
         <div style={{ flex: 1, minWidth: '240px' }}>
           {editando ? (
-            <TextField id="nombre" label="Nombre a mostrar" value={borrador.nombre_mostrado} maxLength={50} onChange={(e) => setBorrador({ ...borrador, nombre_mostrado: e.target.value })} />
+            <TextField id="nombre" label={t('displayName')} value={borrador.nombre_mostrado} maxLength={50} onChange={(e) => setBorrador({ ...borrador, nombre_mostrado: e.target.value })} />
           ) : (
             <>
               <h1 style={estilos.nombre}>{perfil.nombre}</h1>
@@ -397,7 +415,7 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
           )}
 
           <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <StatusDot status={perfil.estado} label={TEXTO_ESTADO[perfil.estado] || perfil.estado} />
+            <StatusDot status={perfil.estado} label={TEXTO_ESTADO[perfil.estado] ? t(TEXTO_ESTADO[perfil.estado]) : perfil.estado} />
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Miembro desde {perfil.miembro_desde}</span>
             {perfil.is_alumni && <span style={{ color: 'var(--rarity-legendary)', fontSize: '0.85rem', fontWeight: 700 }}>🎓 Alumni</span>}
           </div>
@@ -406,12 +424,12 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
 
       {editando ? (
         <div style={{ marginTop: '1.2rem' }}>
-          <TextField id="bio" label="Sobre mí" as="textarea" value={borrador.bio} maxLength={500} onChange={(e) => setBorrador({ ...borrador, bio: e.target.value })} />
+          <TextField id="bio" label={t('aboutMe')} as="textarea" value={borrador.bio} maxLength={500} onChange={(e) => setBorrador({ ...borrador, bio: e.target.value })} />
         </div>
       ) : perfil.bio ? (
         <p style={estilos.bio}>{perfil.bio}</p>
       ) : perfil.es_mi_perfil ? (
-        <p style={estilos.bioVacia}>Todavía no has escrito nada sobre ti.</p>
+        <p style={estilos.bioVacia}>{t('profileNoBio')}</p>
       ) : null}
 
       {/* 🤝 EL BOTÓN DE AMISTAD, SEGÚN CÓMO ESTÉIS (Nacho, 21/09)
@@ -441,19 +459,19 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
             <>
               <SecondaryButton disabled>⏳ Solicitud enviada</SecondaryButton>
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                Esperando a que la acepte.
+                {t('friendWaitingAccept')}
               </span>
             </>
           )}
           {perfil.amistad === 'recibida' && (
             <>
-              <Button onClick={() => accionAmistad('aceptar')} disabled={enviandoAmistad}>Aceptar</Button>
-              <SecondaryButton onClick={() => accionAmistad('rechazar')} disabled={enviandoAmistad}>Rechazar</SecondaryButton>
+              <Button onClick={() => accionAmistad('aceptar')} disabled={enviandoAmistad}>{t('accept')}</Button>
+              <SecondaryButton onClick={() => accionAmistad('rechazar')} disabled={enviandoAmistad}>{t('reject')}</SecondaryButton>
             </>
           )}
           {perfil.amistad === 'amigos' && (
             <SecondaryButton onClick={() => accionAmistad('eliminar')} disabled={enviandoAmistad}>
-              Eliminar amigo
+              {t('removeFriend')}
             </SecondaryButton>
           )}
 
@@ -466,12 +484,12 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
         <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.3rem' }}>
           {editando ? (
             <>
-              <Button onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar cambios'}</Button>
-              <SecondaryButton onClick={() => setEditando(false)} disabled={guardando}>Cancelar</SecondaryButton>
+              <Button onClick={guardar} disabled={guardando}>{guardando ? t('saving') : t('saveChanges')}</Button>
+              <SecondaryButton onClick={() => setEditando(false)} disabled={guardando}>{t('cancel')}</SecondaryButton>
             </>
           ) : (
             <>
-              <Button onClick={iniciarEdicion}>✏️ Editar perfil</Button>
+              <Button onClick={iniciarEdicion}>{t('editProfile')}</Button>
               {/* 🔗 En tu propio perfil también: es tu Intra. */}
               <BotonIntra login={perfil.username} esDe42={perfil.es_de_42} />
             </>
@@ -484,12 +502,13 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
 
 // Estadísticas de la colección del usuario
 function ColeccionPerfil({ coleccion, puntos, esMiPerfil }) {
+  const { t } = useI18n();
   return (
     <Card>
-      <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>Colección</h2>
+      <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>{t('collection')}</h2>
       <div style={{ marginTop: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          <span>Álbum completado</span>
+          <span>{t('albumCompleted')}</span>
           <strong style={{ color: 'var(--text-primary)' }}>{coleccion.porcentaje}%</strong>
         </div>
         <ProgressBar value={coleccion.porcentaje} />
@@ -500,15 +519,15 @@ function ColeccionPerfil({ coleccion, puntos, esMiPerfil }) {
           <div style={estilos.datoValor}>
             {coleccion.cartas_distintas}<span style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>/{coleccion.cartas_en_catalogo}</span>
           </div>
-          <div style={estilos.datoEtiqueta}>Cartas distintas</div>
+          <div style={estilos.datoEtiqueta}>{t('distinctCards')}</div>
         </div>
         <div style={estilos.dato}>
           <div style={estilos.datoValor}>{coleccion.cartas_con_repetidas}</div>
-          <div style={estilos.datoEtiqueta}>Con repetidas</div>
+          <div style={estilos.datoEtiqueta}>{t('withDuplicates')}</div>
         </div>
         <div style={estilos.dato}>
           <div style={estilos.datoValor}>{(puntos ?? 0).toLocaleString('es-ES')}</div>
-          <div style={estilos.datoEtiqueta}>Puntuación</div>
+          <div style={estilos.datoEtiqueta}>{t('score')}</div>
         </div>
       </div>
 
@@ -518,7 +537,7 @@ function ColeccionPerfil({ coleccion, puntos, esMiPerfil }) {
             <img src={coleccion.carta_mas_rara.photo} alt={coleccion.carta_mas_rara.login} style={{ width: '54px', height: '54px', borderRadius: '8px', objectFit: 'cover' }} />
           )}
           <div>
-            <div style={estilos.datoEtiqueta}>{esMiPerfil ? 'Tu carta más rara' : 'Su carta más rara'}</div>
+            <div style={estilos.datoEtiqueta}>{esMiPerfil ? t('yourRarestCard') : t('theirRarestCard')}</div>
             <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{coleccion.carta_mas_rara.login}</div>
             <div style={{ color: COLOR_RAREZA[coleccion.carta_mas_rara.tier] || 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 700 }}>
               {coleccion.carta_mas_rara.tier}
@@ -532,11 +551,12 @@ function ColeccionPerfil({ coleccion, puntos, esMiPerfil }) {
 
 // Lista de Logros
 function LogrosPerfil({ logros }) {
+  const { t } = useI18n();
   if (!logros) return null;
   return (
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>Logros</h2>
+        <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>{t('achievements')}</h2>
         <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
           {logros.filter((l) => l.conseguido).length} de {logros.length}
         </span>
@@ -560,6 +580,7 @@ function LogrosPerfil({ logros }) {
 
 // Opciones RGPD, Cierre de Sesión y Eliminación de Cuenta
 function SeccionAjustesCuenta({ apiBaseUrl, setAviso, onAbrirLogoutModal }) {
+  const { t } = useI18n();
   const [borrandoCuenta, setBorrandoCuenta] = useState(false);
   const [textoConfirmacion, setTextoConfirmacion] = useState('');
   const [borrando, setBorrando] = useState(false);
@@ -573,16 +594,16 @@ function SeccionAjustesCuenta({ apiBaseUrl, setAviso, onAbrirLogoutModal }) {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-        body: JSON.stringify({ confirmacion: 'BORRAR MI CUENTA' }),
+        body: JSON.stringify({ confirmacion: FRASE_BORRADO }),
       });
 
       if (!res.ok) {
-        setAviso({ texto: 'No se ha podido borrar la cuenta.', ok: false });
+        setAviso({ texto: t('deleteAccountError'), ok: false });
         return;
       }
       window.location.href = '/';
     } catch (e) {
-      setAviso({ texto: 'Error de conexión.', ok: false });
+      setAviso({ texto: t('connectionError'), ok: false });
     } finally {
       setBorrando(false);
     }
@@ -590,14 +611,14 @@ function SeccionAjustesCuenta({ apiBaseUrl, setAviso, onAbrirLogoutModal }) {
 
   return (
     <Card>
-      <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>Tus datos</h2>
+      <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>{t('yourData')}</h2>
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-        Puedes llevarte todo lo que guardamos de ti o borrar tu cuenta cuando quieras.
+        {t('yourDataText')}
       </p>
 
       <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.2rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <a href={`${apiBaseUrl}/users/me/datos/`} className="ui-button ui-button-secondary">⬇️ Descargar mis datos</a>
-        <SecondaryButton onClick={onAbrirLogoutModal}> Cerrar sesión</SecondaryButton>
+        <SecondaryButton onClick={onAbrirLogoutModal}>{t('logout')}</SecondaryButton>
         <SecondaryButton className="danger-button" onClick={() => { setBorrandoCuenta(true); setAviso(null); }}>
           🗑️ Borrar mi cuenta
         </SecondaryButton>
@@ -605,13 +626,18 @@ function SeccionAjustesCuenta({ apiBaseUrl, setAviso, onAbrirLogoutModal }) {
 
       {borrandoCuenta && (
         <div style={{ marginTop: '1.2rem', padding: '1.2rem', borderRadius: '10px', background: 'rgba(248, 113, 113, 0.08)', border: '1px solid rgba(248, 113, 113, 0.4)' }}>
-          <p style={{ color: '#fca5a5', fontWeight: 700, marginTop: 0 }}>Esto no se puede deshacer</p>
-          <TextField id="confirmacion-borrado" label="Confirmación" value={textoConfirmacion} onChange={(e) => setTextoConfirmacion(e.target.value)} placeholder="BORRAR MI CUENTA" />
+          <p style={{ color: '#fca5a5', fontWeight: 700, marginTop: 0 }}>{t('cannotBeUndone')}</p>
+          {/* La instrucción se traduce; la FRASE que hay que escribir, no.
+              Por eso va como hueco y no dentro del texto traducido. */}
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+            {t('typeToConfirm', { phrase: FRASE_BORRADO })}
+          </p>
+          <TextField id="confirmacion-borrado" label={t('confirmation')} value={textoConfirmacion} onChange={(e) => setTextoConfirmacion(e.target.value)} placeholder={FRASE_BORRADO} />
           <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem' }}>
-            <Button className="danger-button" disabled={textoConfirmacion !== 'BORRAR MI CUENTA' || borrando} onClick={borrarCuenta}>
-              {borrando ? 'Borrando…' : 'Borrar mi cuenta definitivamente'}
+            <Button className="danger-button" disabled={textoConfirmacion !== FRASE_BORRADO || borrando} onClick={borrarCuenta}>
+              {borrando ? t('deleting') : t('deleteAccountForever')}
             </Button>
-            <SecondaryButton onClick={() => setBorrandoCuenta(false)}>Cancelar</SecondaryButton>
+            <SecondaryButton onClick={() => setBorrandoCuenta(false)}>{t('cancel')}</SecondaryButton>
           </div>
         </div>
       )}
@@ -621,6 +647,7 @@ function SeccionAjustesCuenta({ apiBaseUrl, setAviso, onAbrirLogoutModal }) {
 
 // PARTE E: Ventana emergente Modal Cierre de Sesión
 function ModalCerrarSesion({ visible, onCancelar, apiBaseUrl }) {
+  const { t } = useI18n();
   const [cerrando, setCerrando] = useState(false);
 
   if (!visible) return null;
@@ -645,13 +672,13 @@ function ModalCerrarSesion({ visible, onCancelar, apiBaseUrl }) {
     <div style={estilos.modalOverlay}>
       <div style={estilos.modalCaja}>
         <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}></div>
-        <h3 style={{ fontFamily: 'var(--font-heading)', margin: '0 0 0.5rem', color: 'var(--text-primary)' }}>¿Cerrar sesión?</h3>
+        <h3 style={{ fontFamily: 'var(--font-heading)', margin: '0 0 0.5rem', color: 'var(--text-primary)' }}>{t('logoutConfirmTitle')}</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 1.5rem' }}>
-          Tendrás que volver a iniciar sesión para acceder a tu álbum y tus cartas.
+          {t('logoutConfirmText')}
         </p>
         <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center' }}>
-          <SecondaryButton onClick={onCancelar} disabled={cerrando}>Cancelar</SecondaryButton>
-          <Button onClick={cerrarSesion} disabled={cerrando}>{cerrando ? 'Cerrando…' : 'Sí, cerrar sesión'}</Button>
+          <SecondaryButton onClick={onCancelar} disabled={cerrando}>{t('cancel')}</SecondaryButton>
+          <Button onClick={cerrarSesion} disabled={cerrando}>{cerrando ? t('loggingOut') : t('yesLogout')}</Button>
         </div>
       </div>
     </div>
@@ -661,6 +688,7 @@ function ModalCerrarSesion({ visible, onCancelar, apiBaseUrl }) {
 // FUNCION PRINCIPAL
 
 export default function Perfil() {
+  const { t } = useI18n();
   const { login } = useParams();
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
 
@@ -677,7 +705,7 @@ export default function Perfil() {
       </header>
 
       {cargando ? (
-        <Card>Cargando perfil…</Card>
+        <Card>{t('profileLoading')}</Card>
       ) : error ? (
         <Card><Alert tone="error">{error}</Alert></Card>
       ) : (

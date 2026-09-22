@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n';
 import { useState } from 'react';
 
 function ListaChats({
@@ -11,6 +12,7 @@ function ListaChats({
   abrirModalSolicitudes,
   numSolicitudesPendientes = 0,
 }) {
+  const { t } = useI18n();
   const [textoBusqueda, setTextoBusqueda] = useState('');
   const [loginMenuDesplegado, setLoginMenuDesplegado] = useState(null);
 
@@ -37,7 +39,7 @@ function ListaChats({
     <div className="chat-sidebar">
       {/* CABECERA SUPERIOR CON BOTONES DE ACCIÓN */}
       <div className="sidebar-header">
-        <button onClick={clickVolverHome} className="btn-volver" title="Volver al menú principal">
+        <button onClick={clickVolverHome} className="btn-volver" title={t('backToMainMenu')}>
           ← Home
         </button>
 
@@ -87,7 +89,7 @@ function ListaChats({
       <div style={{ padding: '0.8rem' }}>
         <input
           type="text"
-          placeholder="🔍 Buscar o empezar un chat..."
+          placeholder={t('chatSearchPlaceholder')}
           value={textoBusqueda}
           onChange={(eventoDeClic) => setTextoBusqueda(eventoDeClic.target.value)}
           style={{
@@ -107,7 +109,7 @@ function ListaChats({
       <div style={{ padding: '0 0.8rem 0.8rem 0.8rem', overflowY: 'auto', flex: 1 }}>
         {listaAmigosFiltrados.length === 0 ? (
           <p style={{ color: '#6c728f', textAlign: 'center', marginTop: '1rem', fontSize: '0.85rem' }}>
-            No se encontraron contactos
+            {t('noContactsFound')}
           </p>
         ) : (
           listaAmigosFiltrados.map((amigoActual) => {
@@ -170,7 +172,7 @@ function ListaChats({
                 <button
                   className="btn-opciones-sidebar"
                   onClick={(eventoDeClic) => alternarMenuOpcionesAmigo(eventoDeClic, amigoActual.login)}
-                  title="Opciones del amigo"
+                  title={t('friendOptions')}
                 >
                   ⋮
                 </button>
@@ -196,7 +198,7 @@ function ListaChats({
                         setLoginMenuDesplegado(null);
                       }}
                     >
-                      {amigoActual.bloqueado ? '✅ Desbloquear' : '🚫 Bloquear'}
+                      {amigoActual.bloqueado ? t('unblock') : t('block')}
                     </button>
                   </div>
                 )}
