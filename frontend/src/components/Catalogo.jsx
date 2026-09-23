@@ -203,18 +203,14 @@ export default function Catalogo() {
   /* Renderizado de Carta Individual */
   const renderCardContent = (card) => {
     const isStaff = card.tier.toLowerCase() === "staff";
-    const isCreator = card.tier.toLowerCase() === "creator" ;
+    const isCreator = card.tier.toLowerCase() === "creator";
 
     // 🌟 SI ES CREATOR: Se usa el nuevo componente separado
     if (isCreator) {
       return (
         <CreatorCard
           key={card.id}
-          carta={{
-            ...card,
-            // Aseguramos que la badge del modal u otros detalles reciban 'creator'
-            rareza: "creator" 
-          }}
+          carta={card}
           onClick={() => setCartaAbierta(card)}
         />
       );
