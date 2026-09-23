@@ -7,6 +7,7 @@ import BotonAbrirSobres from "./BotonAbrirSobres";
 import { CLASE_RAREZA, RAREZAS } from "./rarezas";
 import ElectricBorder from "./ElectricBorder";
 import CreatorCard from "./CreatorCard"; // 👈 IMPORTANTE: Importamos el nuevo componente
+import { useI18n } from "../i18n";
 
 const TIER_A_RAREZA = CLASE_RAREZA;
 
@@ -103,6 +104,7 @@ function Dato({ etiqueta, valor }) {
 }
 
 export default function Catalogo() {
+  const { t } = useI18n();
   const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
 
   const [album, setAlbum] = useState([]);
@@ -333,7 +335,7 @@ export default function Catalogo() {
       <header className="app-header">
         <div className="header-navigation floating-navigation">
           <Link to="/home" className="back-btn-link">
-            ← Volver al Inicio
+            {t("catalogBack")}
           </Link>
           <BotonAbrirSobres />
           <BotonContratos onClick={() => setContratosAbierto(true)} />
