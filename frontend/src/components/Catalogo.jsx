@@ -20,12 +20,31 @@ const LOGOS_COALICIONES = {
 
 const TIERS = [...RAREZAS].reverse();
 
+/* 🌍 LA RAREZA, TRADUCIDA
+ *
+ * ⚠️ SE CONSTRUYE SOLO a partir de RAREZAS (rarezas.js), nunca a mano. Ya pasó
+ * una vez: había un diccionario escrito con "Común", "Épica" y "Legendaria",
+ * rarezas que dejaron de existir el 15/09, y el filtro del álbum se quedó
+ * mostrando el nombre de la clave. Construyéndolo así, el día que se añada una
+ * rareza nueva aparece aquí sola.
+ *
+ * La clave queda 'rarity' + el nombre: Junior -> rarityJunior.
+ */
+const RAREZA_TRADUCCIONES = Object.fromEntries(
+  RAREZAS.map((r) => [r, `rarity${r}`]),
+);
+
 /* 🔍 DETALLE DE UNA CARTA EN POP-UP */
-function ModalCarta({ carta, onCerrar }) {
+function ModalCarta({ carta, registrados, onCerrar }) {
   const navigate = useNavigate();
   const { t } = useI18n();
 
   if (!carta) return null;
+
+  /* ⚠️ De las ~719 cartas del álbum, solo un puñado son de gente que tiene
+   * cuenta en la web. Sin esta comprobación el botón "Ver su perfil" sale en
+   * todas y lleva a "No existe ningún usuario llamado X". */
+  const tienePerfil = registrados.has(carta.login);
 
   const visitarPerfil = () => navigate(`/perfil/${carta.login}`);
   const logoCoalicion = LOGOS_COALICIONES[carta.coalicion?.toLowerCase()];
@@ -82,7 +101,13 @@ function ModalCarta({ carta, onCerrar }) {
 
         <div style={{ display: "flex", gap: "0.7rem", justifyContent: "center", flexWrap: "wrap", marginTop: "0.5rem" }}>
           <SecondaryButton onClick={onCerrar}>{t("close")}</SecondaryButton>
-          <Button onClick={visitarPerfil}>{t("viewTheirProfile")}</Button>
+          {tienePerfil ? (
+            <Button onClick={visitarPerfil}>{t("viewTheirProfile")}</Button>
+          ) : (
+            <span style={{ alignSelf: "center", color: "var(--text-secondary)", fontSize: "0.82rem" }}>
+              {t("notRegisteredYet")}
+            </span>
+          )}
         </div>
       </div>
     </Modal>
@@ -123,17 +148,21 @@ export default function Catalogo() {
 
   const [cartaAbierta, setCartaAbierta] = useState(null);
 
+  /* Quién de las cartas del álbum tiene cuenta en la web. Lo rellena el
+   * segundo useEffect y lo usa el pop-up para decidir si ofrece el perfil. */
+  const [registrados, setRegistrados] = useState(new Set());
+
   useEffect(() => {
     async function cargarAlbum() {
       try {
         const res = await fetch(`${apiBaseUrl}/cards/album/`, { credentials: "include" });
 
         if (res.status === 401 || res.status === 403) {
-          setError("Tienes que iniciar sesión para ver tu álbum.");
+          setError(t("loginRequired"));
           return;
         }
         if (!res.ok) {
-          setError("No se ha podido cargar tu álbum.");
+          setError(t("albumLoadError"));
           return;
         }
 
@@ -145,7 +174,7 @@ export default function Catalogo() {
             cantidad: item.cantidad ?? 1,
             login: item.card?.login || "",
             titulo: item.card?.title || item.card?.login || "",
-            coalicion: item.card?.coalition || "Sin coalición",
+            coalicion: item.card?.coalition || t("noCoalition"),
             foto: item.card?.photo,
             tier: item.card?.tier || "Junior",
             rareza: TIER_A_RAREZA[item.card?.tier] || "common",
@@ -156,13 +185,42 @@ export default function Catalogo() {
         );
       } catch (e) {
         console.error("Error al cargar el álbum:", e);
-        setError("No se ha podido conectar con el servidor.");
+        setError(t("serverError"));
       } finally {
         setCargando(false);
       }
     }
     cargarAlbum();
-  }, [apiBaseUrl, refrescoAlbum]);
+  }, [apiBaseUrl, refrescoAlbum, t]);
+
+  /* Consulta de usuarios registrados en la web.
+   *
+   * Va en su propio useEffect y depende de `album` porque hasta que el álbum no
+   * ha cargado no sabemos qué logins preguntar. Una sola petición con todos los
+   * logins de golpe, no una por carta. */
+  useEffect(() => {
+    if (album.length === 0) return;
+    let cancelado = false;
+
+    async function mirarQuienEstaEnLaWeb() {
+      try {
+        const logins = [...new Set(album.map((c) => c.login))].filter(Boolean);
+        const res = await fetch(
+          `${apiBaseUrl}/users/list/?logins=${encodeURIComponent(logins.join(","))}`,
+          { credentials: "include" },
+        );
+        if (!res.ok) return;
+        const datos = await res.json();
+        if (cancelado) return;
+        setRegistrados(new Set((datos.users || []).map((u) => u.username)));
+      } catch (e) {
+        console.error("No se ha podido saber quién está registrado:", e);
+      }
+    }
+    mirarQuienEstaEnLaWeb();
+
+    return () => { cancelado = true; };
+  }, [album, apiBaseUrl]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -347,8 +405,8 @@ export default function Catalogo() {
         </div>
         <p className="subtitle">
           {cargando
-            ? "Cargando tu colección…"
-            : `Tienes ${album.length} cartas distintas (${totalConRepetidas} contando repetidas)`}
+            ? t("catalogLoadingCollection")
+            : t("catalogCollectionCount", { distinct: album.length, total: totalConRepetidas })}
         </p>
       </header>
 
@@ -356,29 +414,32 @@ export default function Catalogo() {
         <TextField
           id="search"
           type="text"
-          label="Buscar carta"
-          placeholder="Por login, título o coalición…"
+          label={t("catalogSearch")}
+          placeholder={t("catalogSearchPlaceholder")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
 
         <div className="control-group">
-          <label htmlFor="rarity">Rareza</label>
+          <label htmlFor="rarity">{t("rarity")}</label>
           <select id="rarity" value={rarityFilter} onChange={(e) => setRarityFilter(e.target.value)}>
-            <option value="all">Todas las rarezas</option>
-            {TIERS.map((t) => (
-              <option key={t} value={t}>{t}</option>
+            <option value="all">{t("allRarities")}</option>
+            {/* ⚠️ La variable del map se llama `tier`, NO `t`: con `t` tapaba la
+              * función t() de las traducciones y dentro del map era imposible
+              * traducir nada. */}
+            {TIERS.map((tier) => (
+              <option key={tier} value={tier}>{t(RAREZA_TRADUCCIONES[tier])}</option>
             ))}
           </select>
         </div>
 
         <div className="control-group">
-          <label htmlFor="sort">Ordenar por</label>
+          <label htmlFor="sort">{t("sortBy")}</label>
           <select id="sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-            <option value="login">Login (A-Z)</option>
-            <option value="rareza">Rareza</option>
-            <option value="nivel">Nivel</option>
-            <option value="repetidas">Repetidas</option>
+            <option value="login">{t("sortLogin")}</option>
+            <option value="rareza">{t("sortRarity")}</option>
+            <option value="nivel">{t("sortLevel")}</option>
+            <option value="repetidas">{t("sortDuplicates")}</option>
           </select>
         </div>
       </section>
@@ -456,6 +517,7 @@ export default function Catalogo() {
 
       <ModalCarta
         carta={cartaAbierta}
+        registrados={registrados}
         onCerrar={() => setCartaAbierta(null)}
       />
 
