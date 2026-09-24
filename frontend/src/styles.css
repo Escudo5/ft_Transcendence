@@ -860,6 +860,40 @@ button, a, select {
   border: 1px solid var(--border-default);
 }
 
+/* 🌟 EL INTERIOR DE LA CARTA DE CREATOR
+ *
+ * ARREGLO (Nacho, 24/09): el logo de la coalición salía pegado a la foto, y
+ * en las demás cartas no. El porqué:
+ *
+ * .card-item es `display: flex` en columna con `gap: var(--space-4)`, y ese
+ * hueco lo reparte entre sus HIJOS DIRECTOS. En una carta normal los hijos
+ * directos son .card-header, .card-artwork, .card-body y .card-stats, así que
+ * se separan solos. En CreatorCard todo eso va envuelto en un
+ * .creator-card-content, o sea un único hijo: el gap de .card-item no llega
+ * dentro, y como esta clase no estaba definida en ninguna hoja, sus hijos se
+ * quedaban pegados unos a otros.
+ *
+ * Se le pone el MISMO flex y el MISMO gap que .card-item para que la carta de
+ * creator se separe igual que todas las demás.
+ *
+ * ⚠️ Si se cambia el gap de .card-item, hay que cambiarlo aquí también. Van
+ * juntos a propósito: son el mismo hueco visto desde dos niveles distintos. */
+.creator-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* La capa de efectos del fondo de la carta de creator. Es decoración, así que
+ * va fuera del flujo: siendo hija directa de .card-item (un flex en columna)
+ * ocupaba un hueco entero de la rejilla aunque esté vacía, y empujaba todo el
+ * contenido hacia abajo. .card-item ya es position: relative. */
+.creator-bg-effect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 /* 🔢 EL CONTADOR DE REPETIDAS (el ×2, ×3) DE UNA CARTA
  *
  * ARREGLO (Nacho, 24/09): esta clase se usaba en CreatorCard.jsx pero NO
