@@ -24,7 +24,7 @@ ESPECIFIC_LOGINS = pablalva nmagro-r smarquez osmunoz- ksudyn
 # con el nombre de un target, `make` dice "nothing to be done" y no explica nada.
 .PHONY: help build up up_silent start start_full down down_clean recreate \
         restart logs migrations migrate shell superuser wait_backend \
-        sync-quick sync-full insert_login
+        sync-quick sync-full insert_login pwa
 
 # Comando por defecto si solo escribes 'make'
 .DEFAULT_GOAL := help
@@ -52,6 +52,8 @@ help:
 	@echo "  make sync-quick   - Mapeo y actualización basica de la base de datos"
 	@echo "  make sync-full    - Mapeo y actualización completa de la base de datos"
 	@echo "  make insert_login - Crea o actualiza el login designado en la base de datos"
+	@echo "------------------------------------------------------------------------------------------------------"
+	@echo "  make pwa          - Compila y sirve la PWA en http://localhost:4173 (para poder ensenarla)"
 	@echo "======================================================================================================"
 
 # ==============================================================================
@@ -153,4 +155,38 @@ insert_login:
 
 sync-full:
 	$(MANAGE) fill_db
+
+# ==============================================================================
+# 📱 LA PWA
+# ==============================================================================
+#
+# `npm run dev` NO sirve para ensenar la PWA. El service worker solo se
+# registra en la compilacion de produccion (main.jsx mira import.meta.env.PROD,
+# que en el modo dev es false), y sin el no hay ni instalacion ni modo sin
+# conexion: justo las dos cosas que pide el modulo.
+#
+# Esto compila y sirve esa version. El dev server del 3000 se queda donde
+# estaba, no se pisan.
+#
+# ⚠️ HAY QUE ABRIRLO COMO http://localhost:4173, en la maquina que lo lanza.
+# Un service worker necesita "contexto seguro": http://localhost SIEMPRE lo es,
+# pero http://10.19.x.x NO. Y por https tampoco valdria, porque nuestro
+# certificado es autofirmado y Chrome se niega a registrar el service worker
+# cuando el certificado da error. El porque esta en frontend/vite.config.js.
+pwa:
+	@echo "🔨 Compilando el frontend..."
+	$(DC) exec -T frontend npm run build
+	@echo ""
+	@echo "=================================================================="
+	@echo "  📱 Abre  http://localhost:4173  en Chrome"
+	@echo ""
+	@echo "  Para comprobar que la PWA va:"
+	@echo "    1. En la barra de direcciones sale el icono de instalar"
+	@echo "    2. F12 > Application > Service Workers: 'activated and running'"
+	@echo "    3. F12 > Network > Offline, y recarga: la web sigue abriendo"
+	@echo ""
+	@echo "  Ctrl+C para parar."
+	@echo "=================================================================="
+	@echo ""
+	$(DC) exec frontend npm run preview -- --host 0.0.0.0 --port 4173
 

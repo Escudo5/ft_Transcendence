@@ -25,4 +25,40 @@ export default defineConfig({
       usePolling: true, // Asegura que los cambios de código se actualicen al momento en Docker
     },
   },
+
+  /* 📱 EL SERVIDOR DE LA PWA (Nacho, 24/09)
+   *
+   * `npm run dev` NO sirve para enseñar la PWA: el service worker solo se
+   * registra en la compilación de producción (main.jsx mira
+   * import.meta.env.PROD, que en el modo dev es false). Sin él no hay ni
+   * instalación ni modo sin conexión, que es justo lo que pide el módulo.
+   *
+   * Esto sirve la compilación ya hecha, que es donde la PWA existe de verdad.
+   * Se lanza con `make pwa`.
+   *
+   * ⚠️ AQUÍ VA SIN HTTPS A PROPÓSITO, y no es un descuido.
+   * Un service worker solo arranca en un "contexto seguro", y Chrome se
+   * NIEGA a registrarlo si el certificado da error. El nuestro es
+   * autofirmado (el plugin basic-ssl), así que por https daría error y no
+   * habría PWA que enseñar. En cambio `http://localhost` es contexto seguro
+   * SIEMPRE, por definición del navegador, y no hay certificado de por medio.
+   *
+   * ⚠️ POR ESO HAY QUE ABRIRLO COMO http://localhost:4173, en la propia
+   * máquina que lo lanza. Por la IP (http://10.19.x.x:4173) NO es contexto
+   * seguro y el service worker no arrancaría.
+   *
+   * El proxy es el mismo que el de arriba: sin él la compilación no sabría a
+   * dónde mandar las peticiones de /api y la web saldría vacía.
+   */
+  preview: {
+    https: false,
+    host: true,
+    port: 4173,
+    proxy: {
+      '/api': {
+        target: 'https://backend:8000/',
+        secure: false,
+      },
+    },
+  },
 });
