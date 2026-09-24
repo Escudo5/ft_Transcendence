@@ -37,12 +37,18 @@ class Command(BaseCommand):
     help = 'Puebla el catálogo de forma masiva filtrando los 10.000 usuarios históricos o actualiza solo a los creadores'
 
     def add_arguments(self, parser):
-        # Flag para ejecutar exclusivamente el flujo de creadores
-            parser.add_argument(
-            '--quick', 
-            action='store_true', 
-            help='Ejecutar solo la primera página de prueba (100 usuarios)'
+        # 🔧 ARREGLO (Nacho, 24/09): solo indentación. `parser.add_argument`
+        # estaba a 12 espacios donde van 8, había espacios sueltos al final de
+        # dos líneas y a `def handle` le faltaba la línea en blanco de delante.
+        # Compilaba (un comentario no abre bloque y era la única sentencia del
+        # cuerpo), pero de milagro: en cuanto se añada un segundo argumento a
+        # 8 espacios, revienta con IndentationError.
+        parser.add_argument(
+            '--quick',
+            action='store_true',
+            help='Ejecutar solo la primera página de prueba (100 usuarios)',
         )
+
     def handle(self, *args, **options):
         # 🔑 1. OBTENER TOKEN DE ACCESO
         headers = _obtener_headers_auth()
