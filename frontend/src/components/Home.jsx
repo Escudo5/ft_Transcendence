@@ -165,32 +165,8 @@ function Home() {
   useEffect(() => {
     const controller = new AbortController();
 
-    /* Cuántas copias tengo de cada carta. Va en una petición aparte porque
-     * /cards/<login>/ describe la carta, no sabe nada de MI álbum, y el ×N
-     * sale de ahí. */
-    async function cuantasCopiasTengo() {
-      const copias = {};
-      try {
-        const res = await fetch(`${apiBaseUrl}/cards/album/`, {
-          credentials: 'include',
-          signal: controller.signal,
-        });
-        if (!res.ok) return copias;
-        for (const item of (await res.json()) || []) {
-          if (item.card?.login) copias[item.card.login] = item.cantidad ?? 1;
-        }
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('No se ha podido saber cuántas copias tengo:', error);
-        }
-      }
-      return copias;
-    }
-
     async function cargarUsuarios() {
       try {
-        const copias = await cuantasCopiasTengo();
-
         const respuestas = await Promise.all(
           INTEGRANTES_BASE.map(async (user) => {
             const response = await fetch(`${cardsEndpoint}/${encodeURIComponent(user.login)}/`, {
@@ -212,7 +188,14 @@ function Home() {
              * Se mantienen `nombre`, `avatar` y `rareza` porque son los que usa
              * el modal de abajo, y se añaden los de la carta con LOS MISMOS
              * NOMBRES que en el álbum (Catalogo.jsx), que es lo que espera
-             * CreatorCard. Si se renombra uno allí, hay que renombrarlo aquí. */
+             * CreatorCard. Si se renombra uno allí, hay que renombrarlo aquí.
+             *
+             * ⚠️ AQUÍ NO VA `cantidad` A PROPÓSITO (Nacho, 24/09). Las
+             * repetidas son cosa del álbum: la portada es la presentación del
+             * equipo, no tu colección, así que el ×2 no pinta nada. Como
+             * CreatorCard solo dibuja el contador si `carta.cantidad > 1`, no
+             * poniendo el campo ya no sale. Y así la portada tampoco necesita
+             * pedir /cards/album/, que era una petición solo para esto. */
             return {
               ...user,
               nombre: cardDb.title || user.nombre,
@@ -226,7 +209,6 @@ function Home() {
               nivel: cardDb.cursus_lvl ?? 0,
               evaluaciones: cardDb.eval_point ?? 0,
               altarians: cardDb.altarians ?? 0,
-              cantidad: copias[cardDb.login] ?? 0,
             };
           }),
         );
@@ -242,7 +224,7 @@ function Home() {
     cargarUsuarios();
 
     return () => controller.abort();
-  }, [cardsEndpoint, apiBaseUrl]);
+  }, [cardsEndpoint]);
 
   /*
   📊 Carga de los datos del tablón de estadísticas.
@@ -354,8 +336,11 @@ function Home() {
   * 🎴 CAMBIO (Nacho, 24/09): aquí había un maquetado propio, con un "DEV"
   * escrito a mano y sin ningún dato real de la carta. Ahora se pinta con
   * CreatorCard, EL MISMO componente que usa el álbum, así que la portada
-  * enseña exactamente la carta que tienes, con su coalición, su nivel, sus
-  * evaluaciones, sus altarians y el ×N si tienes repetidas.
+  * enseña la carta de verdad: su coalición, su nivel, sus evaluaciones y sus
+  * altarians.
+  *
+  * Sin el ×N de las repetidas, a propósito: esto es la presentación del
+  * equipo, no la colección de quien mira. Lo de las repetidas es del álbum.
   *
   * ⚠️ La rareza sale de la base de datos: si tus 5 cartas no están todavía
   * como Creator, lo que se ve son los datos reales dentro del marco de
