@@ -1078,8 +1078,8 @@ button, a, select {
 
 .floating-pack-back-button {
   position: fixed;
-  top: 1rem;
-  left: 1rem;
+  top: 4.5rem;
+  inset-inline-start: 1rem;
   z-index: 20;
   margin: 0;
 }
@@ -1157,6 +1157,7 @@ button, a, select {
   }
 
   .floating-pack-back-button {
+    top: 4rem;
     max-width: calc(100vw - 2rem);
   }
 
