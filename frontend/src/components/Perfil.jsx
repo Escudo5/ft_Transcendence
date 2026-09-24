@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Alert, Avatar, Button, Card, ProgressBar, StatusDot, TextField, SecondaryButton } from './ui';
 import { COLOR_RAREZA } from './rarezas';
 import { useI18n } from '../i18n';
+import ClavesApi from './ClavesApi';
 
 // CONSTANTES Y ESTILOS
 /* ⚠️ ESTA FRASE NO SE TRADUCE NUNCA, EN NINGÚN IDIOMA (Nacho, 22/09).
@@ -727,8 +728,16 @@ export default function Perfil() {
 
           <LogrosPerfil logros={perfil.logros} />
 
+          {/* ---------- Claves de la API pública — solo en tu propio perfil ----------
+            * Nacho, 24/09: esto venía de la rama nacho/api-publica, que salía de
+            * un Perfil.jsx del 9 de septiembre. El merge dio conflicto porque el
+            * fichero ha cambiado entero desde entonces (traducciones, RGPD, logros).
+            * De aquel lado se ha cogido SOLO esto: el import y estas dos líneas.
+            * Todo lo demás de aquella versión se ha descartado a propósito. */}
+          {perfil.es_mi_perfil && <ClavesApi />}
+
           {perfil.es_mi_perfil && (
-            <SeccionAjustesCuenta 
+            <SeccionAjustesCuenta
               apiBaseUrl={apiBaseUrl} 
               setAviso={setAviso} 
               onAbrirLogoutModal={() => setConfirmarLogout(true)} 
