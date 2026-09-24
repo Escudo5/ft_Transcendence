@@ -38,21 +38,15 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         # Flag para ejecutar exclusivamente el flujo de creadores
-        parser.add_argument(
-            '--creators',
-            action='store_true',
-            help='Sincroniza única y exclusivamente a los 5 creadores usando el endpoint directo de usuarios',
+            parser.add_argument(
+            '--quick', 
+            action='store_true', 
+            help='Ejecutar solo la primera página de prueba (100 usuarios)'
         )
-
     def handle(self, *args, **options):
         # 🔑 1. OBTENER TOKEN DE ACCESO
         headers = _obtener_headers_auth()
         if not headers:
-            return
-
-        # 🌟 CASO A: VÍA EXCLUSIVA PARA LOS 5 CREADORES (JSON Directo)
-        if options['creators']:
-            self._sincronizar_creadores_directo(headers)
             return
 
         # 🏴 CASO B: FASE MASIVA HISTÓRICA POR PÁGINAS (JSON Anidado)
@@ -92,7 +86,9 @@ class Command(BaseCommand):
 
             # 🛑 MODO PRUEBA: Procesa los 100 primeros de la página 1 y frena.
             # Quita este break cuando quieras lanzar la sincronización de todo el campus.
-            break
+            if options.get('quick'):
+                self.stdout.write(self.style.WARNING("\n⚡ Modo rápido activado: Finalizando tras la página 1."))
+                break
             pagina_actual += 1
             time.sleep(0.5)
 
