@@ -51,9 +51,9 @@
   --rarity-staff: #ec4899;
   
   --rarity-creator: #00FF87;
-  --rarity-creator-bg: linear-gradient(135deg, rgba(0, 255, 135, 0.25), rgba(96, 239, 255, 0.15));
-
-  --rarity-common-bg: linear-gradient(135deg, #1e293b, #0f172a);
+  --rarity-creator-bg: linear-gradient(135deg, #063d27, #081a15);
+  
+--rarity-common-bg: linear-gradient(135deg, #1e293b, #0f172a);
   --rarity-rare-bg: linear-gradient(135deg, #0c4a6e, #0c1c30);
   --rarity-epic-bg: linear-gradient(135deg, #581c87, #1e1135);
   --rarity-legendary-bg: linear-gradient(135deg, #78350f, #251205);
@@ -436,7 +436,7 @@ button, a, select {
   transform: scale(0.97);
 }
 
-/* Estilos de bordes por rareza */
+/* Estilos de bordes estándar por rareza */
 .card-item.rarity-common { border-color: var(--rarity-common); }
 .card-item.rarity-rare { border-color: var(--rarity-rare); }
 .card-item.rarity-epic { border-color: var(--rarity-epic); }
@@ -445,12 +445,15 @@ button, a, select {
 
 /* 🌟 EFECTO BORDE NEÓN GIRATORIO EXCLUSIVO PARA CREATOR 🌟 */
 .card-item.rarity-creator {
-  border-color: transparent !important;
+  border: none !important;
   position: relative;
-  /* Aseguramos que el contenido hijo no rompa las esquinas redondeadas */
-  background-clip: padding-box;
+  overflow: hidden;
+  isolation: isolate;
+  background: transparent !important;
+  box-shadow: 0 8px 32px rgba(0, 255, 135, 0.15);
 }
 
+/* Borde Neón Giratorio */
 .card-item.rarity-creator::before {
   content: "";
   position: absolute;
@@ -461,28 +464,33 @@ button, a, select {
   background: conic-gradient(
     from 0deg,
     transparent 0%,
-    #00FF87 25%,
-    #60EFFF 50%,
-    transparent 75%
+    #00FF87 18%,
+    #60EFFF 35%,
+    transparent 50%,
+    #00FF87 68%,
+    #60EFFF 85%,
+    transparent 100%
   );
-  animation: girarBordeCreator 4s linear infinite;
+  animation: girarBordeCreator 3.5s linear infinite;
   z-index: 0;
   pointer-events: none;
 }
 
-/* Tapa interior para crear la ilusión del borde fino (3px) */
+/* Fondo interior del cuerpo de la carta */
 .card-item.rarity-creator::after {
   content: "";
   position: absolute;
-  inset: 3px; /* Grosor del borde */
-  background: var(--surface-raised);
-  border-radius: calc(var(--radius-card) - 3px);
+  inset: 2px;
+  background: rgba(12, 18, 24, 0.88);
+  border-radius: calc(var(--radius-card) - 2px);
   z-index: 1;
   pointer-events: none;
 }
 
-/* Sube todo el contenido real de la carta por encima del ::after */
-.card-item.rarity-creator > * {
+/* Marco de la foto (fondo degradado verde oscuro independiente) */
+.rarity-creator .card-artwork {
+  background: var(--rarity-creator-bg) !important;
+  border: 1px solid rgba(0, 255, 135, 0.3) !important;
   position: relative;
   z-index: 2;
 }
@@ -492,11 +500,14 @@ button, a, select {
   100% { transform: rotate(360deg); }
 }
 
+/* --- ENCABEZADO Y ELEMENTOS INTERNOS DE LA CARTA --- */
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-family: var(--font-heading);
+  position: relative;
+  z-index: 2; /* Para que quede por encima del fondo ::after en Creator */
 }
 
 .card-type {
@@ -526,7 +537,6 @@ button, a, select {
 .badge-rare { background-color: var(--rarity-rare); color: var(--color-neutral-50); }
 .badge-epic { background-color: var(--rarity-epic); color: var(--color-neutral-50); }
 .badge-legendary { background-color: var(--rarity-legendary); color: var(--color-neutral-950); }
-
 .badge-creator { background-color: var(--rarity-creator); color: var(--color-neutral-950); }
 
 /* ==========================================================================

@@ -491,18 +491,53 @@ export default function Catalogo() {
           </button>
 
           <div className="page-numbers">
-            {Array.from({ length: totalPages }, (_, idx) => {
-              const pageNumber = idx + 1;
-              return (
-                <button
-                  key={pageNumber}
-                  className={`pagination-btn number-btn ${activePage === pageNumber ? "active" : ""}`}
-                  onClick={() => setCurrentPage(pageNumber)}
-                >
-                  {pageNumber}
-                </button>
-              );
-            })}
+            {(() => {
+              const pages = [];
+              const delta = 1;
+
+              for (let i = 1; i <= totalPages; i++) {
+                if (
+                  i === 1 ||
+                  i === totalPages ||
+                  (i >= activePage - delta && i <= activePage + delta)
+                ) {
+                  pages.push(i);
+                } else if (
+                  pages[pages.length - 1] !== "..." &&
+                  (i < activePage - delta || i > activePage + delta)
+                ) {
+                  pages.push("...");
+                }
+              }
+
+              return pages.map((page, index) => {
+                if (page === "...") {
+                  return (
+                    <span
+                      key={`ellipsis-${index}`}
+                      style={{
+                        padding: "0.5rem 0.6rem",
+                        color: "var(--text-secondary)",
+                        fontWeight: "bold",
+                        alignSelf: "center",
+                      }}
+                    >
+                      ...
+                    </span>
+                  );
+                }
+
+                return (
+                  <button
+                    key={page}
+                    className={`pagination-btn number-btn ${activePage === page ? "active" : ""}`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                );
+              });
+            })()}
           </div>
 
           <button
