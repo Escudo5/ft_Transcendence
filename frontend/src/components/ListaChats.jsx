@@ -40,7 +40,7 @@ function ListaChats({
       {/* CABECERA SUPERIOR CON BOTONES DE ACCIÓN */}
       <div className="sidebar-header">
         <button onClick={clickVolverHome} className="btn-volver" title={t('backToMainMenu')}>
-          ← Home
+          ← {t('home')}
         </button>
 
         <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -49,7 +49,7 @@ function ListaChats({
             className="btn-volver"
             style={{ borderColor: '#00bfff', color: '#00bfff', padding: '0.4rem 0.7rem', fontSize: '0.8rem' }}
           >
-            + Amigos
+            + {t('friends')}
           </button>
 
           <button
@@ -63,7 +63,7 @@ function ListaChats({
               position: 'relative',
             }}
           >
-            Solicitudes
+            {t('requests')}
             {numSolicitudesPendientes > 0 && (
               <span
                 style={{

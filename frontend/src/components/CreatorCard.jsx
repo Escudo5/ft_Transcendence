@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Badge } from "./ui";
+import { useI18n } from "../i18n";
 
 /*
   Logotipos de las coaliciones
@@ -12,6 +13,7 @@ const LOGOS_COALICIONES = {
 };
 
 export default function CreatorCard({ carta, onClick }) {
+  const { t } = useI18n();
   const logoCoalicion = LOGOS_COALICIONES[carta.coalicion?.toLowerCase()];
 
   return (
@@ -55,7 +57,7 @@ export default function CreatorCard({ carta, onClick }) {
           ) : (
             <span className="card-type">{carta.coalicion}</span>
           )}
-          <Badge tone="creator">CREATOR</Badge>
+          <Badge tone="creator">{t("rarityCreator").toUpperCase()}</Badge>
         </div>
 
         {/* Arte / Foto */}
@@ -82,17 +84,17 @@ export default function CreatorCard({ carta, onClick }) {
         {/* Stats */}
         <div className="card-stats">
           <div className="stat">
-            <span className="stat-label">NIVEL</span>
+            <span className="stat-label">{t("level")}</span>
             <span className="stat-value">{carta.nivel}</span>
           </div>
           <div className="stat-divider"></div>
           <div className="stat">
-            <span className="stat-label">EVALS</span>
+            <span className="stat-label">{t("evaluations")}</span>
             <span className="stat-value">{carta.evaluaciones}</span>
           </div>
           <div className="stat-divider"></div>
           <div className="stat">
-            <span className="stat-label">WALLET</span>
+            <span className="stat-label">{t("wallet")}</span>
             <span className="stat-value stat-wallet-value">
               {carta.altarians}
               <img className="stat-logo" src="/icons/Altarians_logo.png" alt="" aria-hidden="true" />

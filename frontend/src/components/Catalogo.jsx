@@ -23,6 +23,7 @@ const TIERS = [...RAREZAS].reverse();
 /* 🔍 DETALLE DE UNA CARTA EN POP-UP */
 function ModalCarta({ carta, onCerrar }) {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   if (!carta) return null;
 
@@ -67,21 +68,21 @@ function ModalCarta({ carta, onCerrar }) {
         )}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
-          <Dato etiqueta="Nivel" valor={carta.nivel} />
-          <Dato etiqueta="Coalición" valor={carta.coalicion} />
-          <Dato etiqueta="Evaluaciones" valor={carta.evaluaciones} />
-          <Dato etiqueta="Wallet" valor={carta.altarians} />
+          <Dato etiqueta={t("level")} valor={carta.nivel} />
+          <Dato etiqueta={t("coalition")} valor={carta.coalicion} />
+          <Dato etiqueta={t("evaluations")} valor={carta.evaluaciones} />
+          <Dato etiqueta={t("wallet")} valor={carta.altarians} />
         </div>
 
         {carta.cantidad > 1 && (
           <p style={{ margin: 0, textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
-            Tienes <strong>{carta.cantidad}</strong> copias de esta carta
+            {t("copiesOfCard", { count: carta.cantidad })}
           </p>
         )}
 
         <div style={{ display: "flex", gap: "0.7rem", justifyContent: "center", flexWrap: "wrap", marginTop: "0.5rem" }}>
-          <SecondaryButton onClick={onCerrar}>Cerrar</SecondaryButton>
-          <Button onClick={visitarPerfil}>Ver su perfil</Button>
+          <SecondaryButton onClick={onCerrar}>{t("close")}</SecondaryButton>
+          <Button onClick={visitarPerfil}>{t("viewTheirProfile")}</Button>
         </div>
       </div>
     </Modal>
@@ -293,17 +294,17 @@ export default function Catalogo() {
 
         <div className="card-stats">
           <div className="stat">
-            <span className="stat-label">NIVEL</span>
+            <span className="stat-label">{t("level")}</span>
             <span className="stat-value">{card.nivel}</span>
           </div>
           <div className="stat-divider"></div>
           <div className="stat">
-            <span className="stat-label">EVALS</span>
+            <span className="stat-label">{t("evaluations")}</span>
             <span className="stat-value">{card.evaluaciones}</span>
           </div>
           <div className="stat-divider"></div>
           <div className="stat">
-            <span className="stat-label">WALLET</span>
+            <span className="stat-label">{t("wallet")}</span>
             <span className="stat-value stat-wallet-value">
               {card.altarians}
               <img className="stat-logo" src="/icons/Altarians_logo.png" alt="" aria-hidden="true" />
@@ -419,13 +420,13 @@ export default function Catalogo() {
       </section>
 
       {totalPages > 1 && (
-        <nav className="pagination-container" aria-label="Selector de páginas del álbum">
+        <nav className="pagination-container" aria-label={t("pageSelector")}>
           <button
             className="pagination-btn arrow-btn"
             onClick={goToPrevPage}
             disabled={activePage === 1}
           >
-            &larr; Anterior
+            &larr; {t("previous")}
           </button>
 
           <div className="page-numbers">
@@ -448,7 +449,7 @@ export default function Catalogo() {
             onClick={goToNextPage}
             disabled={activePage === totalPages}
           >
-            Siguiente &rarr;
+            {t("next")} &rarr;
           </button>
         </nav>
       )}

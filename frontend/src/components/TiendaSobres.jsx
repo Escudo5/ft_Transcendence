@@ -370,7 +370,7 @@ function TiendaSobres() {
           boxShadow: '0 0 10px rgba(255,159,252,0.3)'
         }}
       >
-        ← Volver al Catálogo
+        {t('backToCatalog')}
       </button>
     );
   };
