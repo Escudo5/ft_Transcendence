@@ -9,11 +9,11 @@ import { useI18n } from '../i18n';
 
 // 👥 Tarjetas base de presentación del equipo de desarrollo
 const INTEGRANTES_BASE = [
-  { login: "ksudyn", nombre: "Konrad", avatar: "imagen", rareza: "legendary" },
-  { login: "pablalva", nombre: "Pablo", avatar: "imagen", rareza: "legendary" },
-  { login: "nmagro-r", nombre: "Nacho", avatar: "imagen", rareza: "epic" },
-  { login: "smarquez", nombre: "Sergio", avatar: "imagen", rareza: "rare" },
-  { login: "osmunoz-", nombre: "Óscar", avatar: "imagen", rareza: "common" },
+  { login: "ksudyn", nombre: "Konrad", avatar: "imagen", rareza: "creator" },
+  { login: "pablalva", nombre: "Pablo", avatar: "imagen", rareza: "creator" },
+  { login: "nmagro-r", nombre: "Nacho", avatar: "imagen", rareza: "creator" },
+  { login: "smarquez", nombre: "Sergio", avatar: "imagen", rareza: "creator" },
+  { login: "osmunoz-", nombre: "Óscar", avatar: "imagen", rareza: "creator" },
 ];
 
 function getUserImage(userData) {
@@ -305,46 +305,60 @@ function Home() {
         </p>
       </header>
 
-      {/* Fila con las 5 cartas de los miembros del grupo */}
-      <section className="team-grid" aria-label="Integrantes del proyecto">
-        {integrantes.map((user, index) => (
-          <motion.article
-          key={user.login}
-          className={`card-item rarity-${user.rareza}`}
-          style={{ padding: '1rem', textAlign: 'center', cursor: 'pointer'}}
-          onClick={() => setIndiceSeleccionado(index)} // Al hacer click, guardamos su índice
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') setIndiceSeleccionado(index);
-          }}
-          role="button"
-          tabIndex={0}
-          aria-label={`Ver carta de ${user.nombre}`}
-          initial={{ opacity: 0, y: 20, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{
-            opacity: { duration: 0.3, delay: index * 0.08 },
-            default: { type: 'spring', stiffness: 240, damping: 24, mass: 0.8 },
-          }}
-          whileHover={{
-            y: -6,
-            scale: 1.02,
-            transition: { type: 'spring', stiffness: 320, damping: 26, mass: 0.7 },
-          }}
-          whileTap={{
-            scale: 0.97,
-            transition: { type: 'spring', stiffness: 420, damping: 30, mass: 0.6 },
-          }}
-          whileFocus={{
-            scale: 1.015,
-            transition: { type: 'spring', stiffness: 320, damping: 26, mass: 0.7 },
-          }}
-          >
-            <Avatar src={user.avatar !== 'imagen' ? user.avatar : undefined} alt={user.nombre} size="medium" />
-            <h3 style={{ fontSize: '1rem', margin: '0' }}>{user.nombre}</h3>
-            <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>@{user.login}</span>
-          </motion.article>
-        ))}
-      </section>
+{/* Fila con las 5 cartas de los miembros del grupo */}
+  <section className="team-grid" aria-label="Integrantes del proyecto">
+    {integrantes.map((user, index) => (
+      <motion.article
+        key={user.login}
+        className={`card-item rarity-${user.rareza}`}
+        onClick={() => setIndiceSeleccionado(index)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') setIndiceSeleccionado(index);
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Ver carta de ${user.nombre}`}
+        initial={{ opacity: 0, y: 20, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{
+          opacity: { duration: 0.3, delay: index * 0.08 },
+          default: { type: 'spring', stiffness: 240, damping: 24, mass: 0.8 },
+        }}
+        whileHover={{
+          y: -6,
+          scale: 1.02,
+          transition: { type: 'spring', stiffness: 320, damping: 26, mass: 0.7 },
+        }}
+        whileTap={{
+          scale: 0.97,
+          transition: { type: 'spring', stiffness: 420, damping: 30, mass: 0.6 },
+        }}
+      >
+        {/* 1. Cabecera con Título y Badge de Rareza */}
+        <div className="card-header">
+          <span className="card-type">DEV</span>
+          <span className={`rarity-badge badge-${user.rareza}`}>
+            {user.rareza.toUpperCase()}
+          </span>
+        </div>
+
+        {/* 2. Marco de Foto / Arte (.card-artwork) */}
+        <div className="card-artwork">
+          {user.avatar && user.avatar !== 'imagen' ? (
+            <img src={user.avatar} alt={user.nombre} className="card-photo" />
+          ) : (
+            <div className="artwork-symbol">👤</div>
+          )}
+        </div>
+
+        {/* 3. Información del Integrante */}
+        <div className="card-body" style={{ textAlign: 'left' }}>
+          <h3 className="card-title" style={{ margin: 0 }}>{user.nombre}</h3>
+          <span className="card-description">@{user.login}</span>
+        </div>
+      </motion.article>
+    ))}
+  </section>
 
       {/* 🧭 BOTONES DE ACCIÓN: las opciones del juego.
           La rejilla se ajusta sola al número de botones (antes eran dos fijos),
