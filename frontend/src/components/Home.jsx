@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import PieLegal from './PieLegal';
 import ContadorMensajes from './ContadorMensajes';
 import { Avatar, Badge, Button, Card, Modal } from './ui';
-import { COLOR_RAREZA } from './rarezas';
+import { CLASE_RAREZA, COLOR_RAREZA } from './rarezas';
+import CreatorCard from './CreatorCard';
 import { useI18n } from '../i18n';
 
 // 👥 Tarjetas base de presentación del equipo de desarrollo
@@ -164,8 +165,32 @@ function Home() {
   useEffect(() => {
     const controller = new AbortController();
 
+    /* Cuántas copias tengo de cada carta. Va en una petición aparte porque
+     * /cards/<login>/ describe la carta, no sabe nada de MI álbum, y el ×N
+     * sale de ahí. */
+    async function cuantasCopiasTengo() {
+      const copias = {};
+      try {
+        const res = await fetch(`${apiBaseUrl}/cards/album/`, {
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        if (!res.ok) return copias;
+        for (const item of (await res.json()) || []) {
+          if (item.card?.login) copias[item.card.login] = item.cantidad ?? 1;
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('No se ha podido saber cuántas copias tengo:', error);
+        }
+      }
+      return copias;
+    }
+
     async function cargarUsuarios() {
       try {
+        const copias = await cuantasCopiasTengo();
+
         const respuestas = await Promise.all(
           INTEGRANTES_BASE.map(async (user) => {
             const response = await fetch(`${cardsEndpoint}/${encodeURIComponent(user.login)}/`, {
@@ -179,10 +204,29 @@ function Home() {
 
             const cardDb = await response.json();
 
+            /* 🎴 CAMBIO (Nacho, 24/09): antes de aquí solo salían el nombre y
+             * la foto, y la portada pintaba un maquetado propio con un "DEV"
+             * fijo. La llamada YA traía la carta entera; solo había que dejar
+             * de tirar el resto de campos.
+             *
+             * Se mantienen `nombre`, `avatar` y `rareza` porque son los que usa
+             * el modal de abajo, y se añaden los de la carta con LOS MISMOS
+             * NOMBRES que en el álbum (Catalogo.jsx), que es lo que espera
+             * CreatorCard. Si se renombra uno allí, hay que renombrarlo aquí. */
             return {
               ...user,
               nombre: cardDb.title || user.nombre,
               avatar: getUserImage(cardDb) || user.avatar,
+              rareza: CLASE_RAREZA[cardDb.tier] || user.rareza,
+
+              titulo: cardDb.title || '',
+              coalicion: cardDb.coalition || '',
+              foto: cardDb.photo,
+              tier: cardDb.tier,
+              nivel: cardDb.cursus_lvl ?? 0,
+              evaluaciones: cardDb.eval_point ?? 0,
+              altarians: cardDb.altarians ?? 0,
+              cantidad: copias[cardDb.login] ?? 0,
             };
           }),
         );
@@ -198,7 +242,7 @@ function Home() {
     cargarUsuarios();
 
     return () => controller.abort();
-  }, [cardsEndpoint]);
+  }, [cardsEndpoint, apiBaseUrl]);
 
   /*
   📊 Carga de los datos del tablón de estadísticas.
@@ -305,58 +349,24 @@ function Home() {
         </p>
       </header>
 
-{/* Fila con las 5 cartas de los miembros del grupo */}
+{/* Fila con las 5 cartas de los miembros del grupo.
+  *
+  * 🎴 CAMBIO (Nacho, 24/09): aquí había un maquetado propio, con un "DEV"
+  * escrito a mano y sin ningún dato real de la carta. Ahora se pinta con
+  * CreatorCard, EL MISMO componente que usa el álbum, así que la portada
+  * enseña exactamente la carta que tienes, con su coalición, su nivel, sus
+  * evaluaciones, sus altarians y el ×N si tienes repetidas.
+  *
+  * ⚠️ La rareza sale de la base de datos: si tus 5 cartas no están todavía
+  * como Creator, lo que se ve son los datos reales dentro del marco de
+  * creator. Se arregla sincronizando, no tocando esto. */}
   <section className="team-grid" aria-label="Integrantes del proyecto">
     {integrantes.map((user, index) => (
-      <motion.article
+      <CreatorCard
         key={user.login}
-        className={`card-item rarity-${user.rareza}`}
+        carta={user}
         onClick={() => setIndiceSeleccionado(index)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') setIndiceSeleccionado(index);
-        }}
-        role="button"
-        tabIndex={0}
-        aria-label={`Ver carta de ${user.nombre}`}
-        initial={{ opacity: 0, y: 20, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{
-          opacity: { duration: 0.3, delay: index * 0.08 },
-          default: { type: 'spring', stiffness: 240, damping: 24, mass: 0.8 },
-        }}
-        whileHover={{
-          y: -6,
-          scale: 1.02,
-          transition: { type: 'spring', stiffness: 320, damping: 26, mass: 0.7 },
-        }}
-        whileTap={{
-          scale: 0.97,
-          transition: { type: 'spring', stiffness: 420, damping: 30, mass: 0.6 },
-        }}
-      >
-        {/* 1. Cabecera con Título y Badge de Rareza */}
-        <div className="card-header">
-          <span className="card-type">DEV</span>
-          <span className={`rarity-badge badge-${user.rareza}`}>
-            {user.rareza.toUpperCase()}
-          </span>
-        </div>
-
-        {/* 2. Marco de Foto / Arte (.card-artwork) */}
-        <div className="card-artwork">
-          {user.avatar && user.avatar !== 'imagen' ? (
-            <img src={user.avatar} alt={user.nombre} className="card-photo" />
-          ) : (
-            <div className="artwork-symbol">👤</div>
-          )}
-        </div>
-
-        {/* 3. Información del Integrante */}
-        <div className="card-body" style={{ textAlign: 'left' }}>
-          <h3 className="card-title" style={{ margin: 0 }}>{user.nombre}</h3>
-          <span className="card-description">@{user.login}</span>
-        </div>
-      </motion.article>
+      />
     ))}
   </section>
 

@@ -317,23 +317,15 @@ export default function Catalogo() {
 
         <div className="card-artwork">
           <div className="artwork-glow"></div>
+          {/* 🔢 El contador de repetidas. Antes iba con estilos escritos aquí
+            * a mano y CreatorCard usaba una clase .card-copies-badge que no
+            * existía en ninguna hoja: por eso el ×2 de las cartas de creator
+            * salía suelto a la izquierda. Ahora las dos usan la misma clase
+            * (styles.css), así que el contador se ve igual en todas. */}
           {card.cantidad > 1 && (
             <span
+              className="card-copies-badge"
               title={`Tienes ${card.cantidad} copias de esta carta`}
-              style={{
-                position: "absolute",
-                top: "8px",
-                right: "8px",
-                zIndex: 3,
-                background: "rgba(12, 15, 22, 0.85)",
-                border: "2px solid var(--accent)",
-                color: "var(--accent)",
-                borderRadius: "999px",
-                padding: "0.15rem 0.55rem",
-                fontFamily: "var(--font-heading)",
-                fontSize: "0.85rem",
-                fontWeight: 800,
-              }}
             >
               ×{card.cantidad}
             </span>
