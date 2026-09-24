@@ -18,24 +18,24 @@ export default function CreatorCard({ carta, onClick }) {
 
   return (
     <motion.article
-      className="card-item rarity-creator creator-card-special"
-      role="button"
-      tabIndex={0}
-      aria-label={`Ver el detalle de la carta Creator de ${carta.login}`}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      initial={{ opacity: 0, y: 24, scale: 0.94 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.38, type: "spring", stiffness: 190, damping: 17 }}
-      whileHover={{ y: -6, scale: 1.02 }}
-      whileTap={{ scale: 0.96 }}
-      style={{ position: "relative", overflow: "hidden" }}
-    >
+  className="card-item rarity-creator creator-card-special"
+  role="button"
+  tabIndex={0}
+  aria-label={`Ver el detalle de la carta Creator de ${carta.login}`}
+  onClick={onClick}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick();
+    }
+  }}
+  initial={{ opacity: 0, y: 24, scale: 0.94 }}
+  animate={{ opacity: 1, y: 0, scale: 1 }}
+  transition={{ duration: 0.38, type: "spring", stiffness: 190, damping: 17 }}
+  whileHover={{ y: -6, scale: 1.02 }}
+  whileTap={{ scale: 0.96 }}
+  style={{ position: "relative" }}
+>
       {/* 🔮 CAPAS DE EFECTO EN EL FONDO 🔮 */}
       <div className="creator-bg-effect">
         <div className="creator-glow-orb primary" />
