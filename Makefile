@@ -2,12 +2,29 @@
 # CONFIGURACIÓN Y VARIABLES
 # ==============================================================================
 DC       = docker compose
-SERVICE  = backend
-EXEC     = $(DC) exec $(SERVICE)
+
+# 🔧 ARREGLO (Nacho, 24/09): antes esto era `SERVICE = backend`, y esa MISMA
+# variable la usaban dentro `logs` y `recreate` para decidir "todos los
+# servicios o uno solo". Al tener siempre valor, el `if [ -z "$(SERVICE)" ]` de
+# esos dos NUNCA se cumplía: `make logs` mostraba solo el backend aunque la
+# ayuda prometiera todos, y el mensaje de error de `recreate` era código al que
+# no se podía llegar.
+#
+# Ahora son dos cosas distintas: BACKEND es fijo, porque es el contenedor donde
+# vive manage.py; SERVICE lo pone quien llama y por defecto está vacío.
+BACKEND  = backend
+EXEC     = $(DC) exec $(BACKEND)
 MANAGE   = $(EXEC) python3 manage.py
+SERVICE ?=
+
 ESPECIFIC_LOGINS = pablalva nmagro-r smarquez osmunoz- ksudyn
 
-.PHONY: help up down build restart logs shell migrations migrate test
+# 🔧 ARREGLO (Nacho, 24/09): declaraba `test`, que no existe, y le faltaban 9
+# targets. Sin declarar, el día que aparezca en el repo un fichero o una carpeta
+# con el nombre de un target, `make` dice "nothing to be done" y no explica nada.
+.PHONY: help build up up_silent start start_full down down_clean recreate \
+        restart logs migrations migrate shell superuser wait_backend \
+        sync-quick sync-full insert_login
 
 # Comando por defecto si solo escribes 'make'
 .DEFAULT_GOAL := help
@@ -23,9 +40,9 @@ help:
 	@echo "  make start_full   - Crea y levanta los contenedores ademas de mapear completa la base de datos"
 	@echo "  make down         - Detiene y elimina los contenedores"
 	@echo "  make down_clean   - Detiene y elimina los contenedores ademas de borrar los volumenes"
-	@echo "  make recreate     - Recrea y levanta el contenedor designado"
+	@echo "  make recreate     - Recrea un servicio:   make recreate SERVICE=frontend"
 	@echo "  make restart      - Reinicia los contenedores"
-	@echo "  make logs         - Muestra los logs de los servicios o del servicio definido"
+	@echo "  make logs         - Logs de todos, o de uno: make logs SERVICE=backend"
 	@echo "------------------------------------------------------------------------------------------------------"
 	@echo "  make migrate      - Aplica las migraciones pendientes"
 	@echo "  make migrations   - Crea nuevas migraciones a partir de los modelos"
@@ -49,8 +66,29 @@ up:
 up_silent:
 	$(DC) up -d
 
-start: build up_silent sync-quick
-start_full: build up_silent sync-full
+# 🔧 ARREGLO (Nacho, 24/09): se ha metido `wait_backend` en medio.
+# `up -d` vuelve en cuanto el contenedor ARRANCA, no cuando Django ha acabado de
+# migrar: el `migrate` va dentro del `command:` del docker-compose (línea 23).
+# Sin esperar, el `exec` de sync-quick podía caer a mitad de las migraciones y
+# fallar con "relation does not exist". Era una carrera: unas veces salía bien y
+# otras no, que es justo el tipo de fallo que cuesta una tarde encontrar.
+start: build up_silent wait_backend sync-quick
+start_full: build up_silent wait_backend sync-full
+
+# Espera a que el backend responda Y no le queden migraciones pendientes.
+# `migrate --check` sale con código 0 solo si está todo aplicado, así que sirve
+# de las dos cosas: que Postgres acepte conexiones y que el migrate haya acabado.
+wait_backend:
+	@echo "⏳ Esperando a que el backend acabe de migrar..."
+	@for i in $$(seq 1 30); do \
+		if $(DC) exec -T $(BACKEND) python3 manage.py migrate --check >/dev/null 2>&1; then \
+			echo "✅ Backend listo."; \
+			exit 0; \
+		fi; \
+		sleep 2; \
+	done; \
+	echo "❌ El backend no ha respondido en 60s. Mira 'make logs SERVICE=backend'."; \
+	exit 1
 
 down:
 	$(DC) down
