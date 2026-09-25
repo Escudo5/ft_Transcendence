@@ -45,6 +45,7 @@ def _mensaje_json(m, yo):
         'texto': m.texto,
         'fecha': m.created_at.isoformat(),
         'mio': m.sender_id == yo.pk,
+        'leido': m.leido,
     }
 
 
