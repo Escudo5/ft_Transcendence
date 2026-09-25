@@ -258,14 +258,34 @@ function AreaChat({
                           fontSize: '0.7rem',
                           color: '#8b92b0',
                           marginTop: '0.25rem',
-                          textAlign: 'right',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-end',
+                          gap: '0.3rem',
                         }}
                         title={new Date(mensajeActual.fecha).toLocaleString('es-ES')}
                       >
-                        {new Date(mensajeActual.fecha).toLocaleTimeString('es-ES', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        <span>
+                          {new Date(mensajeActual.fecha).toLocaleTimeString('es-ES', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+
+                        {/* ICONO DE CONFIRMACIÓN DE LECTURA (Solo mensajes propios) */}
+                        {mensajeActual.mio && (
+                          <span
+                            style={{
+                              color: mensajeActual.leido ? '#00ffcc' : '#8b92b0',
+                              fontWeight: 'bold',
+                              fontSize: '0.75rem',
+                              lineHeight: 1,
+                            }}
+                            title={mensajeActual.leido ? 'Leído' : 'Enviado'}
+                          >
+                            {mensajeActual.leido ? '✓✓' : '✓'}
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
