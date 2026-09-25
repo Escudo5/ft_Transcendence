@@ -19,6 +19,7 @@ from django.middleware.csrf import get_token
 from django.http import JsonResponse
 from django.db import transaction
 from .models import CustomUser
+from cards.models import Card
 from django.core.mail import send_mail
 from django.core.mail import EmailMessage
 # 🔑 Credenciales de la aplicación registrada en la Intra (vienen del .env)
@@ -753,6 +754,8 @@ def borrar_mi_cuenta(request):
     # 2. Borrar en la base de datos (álbum, sobres, mensajes, amigos y
     #    bloqueos se van en cascada).
     with transaction.atomic():
+        if Card.objects.filter(login=usuario.username):
+            Card.objects.filter(login=usuario.username).delete()
         usuario.delete()
 
     # 3. Hacer logout DESPUÉS de haber eliminado el usuario en BD
