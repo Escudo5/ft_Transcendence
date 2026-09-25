@@ -274,20 +274,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { MotionConfig } from 'framer-motion';
-import DotField from "./components/Fondo_animado";
+import DotField from "./components/Componentes/Fondo_animado";
 import Acceso from './components/Acceso';
 import RegaloDiario from './components/RegaloDiario';
-import AvisoMensajes from './components/AvisoMensajes';
+import AvisoMensajes from './components/ChatSocial/AvisoMensajes';
 import Home from './components/Home';
-import Catalogo from './components/Catalogo';
+import Catalogo from './components/Album/Catalogo';
 import CrearCarta from './components/CrearCarta';
-import Game from './components/Game';
-import Perfil from './components/Perfil';
-import Ranking from './components/Ranking';
+import Perfil from './components/Perfil/Perfil';
+import Ranking from './components/Clasificacion/Ranking';
 import Legal from './components/Legal';
 import PieLegal from './components/PieLegal';
-import TiendaSobres from './components/TiendaSobres';
-import ChatSocial from './components/ChatSocial';
+import TiendaSobres from './components/TiendaSobres/TiendaSobres';
+import ChatSocial from './components/ChatSocial/ChatSocial';
 import { I18nProvider, LanguageSelector, useI18n } from './i18n';
 
 const router = createBrowserRouter([
@@ -306,10 +305,6 @@ const router = createBrowserRouter([
   {
     path: "/crear",
     element: <CrearCarta />,
-  },
-  {
-    path: "/game",
-    element: <Game />,
   },
   {
     path: "/chatsocial",
@@ -363,7 +358,7 @@ function AppContent() {
   const codeYaProcesado = useRef(false);
 
   useEffect(() => {
-    document.title = '42 Cards Game | Colección y partidas';
+    document.title = '42 Cards | Album de cromos de 42 Madrid';
 
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');

@@ -7,7 +7,7 @@ import BuscarAmigos from './BuscarAmigos';
 import SolicitudesRecibidas from './SolicitudesRecibidas';
 import AreaChat from './AreaChat';
 import { adaptarPropuesta } from './Intercambio';
-import { useI18n } from '../i18n';
+import { useI18n } from '../../i18n';
 import './Chat.css';
 
 const API = import.meta.env.VITE_API_URL || '/api';

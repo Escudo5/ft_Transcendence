@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
-import { COLOR_RAREZA } from './rarezas';
-import { useI18n } from '../i18n';
+import { COLOR_RAREZA } from '../rarezas';
+import { useI18n } from '../../i18n';
 
 const API = import.meta.env.VITE_API_URL || '/api';
 

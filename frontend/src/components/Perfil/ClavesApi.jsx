@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Badge, Button, Card, SecondaryButton, TextField } from './ui';
+import { Alert, Badge, Button, Card, SecondaryButton, TextField } from '../ui';
 
 /**
  * TUS CLAVES DE API

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useI18n } from '../i18n';
+import { useI18n } from '../../i18n';
 
 /**
  * AVISO DE LO QUE TE ESPERA EN EL CHAT

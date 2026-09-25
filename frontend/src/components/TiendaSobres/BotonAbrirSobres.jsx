@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { useI18n } from '../i18n';
+import { useI18n } from '../../i18n';
 
 /* ===========================================================================
    ✨ BOTÓN DE ABRIR SOBRES
