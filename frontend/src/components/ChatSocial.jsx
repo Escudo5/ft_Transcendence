@@ -393,33 +393,46 @@ function ChatSocial() {
   const clickVolverHome = () => navigate('/Home');
   const visitarPerfil = (login) => navigate(`/perfil/${login}`);
 
+  // ⚠️ CAMBIO AQUÍ: Se corrige la lógica de bloqueo/desbloqueo.
+  // Ahora comprueba si el usuario ya está bloqueado y envía el verbo HTTP correspondiente:
+  // - DELETE para desbloquear (la vista BloquearView del backend elimina el registro de Bloqueo).
+  // - POST para bloquear (la vista BloquearView crea el registro de Bloqueo).
   const alternarBloqueoUsuario = async (loginTarget) => {
-    let nuevoEstadoBloqueo = false;
+    const amigoTarget = amigos.find((a) => a.login === loginTarget);
+    const estaBloqueado = amigoTarget ? amigoTarget.bloqueado : false;
 
+    const metodoHTTP = estaBloqueado ? 'DELETE' : 'POST';
+    const nuevoEstado = !estaBloqueado;
+
+    // Actualización optimista de UI
     setAmigos((prevAmigos) =>
       prevAmigos.map((amigo) => {
         if (amigo.login === loginTarget) {
-          nuevoEstadoBloqueo = !amigo.bloqueado;
-          return { ...amigo, bloqueado: nuevoEstadoBloqueo };
+          return { ...amigo, bloqueado: nuevoEstado };
         }
         return amigo;
       })
     );
 
     if (chatSeleccionado && chatSeleccionado.login === loginTarget) {
-      setChatSeleccionado((prev) => ({ ...prev, bloqueado: nuevoEstadoBloqueo }));
+      setChatSeleccionado((prev) => ({ ...prev, bloqueado: nuevoEstado }));
     }
 
-    /* Petición HTTP al backend para guardar el bloqueo en Base de Datos */
     try {
       const token = await pedirTokenCSRF();
-      await fetch(`${API}/social/bloquear/${encodeURIComponent(loginTarget)}/`, {
-        method: 'POST',
+      const respuesta = await fetch(`${API}/social/bloquear/${encodeURIComponent(loginTarget)}/`, {
+        method: metodoHTTP,
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
       });
+
+      if (!respuesta.ok) {
+        console.error('Error al actualizar el estado de bloqueo en servidor');
+        recargarDatosSociales();
+      }
     } catch (err) {
       console.error('Error al notificar bloqueo al backend:', err);
+      recargarDatosSociales();
     }
   };
 
