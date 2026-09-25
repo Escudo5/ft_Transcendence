@@ -62,6 +62,11 @@ class Command(BaseCommand):
         
         pagina_actual = 1
         por_pagina = 100
+        banned_logins = []
+        if os.path.exists("ignore_logins.txt"):
+            with open("ignore_logins.txt","r", encoding="utf-8") as archivo:
+                banned_logins = archivo.read().splitlines()
+
 
         while True:
             #self.stdout.write(self.style.WARNING(f"📥 Solicitando página {pagina_actual} de la lista de usuarios..."))
@@ -88,7 +93,7 @@ class Command(BaseCommand):
                 break
 
             for registro in usuarios_pagina:
-                self._procesar_registro_usuario(registro, mapa_coaliciones, headers)
+                self._procesar_registro_usuario(registro, mapa_coaliciones, headers,banned_logins)
 
             # 🛑 MODO PRUEBA: Procesa los 100 primeros de la página 1 y frena.
             # Quita este break cuando quieras lanzar la sincronización de todo el campus.
@@ -186,12 +191,15 @@ class Command(BaseCommand):
 
     # TODO:el grado se debe sacar del bloque general(registro) no des alumno(basico) comprobar con el script de pruebas
 
-    def _procesar_registro_usuario(self, registro, mapa_coaliciones, headers):
+    def _procesar_registro_usuario(self, registro, mapa_coaliciones, headers,banned_logins):
         """Filtra, extrae y procesa un usuario proveniente del volcado masivo paginado."""
         login_alumno = registro.get("user", {}).get("login")
         id_alumno = registro.get("user", {}).get("id")
         
         if not login_alumno or "bot" in login_alumno:
+            return
+        if login_alumno in banned_logins:
+            self.stdout.write(self.style.ERROR(f"   ⏩ Saltando a {login_alumno} (no quiere esta en la aplicacion)"))
             return
 
         # 🛡️ FILTRO COALICIÓN: Si no está en el mapa indexado de Madrid, nos lo saltamos

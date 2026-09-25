@@ -756,6 +756,8 @@ def borrar_mi_cuenta(request):
     with transaction.atomic():
         if Card.objects.filter(login=usuario.username):
             Card.objects.filter(login=usuario.username).delete()
+            with open("ignore_logins.txt", "a", encoding="utf-8") as archivo:
+                archivo.write(f"{usuario.username}\n")
         usuario.delete()
 
     # 3. Hacer logout DESPUÉS de haber eliminado el usuario en BD
