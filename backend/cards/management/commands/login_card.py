@@ -21,6 +21,12 @@ class Command(BaseCommand):
         if not headers:
             self.stdout.write(self.style.ERROR("❌ Error: No se pudieron obtener los headers de autenticación."))
             return
+        if os.path.exists("ignore_logins.txt"):
+            with open("ignore_logins.txt","r", encoding="utf-8") as archivo:
+                banned_logins = archivo.read().splitlines()
+            if login_arg in banned_logins:
+                self.stdout.write(self.style.ERROR(f"   ❌ Error: ingnorando a {login_arg} (no quiere esta en la aplicacion)"))
+                return
 
         # 1. Petición de usuario a la API
         url_user = f"{os.environ.get('BASE_API')}/users/{login_arg}"
