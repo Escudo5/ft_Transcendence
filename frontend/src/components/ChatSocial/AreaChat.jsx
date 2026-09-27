@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { useI18n } from '../i18n';
+import { useI18n } from '../../i18n';
 import { BotonIntercambio, ModalPropuestaIntercambio, MensajeIntercambio } from './Intercambio';
 
 const LARGO_MAXIMO = 1000;

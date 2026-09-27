@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import PieLegal from './PieLegal';
-import ContadorMensajes from './ContadorMensajes';
+import ContadorMensajes from './ChatSocial/ContadorMensajes';
 import { Avatar, Badge, Button, Card, Modal } from './ui';
 import { CLASE_RAREZA, COLOR_RAREZA } from './rarezas';
-import CreatorCard from './CreatorCard';
+import CreatorCard from './Album/CreatorCard';
 import { useI18n } from '../i18n';
 
 // 👥 Tarjetas base de presentación del equipo de desarrollo

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { Badge } from "./ui";
-import { useI18n } from "../i18n";
+import { Badge } from "../ui";
+import { useI18n } from "../../i18n";
 
 /*
   Logotipos de las coaliciones

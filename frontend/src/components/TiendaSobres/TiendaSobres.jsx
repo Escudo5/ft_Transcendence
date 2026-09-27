@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion'; // 👈 IMPORTAMOS FRAMER MOTION
 import FondoTiendaSobres from './FondoTiendaSobres';
 import SobreHolografico from './SobreHolografico';
-import { Alert, Modal } from './ui';
-import { CLASE_RAREZA } from './rarezas';
-import { useI18n } from '../i18n';
+import { Alert, Modal } from '../ui';
+import { CLASE_RAREZA } from '../rarezas';
+import { useI18n } from '../../i18n';
 
 // 1. IMPORTA LAS 3 IMÁGENES DE TUS SOBRES
 

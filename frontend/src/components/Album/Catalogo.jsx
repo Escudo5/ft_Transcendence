@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Badge, Button, Modal, SecondaryButton, TextField } from "./ui";
+import { Badge, Button, Modal, SecondaryButton, TextField } from "../ui";
 import ModalContratos, { BotonContratos } from "./Contratos";
-import BotonAbrirSobres from "./BotonAbrirSobres";
-import { CLASE_RAREZA, RAREZAS } from "./rarezas";
-import ElectricBorder from "./ElectricBorder";
+import BotonAbrirSobres from "../TiendaSobres/BotonAbrirSobres";
+import { CLASE_RAREZA, RAREZAS } from "../rarezas";
+import ElectricBorder from "../Componentes/ElectricBorder";
 import CreatorCard from "./CreatorCard";
-import { useI18n } from "../i18n";
+import { useI18n } from "../../i18n";
 
 const TIER_A_RAREZA = CLASE_RAREZA;
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Avatar, Card, ProgressBar } from './ui';
-import { useI18n } from '../i18n';
+import { Avatar, Card, ProgressBar } from '../ui';
+import { useI18n } from '../../i18n';
 
 /**
  * CLASIFICACIÓN DE COLECCIONISTAS

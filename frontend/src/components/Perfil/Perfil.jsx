@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Alert, Avatar, Button, Card, ProgressBar, StatusDot, TextField, SecondaryButton } from './ui';
-import { COLOR_RAREZA } from './rarezas';
-import { useI18n } from '../i18n';
+import { Alert, Avatar, Button, Card, ProgressBar, StatusDot, TextField, SecondaryButton } from '../ui';
+import { COLOR_RAREZA } from '../rarezas';
+import { useI18n } from '../../i18n';
 import ClavesApi from './ClavesApi';
 
 // CONSTANTES Y ESTILOS
