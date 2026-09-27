@@ -6,7 +6,7 @@ import ModalContratos, { BotonContratos } from "./Contratos";
 import BotonAbrirSobres from "./BotonAbrirSobres";
 import { CLASE_RAREZA, RAREZAS } from "./rarezas";
 import ElectricBorder from "./ElectricBorder";
-import CreatorCard from "./CreatorCard"; // 👈 IMPORTANTE: Importamos el nuevo componente
+import CreatorCard from "./CreatorCard";
 import { useI18n } from "../i18n";
 
 const TIER_A_RAREZA = CLASE_RAREZA;
@@ -20,16 +20,6 @@ const LOGOS_COALICIONES = {
 
 const TIERS = [...RAREZAS].reverse();
 
-/* 🌍 LA RAREZA, TRADUCIDA
- *
- * ⚠️ SE CONSTRUYE SOLO a partir de RAREZAS (rarezas.js), nunca a mano. Ya pasó
- * una vez: había un diccionario escrito con "Común", "Épica" y "Legendaria",
- * rarezas que dejaron de existir el 15/09, y el filtro del álbum se quedó
- * mostrando el nombre de la clave. Construyéndolo así, el día que se añada una
- * rareza nueva aparece aquí sola.
- *
- * La clave queda 'rarity' + el nombre: Junior -> rarityJunior.
- */
 const RAREZA_TRADUCCIONES = Object.fromEntries(
   RAREZAS.map((r) => [r, `rarity${r}`]),
 );
@@ -41,11 +31,7 @@ function ModalCarta({ carta, registrados, onCerrar }) {
 
   if (!carta) return null;
 
-  /* ⚠️ De las ~719 cartas del álbum, solo un puñado son de gente que tiene
-   * cuenta en la web. Sin esta comprobación el botón "Ver su perfil" sale en
-   * todas y lleva a "No existe ningún usuario llamado X". */
   const tienePerfil = registrados.has(carta.login);
-
   const visitarPerfil = () => navigate(`/perfil/${carta.login}`);
   const logoCoalicion = LOGOS_COALICIONES[carta.coalicion?.toLowerCase()];
 
@@ -139,6 +125,10 @@ export default function Catalogo() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [rarityFilter, setRarityFilter] = useState("all");
+  
+  // ⏱️ CAMBIO 1: Estado para el nuevo filtro de tiempo
+  const [timeFilter, setTimeFilter] = useState("all");
+
   const [sortBy, setSortBy] = useState("login");
   const [currentPage, setCurrentPage] = useState(1);
   const cardsPerPage = 8;
@@ -147,9 +137,6 @@ export default function Catalogo() {
   const [refrescoAlbum, setRefrescoAlbum] = useState(0);
 
   const [cartaAbierta, setCartaAbierta] = useState(null);
-
-  /* Quién de las cartas del álbum tiene cuenta en la web. Lo rellena el
-   * segundo useEffect y lo usa el pop-up para decidir si ofrece el perfil. */
   const [registrados, setRegistrados] = useState(new Set());
 
   useEffect(() => {
@@ -167,6 +154,7 @@ export default function Catalogo() {
         }
 
         const datos = await res.json();
+
         setAlbum(
           (datos || []).map((item) => ({
             id: item.id,
@@ -181,7 +169,8 @@ export default function Catalogo() {
             nivel: item.card?.cursus_lvl ?? 0,
             evaluaciones: item.card?.eval_point ?? 0,
             altarians: item.card?.altarians ?? 0,
-          })),
+            // Se usa el nombre exacto que manda el backend
+            created_at: item.fecha_obtencion || item.created_at || item.obtenida_en || null,          })),
         );
       } catch (e) {
         console.error("Error al cargar el álbum:", e);
@@ -193,11 +182,6 @@ export default function Catalogo() {
     cargarAlbum();
   }, [apiBaseUrl, refrescoAlbum, t]);
 
-  /* Consulta de usuarios registrados en la web.
-   *
-   * Va en su propio useEffect y depende de `album` porque hasta que el álbum no
-   * ha cargado no sabemos qué logins preguntar. Una sola petición con todos los
-   * logins de golpe, no una por carta. */
   useEffect(() => {
     if (album.length === 0) return;
     let cancelado = false;
@@ -222,9 +206,10 @@ export default function Catalogo() {
     return () => { cancelado = true; };
   }, [album, apiBaseUrl]);
 
+  // ⏱️ CAMBIO 3: Añadimos `timeFilter` a las dependencias para resetear la página a 1 al filtrar
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, rarityFilter, sortBy]);
+  }, [searchTerm, rarityFilter, sortBy, timeFilter]);
 
   const filteredCards = album.filter((card) => {
     const texto = searchTerm.toLowerCase();
@@ -233,7 +218,25 @@ export default function Catalogo() {
       card.titulo.toLowerCase().includes(texto) ||
       card.coalicion.toLowerCase().includes(texto);
     const matchesRarity = rarityFilter === "all" || card.tier === rarityFilter;
-    return matchesSearch && matchesRarity;
+
+    // ⏱️ CAMBIO 4: Lógica para filtrar por fecha
+    let matchesTime = true;
+    if (timeFilter !== "all" && card.created_at) {
+      const fechaCarta = new Date(card.created_at);
+      const ahora = new Date();
+      // Calculamos los días transcurridos entre hoy y el momento de obtención
+      const diferenciaDias = (ahora - fechaCarta) / (1000 * 60 * 60 * 24);
+
+      if (timeFilter === "24h") {
+        matchesTime = diferenciaDias <= 1;
+      } else if (timeFilter === "7d") {
+        matchesTime = diferenciaDias <= 7;
+      } else if (timeFilter === "30d") {
+        matchesTime = diferenciaDias <= 30;
+      }
+    }
+
+    return matchesSearch && matchesRarity && matchesTime;
   });
 
   const sortedCards = [...filteredCards].sort((a, b) => {
@@ -261,12 +264,10 @@ export default function Catalogo() {
     if (activePage > 1) setCurrentPage(activePage - 1);
   };
 
-  /* Renderizado de Carta Individual */
   const renderCardContent = (card) => {
     const isStaff = card.tier.toLowerCase() === "staff";
     const isCreator = card.tier.toLowerCase() === "creator";
 
-    // 🌟 SI ES CREATOR: Se usa el nuevo componente separado
     if (isCreator) {
       return (
         <CreatorCard
@@ -277,7 +278,6 @@ export default function Catalogo() {
       );
     }
 
-    // CARTA NORMAL
     const cardMarkup = (
       <motion.article
         key={card.id}
@@ -317,11 +317,6 @@ export default function Catalogo() {
 
         <div className="card-artwork">
           <div className="artwork-glow"></div>
-          {/* 🔢 El contador de repetidas. Antes iba con estilos escritos aquí
-            * a mano y CreatorCard usaba una clase .card-copies-badge que no
-            * existía en ninguna hoja: por eso el ×2 de las cartas de creator
-            * salía suelto a la izquierda. Ahora las dos usan la misma clase
-            * (styles.css), así que el contador se ve igual en todas. */}
           {card.cantidad > 1 && (
             <span
               className="card-copies-badge"
@@ -416,12 +411,20 @@ export default function Catalogo() {
           <label htmlFor="rarity">{t("rarity")}</label>
           <select id="rarity" value={rarityFilter} onChange={(e) => setRarityFilter(e.target.value)}>
             <option value="all">{t("allRarities")}</option>
-            {/* ⚠️ La variable del map se llama `tier`, NO `t`: con `t` tapaba la
-              * función t() de las traducciones y dentro del map era imposible
-              * traducir nada. */}
             {TIERS.map((tier) => (
               <option key={tier} value={tier}>{t(RAREZA_TRADUCCIONES[tier])}</option>
             ))}
+          </select>
+        </div>
+
+        {/* ⏱️ CAMBIO 5: Inserción del selector de rango de tiempo en el panel de control */}
+        <div className="control-group">
+          <label htmlFor="time">{t("Obtenidas")}</label>
+          <select id="time" value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)}>
+            <option value="all">Todas las fechas</option>
+            <option value="24h">Últimas 24 horas</option>
+            <option value="7d">Últimos 7 días</option>
+            <option value="30d">Últimos 30 días</option>
           </select>
         </div>
 
