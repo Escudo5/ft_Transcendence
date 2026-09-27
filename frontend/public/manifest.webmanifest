@@ -1,7 +1,7 @@
 {
   "name": "42 Cards Game",
   "short_name": "42 Cards",
-  "description": "Colecciona cartas del campus 42, consulta tu inventario y juega partidas.",
+  "description": "Colecciona las cartas del campus 42, completa tu album e intercambia repetidas.",
   "start_url": "/home",
   "display": "standalone",
   "background_color": "#101418",

@@ -49,6 +49,10 @@ services:
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
     ports:
       - "3000:3000"
+      # 📱 Puerto de la PWA: aquí sirve `make pwa` la compilacion de
+      # produccion, que es la unica donde el service worker arranca.
+      # El dev server de arriba sigue en el 3000, no se pisan.
+      - "4173:4173"
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
