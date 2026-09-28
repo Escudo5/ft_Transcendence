@@ -1,3 +1,7 @@
+import { useI18n } from '../i18n';
+import es from '../legal/es';
+import en from '../legal/en';
+import ar from '../legal/ar';
 
 /**
  * PÁGINAS LEGALES
@@ -12,8 +16,29 @@
  * los datos de la API de la Intra.
  *
  * ⚠️ Si añadís o quitáis datos del usuario, hay que actualizar la Política de
- * Privacidad. Prometer una cosa y hacer otra es peor que no prometer nada.
+ * Privacidad EN LOS TRES IDIOMAS. Prometer una cosa y hacer otra es peor que no
+ * prometer nada.
+ *
+ * ──────────────────────────────────────────────────────────────────────────
+ * 📄 POR QUÉ EL TEXTO NO ESTÁ AQUÍ DENTRO (Nacho, 28/09)
+ *
+ * Antes estaba, y en español fijo: 88 textos, unas 883 palabras. El módulo de
+ * idiomas pide que TODO el texto sea traducible, así que había que sacarlo.
+ *
+ * Meterlo en i18n.jsx como el resto habría sido un error: son dos documentos
+ * de prosa, no etiquetas de botones. Y como hay negritas DENTRO de las frases,
+ * cada párrafo habría que partirlo en dos o tres claves. Salían 106 claves por
+ * idioma (318 en total) y el texto legal quedaba troceado e ilegible.
+ *
+ * Por eso cada idioma es UN FICHERO en src/legal/, con el documento escrito
+ * de corrido, y este componente solo lo dibuja. Añadir un idioma es copiar un
+ * fichero, no escribir 106 claves.
  */
+
+/* Los idiomas disponibles. El de español hace de red: si algún día se añade
+ * un idioma a i18n.jsx y se olvida el fichero legal, se ve en español en vez
+ * de reventar con la pantalla en blanco. */
+const DOCUMENTOS = { es, en, ar };
 
 const estilos = {
   pagina: {
@@ -53,214 +78,110 @@ const estilos = {
     padding: '1.2rem',
     marginTop: '1rem',
   },
+  enlace: { color: 'var(--accent)' },
 };
 
-const FECHA = '3 de septiembre de 2026';
+/* ✍️ LAS DOS MARCAS QUE ENTIENDE EL TEXTO
+ *
+ *    **negrita**       ->  <strong>negrita</strong>
+ *    [texto](/ruta)    ->  <a href="/ruta">texto</a>
+ *
+ * Se parte la frase por las dos a la vez y se va montando. Hace falta la
+ * `key` en cada trozo porque React pinta una lista de elementos.
+ *
+ * ⚠️ NO interpreta HTML: lo que venga en el texto se escribe tal cual. Es a
+ * propósito, para que un documento legal no pueda meter etiquetas en la
+ * página sin que nos enteremos.
+ */
+const MARCAS = /(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g;
 
-function Privacidad() {
-  return (
-    <>
-      <h1 className="titulo-degradado" style={estilos.titulo}>Política de Privacidad</h1>
-      <p style={estilos.fecha}>Última actualización: {FECHA}</p>
+function conFormato(texto) {
+  return texto.split(MARCAS).filter(Boolean).map((trozo, i) => {
+    const negrita = trozo.match(/^\*\*([^*]+)\*\*$/);
+    if (negrita) return <strong key={i}>{negrita[1]}</strong>;
 
-      <p style={estilos.parrafo}>
-        <strong>42 Card Album</strong> es un proyecto académico desarrollado por estudiantes de
-        42 Madrid como parte del cursus (proyecto ft_transcendence). No tiene ánimo de lucro y
-        no está afiliado oficialmente a 42. Aquí explicamos, sin rodeos, qué datos guardamos y
-        para qué.
-      </p>
-
-      <h2 style={estilos.apartado}>Qué datos guardamos</h2>
-      <p style={estilos.parrafo}>Depende de cómo entres:</p>
-      <p style={estilos.parrafo}><strong>Si entras con tu cuenta de 42:</strong></p>
-      <ul style={estilos.lista}>
-        <li>Tu login, nombre, apellidos y correo de la Intra</li>
-        <li>La URL de tu foto de perfil de la Intra</li>
-        <li>Tu identificador de la Intra, para reconocerte al volver</li>
-        <li>Si eres alumni</li>
-      </ul>
-      <p style={estilos.parrafo}>
-        Estos datos se actualizan cada vez que inicias sesión, para que estén al día.
-        <strong> No guardamos tu contraseña de 42 ni tenemos acceso a ella en ningún momento</strong>:
-        la autenticación la hace la propia Intra.
-      </p>
-
-      <p style={estilos.parrafo}><strong>Si te registras con correo y contraseña:</strong></p>
-      <ul style={estilos.lista}>
-        <li>Tu correo electrónico y el nombre que elijas</li>
-        <li>
-          Tu contraseña, guardada <strong>cifrada de forma irreversible y con sal</strong>. Ni
-          siquiera nosotros podemos leerla
-        </li>
-      </ul>
-
-      <p style={estilos.parrafo}><strong>En ambos casos, mientras usas la aplicación:</strong></p>
-      <ul style={estilos.lista}>
-        <li>Tu colección de cartas y cuántas copias tienes de cada una</li>
-        <li>Los sobres de tu inventario y cuándo recogiste el regalo diario</li>
-        <li>Tu estado de conexión (en línea, desconectado o jugando)</li>
-        <li>La biografía y el nombre a mostrar que tú escribas en tu perfil</li>
-        <li>La foto de perfil que subas, si decides subir una</li>
-        <li>Una cookie de sesión, necesaria para mantenerte identificado</li>
-      </ul>
-
-      <p style={estilos.parrafo}>
-        Sobre la foto que subes: antes de guardarla la reducimos y la volvemos a generar, y en
-        ese paso <strong>se eliminan los datos ocultos que las cámaras de móvil incrustan en
-        cada imagen</strong>, entre ellos las coordenadas del sitio donde se hizo la foto. No
-        llegamos a guardar esa información en ningún momento. Puedes quitar tu foto cuando
-        quieras desde tu perfil, y al hacerlo se borra del servidor.
-      </p>
-
-      <h2 style={estilos.apartado}>De dónde salen las cartas</h2>
-      <p style={estilos.parrafo}>
-        Las cartas del juego se generan a partir de <strong>información pública</strong> de
-        estudiantes de 42 Madrid obtenida de la API oficial de la Intra: login, coalición,
-        título, nivel del cursus, puntos de evaluación y foto de perfil. No se incluye ningún
-        dato privado.
-      </p>
-      <p style={estilos.parrafo}>
-        Si apareces como carta y no quieres estar, escríbenos y te retiramos del catálogo.
-      </p>
-
-      <h2 style={estilos.apartado}>Para qué usamos tus datos</h2>
-      <p style={estilos.parrafo}>
-        Únicamente para que la aplicación funcione: identificarte, guardar tu colección y
-        repartir tus sobres diarios. <strong>No hacemos publicidad, no perfilamos usuarios y no
-        vendemos ni cedemos datos a terceros.</strong> No usamos cookies de seguimiento ni
-        analítica externa.
-      </p>
-
-      <h2 style={estilos.apartado}>Dónde se guardan</h2>
-      <p style={estilos.parrafo}>
-        En una base de datos PostgreSQL alojada en la infraestructura del proyecto. Las
-        conexiones entre tu navegador y el servidor van cifradas mediante HTTPS.
-      </p>
-
-      <h2 style={estilos.apartado}>Cuánto tiempo</h2>
-      <p style={estilos.parrafo}>
-        Mientras tengas cuenta. Si la borras, tus datos se eliminan de inmediato y de forma
-        permanente, incluida tu colección.
-      </p>
-
-      <h2 style={estilos.apartado}>Tus derechos</h2>
-      <div style={estilos.destacado}>
-        <p style={estilos.parrafo}>
-          Desde <a href="/perfil" style={{ color: 'var(--accent)' }}>tu perfil</a> puedes,
-          en cualquier momento y sin pedir permiso a nadie:
-        </p>
-        <ul style={{ ...estilos.lista, marginBottom: 0 }}>
-          <li><strong>Descargar todos tus datos</strong> en un fichero legible</li>
-          <li><strong>Borrar tu cuenta</strong> y todo lo asociado a ella</li>
-          <li><strong>Editar</strong> tu biografía y tu nombre a mostrar</li>
-        </ul>
-      </div>
-      <p style={{ ...estilos.parrafo, marginTop: '1rem' }}>
-        Los datos que vienen de la Intra (nombre, correo, foto) se actualizan solos desde 42 en
-        cada inicio de sesión, así que para cambiarlos hay que hacerlo en la propia Intra.
-      </p>
-
-      <h2 style={estilos.apartado}>Contacto</h2>
-      <p style={estilos.parrafo}>
-        Para cualquier duda sobre tus datos, escribe a cualquiera de los estudiantes que
-        mantienen el proyecto a través de la Intra de 42 Madrid.
-      </p>
-    </>
-  );
+    const enlace = trozo.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (enlace) {
+      return (
+        <a key={i} href={enlace[2]} style={estilos.enlace}>
+          {enlace[1]}
+        </a>
+      );
+    }
+    return trozo;
+  });
 }
 
-function Terminos() {
+/* Un bloque es un párrafo, una lista o una caja destacada (que lleva bloques
+ * dentro). Se dibuja según lo que traiga. */
+function Bloque({ bloque }) {
+  if (bloque.p) return <p style={estilos.parrafo}>{conFormato(bloque.p)}</p>;
+
+  if (bloque.ul) {
+    return (
+      <ul style={estilos.lista}>
+        {bloque.ul.map((linea, i) => (
+          <li key={i}>{conFormato(linea)}</li>
+        ))}
+      </ul>
+    );
+  }
+
+  if (bloque.destacado) {
+    return (
+      <div style={estilos.destacado}>
+        {bloque.destacado.map((b, i) => (
+          <Bloque key={i} bloque={b} />
+        ))}
+      </div>
+    );
+  }
+  return null;
+}
+
+function Documento({ doc, fecha, etiquetaFecha }) {
   return (
     <>
-      <h1 className="titulo-degradado" style={estilos.titulo}>Términos de Servicio</h1>
-      <p style={estilos.fecha}>Última actualización: {FECHA}</p>
+      <h1 className="titulo-degradado" style={estilos.titulo}>{doc.titulo}</h1>
+      <p style={estilos.fecha}>{etiquetaFecha}: {fecha}</p>
 
-      <p style={estilos.parrafo}>
-        Al usar <strong>42 Card Album</strong> aceptas estas condiciones. Si no estás de acuerdo,
-        simplemente no uses la aplicación.
-      </p>
+      <p style={estilos.parrafo}>{conFormato(doc.intro)}</p>
 
-      <h2 style={estilos.apartado}>Qué es esto</h2>
-      <p style={estilos.parrafo}>
-        Un álbum de cromos coleccionables con estudiantes de 42, hecho por estudiantes de 42
-        Madrid como proyecto académico del cursus. <strong>Es un proyecto educativo sin ánimo de
-        lucro</strong> y no está afiliado oficialmente a 42 ni a la Intra.
-      </p>
-
-      <h2 style={estilos.apartado}>Quién puede usarlo</h2>
-      <p style={estilos.parrafo}>
-        Puedes entrar con tu cuenta de 42 o registrarte con un correo y una contraseña. Eres
-        responsable de mantener tu contraseña a salvo y de todo lo que ocurra en tu cuenta.
-      </p>
-
-      <h2 style={estilos.apartado}>Las cartas y los sobres no valen dinero</h2>
-      <p style={estilos.parrafo}>
-        Las cartas, los sobres y cualquier otro elemento del juego son{' '}
-        <strong>contenido virtual sin valor económico</strong>. No se pueden comprar, vender ni
-        intercambiar por dinero, ni dentro ni fuera de la aplicación. No adquieres su propiedad:
-        solo el derecho a usarlos dentro del juego.
-      </p>
-      <p style={estilos.parrafo}>
-        Podemos ajustar las reglas del juego (cuántos sobres se reparten, las probabilidades de
-        cada rareza o cómo funcionan los contratos) para equilibrarlo.
-      </p>
-
-      <h2 style={estilos.apartado}>Qué no se puede hacer</h2>
-      <ul style={estilos.lista}>
-        <li>Automatizar la apertura de sobres o cualquier otra acción con programas o scripts</li>
-        <li>Intentar saltarse los límites del juego, como el regalo diario</li>
-        <li>Suplantar a otra persona o usar su cuenta</li>
-        <li>Atacar la aplicación o intentar acceder a datos de otros usuarios</li>
-        <li>Usar el contenido con fines comerciales</li>
-      </ul>
-
-      <h2 style={estilos.apartado}>Si apareces como carta</h2>
-      <p style={estilos.parrafo}>
-        Las cartas se generan con información pública de la API de 42. Si eres estudiante de 42
-        Madrid, es posible que aparezcas. Si no quieres, dínoslo y te retiramos del catálogo.
-      </p>
-
-      <h2 style={estilos.apartado}>Que esto es un proyecto de estudiantes</h2>
-      <p style={estilos.parrafo}>
-        La aplicación se ofrece <strong>tal cual está</strong>. Puede tener fallos, estar caída o
-        perder datos, y las cuentas pueden reiniciarse durante el desarrollo o al terminar el
-        proyecto. No garantizamos disponibilidad ni conservación de tu colección.
-      </p>
-
-      <h2 style={estilos.apartado}>Tu cuenta</h2>
-      <p style={estilos.parrafo}>
-        Puedes borrarla cuando quieras desde{' '}
-        <a href="/perfil" style={{ color: 'var(--accent)' }}>tu perfil</a>. También
-        podemos cerrar cuentas que incumplan estas normas.
-      </p>
-
-      <h2 style={estilos.apartado}>Cambios</h2>
-      <p style={estilos.parrafo}>
-        Si cambiamos estos términos, actualizaremos la fecha de arriba. Seguir usando la
-        aplicación significa que aceptas la nueva versión.
-      </p>
+      {doc.apartados.map((ap, i) => (
+        <div key={i}>
+          <h2 style={estilos.apartado}>{ap.h}</h2>
+          {ap.bloques.map((b, j) => (
+            <Bloque key={j} bloque={b} />
+          ))}
+        </div>
+      ))}
     </>
   );
 }
 
 export default function Legal({ tipo }) {
+  const { language } = useI18n();
+  const textos = DOCUMENTOS[language] || DOCUMENTOS.es;
+  const esPrivacidad = tipo === 'privacidad';
+
   return (
     <main className="app-container">
       <header className="app-header">
         <div className="header-navigation">
-          <a href="/" className="back-btn-link">← Volver al Inicio</a>
+          <a href="/" className="back-btn-link">{textos.volver}</a>
         </div>
       </header>
 
       <div style={estilos.pagina}>
-        {tipo === 'privacidad' ? <Privacidad /> : <Terminos />}
+        <Documento
+          doc={esPrivacidad ? textos.privacidad : textos.terminos}
+          fecha={textos.fecha}
+          etiquetaFecha={textos.ultimaActualizacion}
+        />
 
         <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-default)' }}>
-          <a
-            href={tipo === 'privacidad' ? '/terminos' : '/privacidad'}
-            style={{ color: 'var(--accent)' }}
-          >
-            {tipo === 'privacidad' ? 'Ver los Términos de Servicio →' : 'Ver la Política de Privacidad →'}
+          <a href={esPrivacidad ? '/terminos' : '/privacidad'} style={estilos.enlace}>
+            {esPrivacidad ? textos.verTerminos : textos.verPrivacidad}
           </a>
         </div>
       </div>
