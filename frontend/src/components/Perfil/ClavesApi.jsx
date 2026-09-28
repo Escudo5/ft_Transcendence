@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Badge, Button, Card, SecondaryButton, TextField } from '../ui';
+import { useI18n } from '../../i18n';
 
 /**
  * TUS CLAVES DE API
@@ -23,6 +24,16 @@ import { Alert, Badge, Button, Card, SecondaryButton, TextField } from '../ui';
 const MAX_NOMBRE = 60;
 
 export default function ClavesApi() {
+  /* ⚠️ VA LO PRIMERO, ANTES DE CUALQUIER OTRA COSA (Nacho, 28/09).
+   * Los hooks de React tienen que llamarse siempre en el mismo orden y en el
+   * cuerpo del componente. Y ademas `t` lo usa la funcion fecha() de mas
+   * abajo, asi que si esta linea estuviera despues, `t` no existiria alli.
+   *
+   * languageInfo trae el locale del idioma activo (es-ES, en-US, ar): lo usa
+   * fecha() para que los dias y los meses salgan en el idioma elegido, en vez
+   * de en español siempre. */
+  const { t, languageInfo } = useI18n();
+
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
 
   const [abierto, setAbierto] = useState(false);
@@ -149,8 +160,8 @@ export default function ClavesApi() {
   }
 
   function fecha(iso) {
-    if (!iso) return 'nunca';
-    return new Date(iso).toLocaleDateString('es-ES', {
+    if (!iso) return t('apiKeyNever');
+    return new Date(iso).toLocaleDateString(languageInfo.locale, {
       day: '2-digit', month: 'short', year: 'numeric',
     });
   }
@@ -170,13 +181,13 @@ export default function ClavesApi() {
             fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0,
             color: 'var(--accent)',
           }}>
-            🔑 Claves de API
+            {t('apiKeysTitle')}
           </h2>
           <p style={{
             color: 'var(--text-secondary)', fontSize: '0.9rem',
             margin: '0.4rem 0 0',
           }}>
-            Para consultar tu álbum o jugar desde un programa tuyo, sin navegador.
+            {t('apiKeysSubtitle')}
           </p>
         </span>
         <span style={{ color: 'var(--text-secondary)', fontSize: '1.3rem' }}>
@@ -198,11 +209,10 @@ export default function ClavesApi() {
               marginBottom: '1.4rem',
             }}>
               <div style={{ fontWeight: 800, color: 'var(--accent)', marginBottom: '0.3rem' }}>
-                Clave «{reciencreada.nombre}» creada
+                {t('apiKeyCreated', { name: reciencreada.nombre })}
               </div>
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', marginBottom: '0.8rem' }}>
-                Cópiala ahora. No se guarda en ninguna parte, así que no vas a
-                poder verla otra vez. Si la pierdes, borra esta y crea otra.
+                {t('apiKeyCopyNow')}
               </div>
               <code style={{
                 display: 'block', wordBreak: 'break-all', userSelect: 'all',
@@ -215,10 +225,10 @@ export default function ClavesApi() {
               </code>
               <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.9rem', flexWrap: 'wrap' }}>
                 <Button type="button" onClick={() => copiar(reciencreada.clave)}>
-                  {copiado ? '✓ Copiada' : 'Copiar'}
+                  {copiado ? t('apiKeyCopied') : t('apiKeyCopy')}
                 </Button>
                 <SecondaryButton type="button" onClick={() => setReciencreada(null)}>
-                  Ya la he guardado
+                  {t('apiKeySaved')}
                 </SecondaryButton>
               </div>
             </div>
@@ -229,29 +239,29 @@ export default function ClavesApi() {
             <div style={{ flex: 1, minWidth: '200px' }}>
               <TextField
                 id="nombre-clave"
-                label="Nombre de la clave"
-                placeholder="Bot de Discord, script del ranking…"
+                label={t('apiKeyName')}
+                placeholder={t('apiKeyNamePlaceholder')}
                 value={nombre}
                 maxLength={MAX_NOMBRE}
                 onChange={(e) => setNombre(e.target.value)}
               />
             </div>
             <Button type="submit" disabled={creando || !nombre.trim() || claves.length >= maximo}>
-              {creando ? 'Creando…' : 'Crear clave'}
+              {creando ? t('apiKeyCreating') : t('apiKeyCreate')}
             </Button>
           </form>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.3rem' }}>
-            {claves.length} de {maximo} claves.
-            {claves.length >= maximo && ' Borra alguna que no uses para crear otra.'}
+            {t('apiKeyCount', { n: claves.length, max: maximo })}
+            {claves.length >= maximo && t('apiKeyMaxReached')}
           </div>
 
           {/* ---- Las que ya tienes ---- */}
           <div style={{ marginTop: '1.4rem' }}>
-            {cargando && <p style={{ color: 'var(--text-secondary)' }}>Cargando…</p>}
+            {cargando && <p style={{ color: 'var(--text-secondary)' }}>{t('apiKeyLoading')}</p>}
 
             {!cargando && claves.length === 0 && (
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                Todavía no tienes ninguna clave.
+                {t('apiKeyNone')}
               </p>
             )}
 
@@ -271,30 +281,30 @@ export default function ClavesApi() {
                         solo trae tonos de rareza de carta, y no hay que
                         inventarse clases que luego no existen en styles.css */}
                     <Badge tone="default" style={{ color: c.activa ? 'var(--accent)' : 'var(--text-secondary)' }}>
-                      {c.activa ? 'activa' : 'apagada'}
+                      {c.activa ? t('apiKeyActive') : t('apiKeyOff')}
                     </Badge>
                   </div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '0.2rem' }}>
-                    <code>{c.prefijo}…</code> · creada el {fecha(c.creada)} · usada por última vez: {fecha(c.ultimo_uso)}
+                    <code>{c.prefijo}…</code> · {t('apiKeyMeta', { created: fecha(c.creada), used: fecha(c.ultimo_uso) })}
                   </div>
                 </div>
 
                 {borrandoId === c.id ? (
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <Button type="button" className="danger-button" onClick={() => borrar(c)}>
-                      Sí, borrar
+                      {t('apiKeyConfirmDelete')}
                     </Button>
                     <SecondaryButton type="button" onClick={() => setBorrandoId(null)}>
-                      Cancelar
+                      {t('cancel')}
                     </SecondaryButton>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <SecondaryButton type="button" onClick={() => cambiarActiva(c)}>
-                      {c.activa ? 'Apagar' : 'Encender'}
+                      {c.activa ? t('apiKeyTurnOff') : t('apiKeyTurnOn')}
                     </SecondaryButton>
                     <SecondaryButton type="button" onClick={() => setBorrandoId(c.id)}>
-                      Borrar
+                      {t('apiKeyDelete')}
                     </SecondaryButton>
                   </div>
                 )}
@@ -309,7 +319,7 @@ export default function ClavesApi() {
             color: 'var(--text-secondary)', fontSize: '0.85rem',
           }}>
             <div style={{ marginBottom: '0.5rem' }}>
-              La clave va en la cabecera <code>X-API-Key</code> de cada petición:
+              {t('apiKeyHeaderBefore')}<code>X-API-Key</code>{t('apiKeyHeaderAfter')}
             </div>
             <code style={{
               display: 'block', overflowX: 'auto', whiteSpace: 'pre',
@@ -320,14 +330,14 @@ export default function ClavesApi() {
               {`curl -k -H "X-API-Key: TU_CLAVE" \\\n  ${window.location.origin}/api/publica/mi-album/`}
             </code>
             <div style={{ marginTop: '0.7rem' }}>
-              Todo lo que se puede pedir está en{' '}
+              {t('apiKeyDocsBefore')}
               <a
                 href={`${apiBaseUrl}/publica/`}
                 target="_blank"
                 rel="noreferrer"
                 style={{ color: 'var(--accent)' }}
               >
-                la documentación de la API
+                {t('apiKeyDocsLink')}
               </a>.
             </div>
           </div>
