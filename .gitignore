@@ -34,6 +34,18 @@ frontend/.env
 # uno tiene las suyas en su ordenador y no tienen por que viajar en el repo.
 backend/media/
 
+# ⚠️ LA LISTA DE QUIEN HA PEDIDO NO APARECER. NUNCA AL REPO.
+#
+# La escribe borrar_mi_cuenta (users/views.py) al darse alguien de baja, y la
+# leen fill_db y login_card para no volver a crearle la carta. Cae en
+# backend/, que esta dentro del repo, asi que sin esta linea acabaria
+# commiteada.
+#
+# Y seria justo lo contrario de lo que promete el borrado: publicar en un
+# repositorio, para siempre, el nombre de quien pidio desaparecer. Va sin
+# carpeta delante para que quede fuera este donde este.
+ignore_logins.txt
+
 .vscode/
 .idea/
 .DS_Store

@@ -151,8 +151,21 @@ class CatalogoView(BaseApiPublica):
     Todas las cartas que existen, las tengas o no.
 
     Filtros opcionales: ?buscar=konrad (por login, título o coalición),
-    ?rareza=Bronce, ?coalicion=Ignisaria, ?pagina=2&por_pagina=20
+    ?rareza=Senior, ?coalicion=Ignisaria, ?pagina=2&por_pagina=20
+
+    Las rarezas válidas son: Junior, Senior, Transcender, Legendario, Staff
+    y Creator.
     """
+    # ⚠️ ESTE DOCSTRING DE ARRIBA ES LA DOCUMENTACIÓN PÚBLICA DE LA API: sale
+    # tal cual en /api/publica/. O sea que lo que se escriba ahí lo lee
+    # cualquiera, y lo que esté mal se publica.
+    #
+    # Aquí ponía de ejemplo `?rareza=Bronce`, una rareza que dejó de existir el
+    # 15/09. No rompía nada (el filtro no habría encontrado ninguna carta),
+    # pero salía publicado. Arreglado el 28/09.
+    #
+    # Las rarezas de verdad viven en cards/rarezas.py. Si se añade una, hay que
+    # tocar también el docstring: no se generan solas.
 
     def get(self, request):
         cartas = Card.objects.all().order_by('login')
