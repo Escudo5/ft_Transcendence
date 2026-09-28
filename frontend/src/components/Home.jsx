@@ -345,7 +345,7 @@ function Home() {
   * ⚠️ La rareza sale de la base de datos: si tus 5 cartas no están todavía
   * como Creator, lo que se ve son los datos reales dentro del marco de
   * creator. Se arregla sincronizando, no tocando esto. */}
-  <section className="team-grid" aria-label="Integrantes del proyecto">
+  <section className="team-grid" aria-label={t("teamGridLabel")}>
     {integrantes.map((user, index) => (
       <CreatorCard
         key={user.login}
@@ -358,7 +358,7 @@ function Home() {
       {/* 🧭 BOTONES DE ACCIÓN: las opciones del juego.
           La rejilla se ajusta sola al número de botones (antes eran dos fijos),
           así añadir o quitar alguno no descuadra la fila. */}
-      <nav className="action-grid" aria-label="Acciones principales">
+      <nav className="action-grid" aria-label={t("mainActionsLabel")}>
         <Link to="/catalogo" className="back-btn-link" style={{ textAlign: 'center', padding: '1.5rem', fontSize: '1.25rem', display: 'block', background: '#00BABC', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
           {t('viewAlbum')}
         </Link>
@@ -465,7 +465,7 @@ function Home() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
             
             {/* Botón Anterior */}
-            <Button type="button" className="pagination-btn" onClick={irAnterior} aria-label="Integrante anterior">
+            <Button type="button" className="pagination-btn" onClick={irAnterior} aria-label={t("previousMember")}>
               <span aria-hidden="true">&#9664;</span>
             </Button>
 
@@ -488,7 +488,7 @@ function Home() {
             </Card>
 
             {/* Botón Siguiente */}
-            <Button type="button" className="pagination-btn" onClick={irSiguiente} aria-label="Siguiente integrante">
+            <Button type="button" className="pagination-btn" onClick={irSiguiente} aria-label={t("nextMember")}>
               <span aria-hidden="true">&#9654;</span>
             </Button>
 

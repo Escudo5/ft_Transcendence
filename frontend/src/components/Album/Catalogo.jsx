@@ -419,12 +419,12 @@ export default function Catalogo() {
 
         {/* ⏱️ CAMBIO 5: Inserción del selector de rango de tiempo en el panel de control */}
         <div className="control-group">
-          <label htmlFor="time">{t("Obtenidas")}</label>
+          <label htmlFor="time">{t("filterObtained")}</label>
           <select id="time" value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)}>
-            <option value="all">Todas las fechas</option>
-            <option value="24h">Últimas 24 horas</option>
-            <option value="7d">Últimos 7 días</option>
-            <option value="30d">Últimos 30 días</option>
+            <option value="all">{t("filterAllDates")}</option>
+            <option value="24h">{t("filterLast24h")}</option>
+            <option value="7d">{t("filterLast7d")}</option>
+            <option value="30d">{t("filterLast30d")}</option>
           </select>
         </div>
 
@@ -441,14 +441,14 @@ export default function Catalogo() {
 
       <section className="album-grid-wrapper">
         <div className="grid-meta">
-          <span>Cartas encontradas: <strong>{totalCards}</strong></span>
-          <span>Página <strong>{activePage}</strong> de <strong>{totalPages}</strong></span>
+          <span>{t("cardsFound")}: <strong>{totalCards}</strong></span>
+          <span>{t("pageOf", { page: activePage, total: totalPages })}</span>
         </div>
 
         {cargando ? (
           <div className="empty-state">
             <span className="empty-icon">⏳</span>
-            <p>Cargando tu álbum…</p>
+            <p>{t("catalogLoading")}</p>
           </div>
         ) : error ? (
           <div className="empty-state">
@@ -458,15 +458,15 @@ export default function Catalogo() {
         ) : album.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon">📂</span>
-            <p>Tu álbum está vacío. Abre sobres en la tienda para conseguir cartas.</p>
+            <p>{t("catalogEmpty")}</p>
             <div style={{ marginTop: "1rem" }}>
-              <BotonAbrirSobres>Ir a abrir sobres</BotonAbrirSobres>
+              <BotonAbrirSobres>{t("goOpenPacks")}</BotonAbrirSobres>
             </div>
           </div>
         ) : currentCards.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon">🔍</span>
-            <p>Ninguna carta de tu álbum coincide con la búsqueda.</p>
+            <p>{t("catalogNoMatch")}</p>
           </div>
         ) : (
           <div className="album-grid">

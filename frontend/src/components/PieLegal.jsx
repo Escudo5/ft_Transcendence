@@ -33,7 +33,7 @@ export default function PieLegal({ estilo }) {
       <span style={{ margin: '0 0.6rem', opacity: 0.5 }}>·</span>
       <a href="/terminos" style={enlace}>{t('termsOfService')}</a>
       <p style={{ marginTop: '0.6rem', opacity: 0.7 }}>
-        Proyecto académico de estudiantes de 42 Madrid · Sin afiliación oficial con 42
+        {t('footerDisclaimer')}
       </p>
     </footer>
   );

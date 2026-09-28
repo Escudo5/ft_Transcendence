@@ -11,7 +11,10 @@ async function pedirTokenCSRF() {
   return datos.csrfToken;
 }
 
-function obtenerEtiquetaDelDia(fechaMensaje) {
+/* ⚠️ Recibe `t` y `locale` como parametros y no por el gancho: esta funcion
+ * vive FUERA del componente, y los hooks de React solo se pueden llamar
+ * dentro. Quien la usa se los pasa. */
+function obtenerEtiquetaDelDia(fechaMensaje, t, locale) {
   const fechaObjeto = new Date(fechaMensaje);
   const hoy = new Date();
   const ayer = new Date();
@@ -19,10 +22,10 @@ function obtenerEtiquetaDelDia(fechaMensaje) {
 
   const esMismoDia = (fechaA, fechaB) => fechaA.toDateString() === fechaB.toDateString();
 
-  if (esMismoDia(fechaObjeto, hoy)) return 'Hoy';
-  if (esMismoDia(fechaObjeto, ayer)) return 'Ayer';
+  if (esMismoDia(fechaObjeto, hoy)) return t('today');
+  if (esMismoDia(fechaObjeto, ayer)) return t('yesterday');
 
-  return fechaObjeto.toLocaleDateString('es-ES', {
+  return fechaObjeto.toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
     ...(fechaObjeto.getFullYear() !== hoy.getFullYear() ? { year: 'numeric' } : {}),
@@ -46,7 +49,7 @@ function AreaChat({
   // esperar a la siguiente vuelta del refresco de 3 segundos.
   recargarIntercambios,
 }) {
-  const { t } = useI18n();
+  const { t, languageInfo } = useI18n();
   const finDeLaListaRef = useRef(null);
   const [modalIntercambioAbierto, setModalIntercambioAbierto] = useState(false);
 
@@ -203,10 +206,10 @@ function AreaChat({
           </div>
         ) : (
           mensajes.map((mensajeActual, indice) => {
-            const etiquetaDia = obtenerEtiquetaDelDia(mensajeActual.fecha);
+            const etiquetaDia = obtenerEtiquetaDelDia(mensajeActual.fecha, t, languageInfo.locale);
             const mensajeAnterior = mensajes[indice - 1];
             const cambiaElDia =
-              indice === 0 || etiquetaDia !== obtenerEtiquetaDelDia(mensajeAnterior.fecha);
+              indice === 0 || etiquetaDia !== obtenerEtiquetaDelDia(mensajeAnterior.fecha, t, languageInfo.locale);
 
             return (
               <div key={mensajeActual.id}>
@@ -263,10 +266,10 @@ function AreaChat({
                           justifyContent: 'flex-end',
                           gap: '0.3rem',
                         }}
-                        title={new Date(mensajeActual.fecha).toLocaleString('es-ES')}
+                        title={new Date(mensajeActual.fecha).toLocaleString(languageInfo.locale)}
                       >
                         <span>
-                          {new Date(mensajeActual.fecha).toLocaleTimeString('es-ES', {
+                          {new Date(mensajeActual.fecha).toLocaleTimeString(languageInfo.locale, {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
@@ -329,7 +332,7 @@ function AreaChat({
             fontSize: '0.9rem',
           }}
         >
-          🔒 Este usuario te ha bloqueado. No puedes enviarle mensajes.
+          {t('blockedByThisUser')}
         </div>
       ) : (
         <form

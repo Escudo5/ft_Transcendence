@@ -411,7 +411,7 @@ function TiendaSobres() {
           onClick={cancelarApertura}
           disabled={abriendo}
         >
-          ← Volver a elegir sobre
+          {t('backToChoosePack')}
         </button>
 
       </div>

@@ -201,7 +201,7 @@ export function ModalPropuestaIntercambio({ isOpen, onClose, usuarioDestino, onE
         color: '#fff',
       }}>
         <h3 style={{ marginTop: 0, color: '#ffaa00', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          🔄 Propuesta de Intercambio con {usuarioDestino.nombre}
+          {t('tradeProposalWith', { user: usuarioDestino.nombre })}
         </h3>
 
         {cargando ? (
@@ -372,7 +372,7 @@ export function MensajeIntercambio({ propuesta, esMio, onResponder }) {
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
         <span style={{ color: '#ffaa00', fontWeight: 'bold', fontSize: '0.85rem' }}>
-          🔄 Propuesta de Intercambio
+          {t('tradeProposal')}
         </span>
         {estadoActual === 'pendiente' && (
           <span style={{ fontSize: '0.72rem', color: '#ffcc00', backgroundColor: 'rgba(255,204,0,0.1)', padding: '0.2rem 0.5rem', borderRadius: '10px' }}>
@@ -424,25 +424,25 @@ export function MensajeIntercambio({ propuesta, esMio, onResponder }) {
 
         {estadoActual === 'pendiente' && esMio && (
           <p style={{ margin: 0, fontSize: '0.75rem', color: '#8b92b0', textAlign: 'center' }}>
-            Esperando respuesta de {propuesta.loginDestino}…
+            {t('tradeWaitingReply', { user: propuesta.loginDestino })}
           </p>
         )}
 
         {estadoActual === 'aceptado' && (
           <p style={{ margin: 0, fontSize: '0.8rem', color: '#00ffcc', textAlign: 'center', fontWeight: 'bold' }}>
-            Aceptado
+            {t('tradeAccepted')}
           </p>
         )}
 
         {estadoActual === 'rechazado' && (
           <p style={{ margin: 0, fontSize: '0.8rem', color: '#ff4d4d', textAlign: 'center' }}>
-            Rechazado
+            {t('tradeRejected')}
           </p>
         )}
 
         {estadoActual === 'expirado' && (
           <p style={{ margin: 0, fontSize: '0.8rem', color: '#8b92b0', textAlign: 'center' }}>
-            Expirado (Plazo vencido)
+            {t('tradeExpired')}
           </p>
         )}
       </div>

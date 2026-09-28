@@ -503,7 +503,7 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
 
 // Estadísticas de la colección del usuario
 function ColeccionPerfil({ coleccion, puntos, esMiPerfil }) {
-  const { t } = useI18n();
+  const { t, languageInfo } = useI18n();
   return (
     <Card>
       <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>{t('collection')}</h2>
@@ -527,7 +527,7 @@ function ColeccionPerfil({ coleccion, puntos, esMiPerfil }) {
           <div style={estilos.datoEtiqueta}>{t('withDuplicates')}</div>
         </div>
         <div style={estilos.dato}>
-          <div style={estilos.datoValor}>{(puntos ?? 0).toLocaleString('es-ES')}</div>
+          <div style={estilos.datoValor}>{(puntos ?? 0).toLocaleString(languageInfo.locale)}</div>
           <div style={estilos.datoEtiqueta}>{t('score')}</div>
         </div>
       </div>
@@ -559,7 +559,7 @@ function LogrosPerfil({ logros }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0, color: 'var(--accent)' }}>{t('achievements')}</h2>
         <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          {logros.filter((l) => l.conseguido).length} de {logros.length}
+          {logros.filter((l) => l.conseguido).length} {t('ofTotal', { total: logros.length })}
         </span>
       </div>
 

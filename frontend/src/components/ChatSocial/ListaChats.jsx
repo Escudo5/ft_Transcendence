@@ -186,7 +186,7 @@ function ListaChats({
                         setLoginMenuDesplegado(null);
                       }}
                     >
-                      👤 Visitar Perfil
+                      {t('visitProfile')}
                     </button>
 
                     <button
