@@ -21,7 +21,7 @@ export default function CreatorCard({ carta, onClick }) {
   className="card-item rarity-creator creator-card-special"
   role="button"
   tabIndex={0}
-  aria-label={`Ver el detalle de la carta Creator de ${carta.login}`}
+  aria-label={t('viewCreatorCardOf', { login: carta.login })}
   onClick={onClick}
   onKeyDown={(e) => {
     if (e.key === "Enter" || e.key === " ") {

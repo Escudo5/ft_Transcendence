@@ -280,7 +280,7 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
       return;
     }
     if (fichero.size > AVATAR_MAX_MB * 1024 * 1024) {
-      setAviso({ texto: `La imagen no puede pesar más de ${AVATAR_MAX_MB} MB.`, ok: false });
+      setAviso({ texto: t('imageTooHeavy', { mb: AVATAR_MAX_MB }), ok: false });
       return;
     }
 
@@ -309,7 +309,7 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
           let cuerpo = {};
           try { cuerpo = JSON.parse(peticion.responseText); } catch {}
           if (peticion.status >= 200 && peticion.status < 300) resolver(cuerpo);
-          else rechazar(new Error(cuerpo.error || 'No se ha podido subir la foto.'));
+          else rechazar(new Error(cuerpo.error || t('photoUploadError')));
         };
         peticion.onerror = () => rechazar(new Error(t('connectionError')));
         peticion.send(formulario);
@@ -341,7 +341,7 @@ function CabeceraPerfil({ perfil, setPerfil, setAviso, apiBaseUrl }) {
       const datos = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setAviso({ texto: datos.error || 'No se ha podido quitar la foto.', ok: false });
+        setAviso({ texto: datos.error || t('photoRemoveError'), ok: false });
         return;
       }
 

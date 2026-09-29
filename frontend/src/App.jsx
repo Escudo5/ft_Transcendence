@@ -357,9 +357,20 @@ function AppContent() {
 
   const codeYaProcesado = useRef(false);
 
+  /* 🌐 El título de la pestaña, en su propio efecto (Nacho, 29/09).
+   *
+   * Antes estaba dentro del efecto de abajo, que es el que canjea el código de
+   * 42. Ese efecto lleva [] a propósito: tiene que correr UNA vez. Si le
+   * metiera `t` en las dependencias, cambiar de idioma volvería a lanzar el
+   * canje del login, y eso no se toca.
+   *
+   * Así que va aparte, con [t]: el título sigue al idioma y el login se queda
+   * quieto. */
   useEffect(() => {
-    document.title = '42 Cards | Album de cromos de 42 Madrid';
+    document.title = t('pageTitle');
+  }, [t]);
 
+  useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
@@ -379,18 +390,20 @@ function AppContent() {
             console.log('Respuesta del login:', data);
             
             if (data.error) {
-              alert(`Error en el login con 42: ${data.error}`);
+              alert(t('login42Error', { error: data.error }));
               setIsAuthenticated(false);
             } else {
               // 🧹 Limpiamos el ?code= de la URL para evitar errores al recargar
               window.history.replaceState({}, document.title, window.location.pathname);
               setIsAuthenticated(true);
-              alert(`${data.mensaje}\nSobres disponibles hoy: ${data.sobres_disponibles_hoy}`);
+              // data.mensaje lo manda Django y viene en español: ver la nota
+              // de i18n.jsx sobre los errores del backend.
+              alert(`${data.mensaje}\n` + t('packsAvailableToday', { count: data.sobres_disponibles_hoy }));
             }
           })
           .catch((error) => {
             console.error('Error al hablar con el backend:', error);
-            alert('Error en la autenticación con la Intra de 42');
+            alert(t('authIntraError'));
             setIsAuthenticated(false);
           })
           .finally(() => setLoading(false));
@@ -435,7 +448,9 @@ function AppContent() {
           apiBaseUrl={apiBaseUrl}
           urlLogin42={URL_LOGIN_42}
           onAutenticado={(datos) => {
-            alert(`${datos.mensaje}\nSobres disponibles hoy: ${datos.sobres_disponibles_hoy}`);
+            // datos.mensaje lo manda Django y viene en español: ver la nota
+            // de i18n.jsx sobre los errores del backend.
+            alert(`${datos.mensaje}\n` + t('packsAvailableToday', { count: datos.sobres_disponibles_hoy }));
             setIsAuthenticated(true);
           }}
         />

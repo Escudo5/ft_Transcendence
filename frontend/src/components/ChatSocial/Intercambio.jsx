@@ -345,9 +345,9 @@ export function MensajeIntercambio({ propuesta, esMio, onResponder }) {
       const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
 
       if (dias > 0) {
-        setTiempoRestante(`${dias}d ${horas}h restantes`);
+        setTiempoRestante(t('timeLeftDaysHours', { d: dias, h: horas }));
       } else {
-        setTiempoRestante(`${horas}h ${minutos}m restantes`);
+        setTiempoRestante(t('timeLeftHoursMinutes', { h: horas, m: minutos }));
       }
     };
 

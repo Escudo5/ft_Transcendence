@@ -123,8 +123,8 @@ export default function AvisoMensajes() {
           + (deQuien.length ? `?con=${encodeURIComponent(deQuien[0])}` : '');
       }}
       title={
-        t('pendingTitle', { items: trozos.join(' y ') })
-        + (deQuien.length ? ` de ${deQuien.join(', ')}` : '')
+        t('pendingTitle', { items: trozos.join(t('listAnd')) })
+        + (deQuien.length ? t('fromWho', { who: deQuien.join(', ') }) : '')
       }
       style={{
         position: 'fixed',

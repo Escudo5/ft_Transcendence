@@ -164,7 +164,7 @@ function ListaChats({
                         color: amigoActual.bloqueado ? '#ff4d4d' : '#00ffcc',
                       }}
                     >
-                      {amigoActual.bloqueado ? '🚫 [Bloqueado]' : amigoActual.estado}
+                      {amigoActual.bloqueado ? t('blockedTag') : amigoActual.estado}
                     </div>
                   </div>
                 </div>

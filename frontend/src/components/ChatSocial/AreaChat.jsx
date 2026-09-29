@@ -131,14 +131,14 @@ function AreaChat({
       });
       const datos = await respuesta.json().catch(() => ({}));
       if (!respuesta.ok) {
-        setAvisoIntercambio(datos.detail || 'No se ha podido enviar la propuesta.');
+        setAvisoIntercambio(datos.detail || t('tradeProposalSendError'));
         return;
       }
       // Para que aparezca ya, sin esperar a la siguiente vuelta de 3 segundos
       recargarIntercambios?.();
     } catch (err) {
       console.error('Error al enviar propuesta de intercambio:', err);
-      setAvisoIntercambio('No se ha podido enviar la propuesta.');
+      setAvisoIntercambio(t('tradeProposalSendError'));
     }
   };
 
@@ -154,14 +154,14 @@ function AreaChat({
       });
       const datos = await respuesta.json().catch(() => ({}));
       if (!respuesta.ok) {
-        setAvisoIntercambio(datos.detail || `No se ha podido ${accion} el intercambio.`);
+        setAvisoIntercambio(datos.detail || t(accion === 'aceptar' ? 'tradeAcceptError' : 'tradeRejectError'));
         return;
       }
       setAvisoIntercambio(datos.detail || '');
       recargarIntercambios?.();
     } catch (err) {
       console.error(`Error al ${accion} el intercambio:`, err);
-      setAvisoIntercambio(`No se ha podido ${accion} el intercambio.`);
+      setAvisoIntercambio(t(accion === 'aceptar' ? 'tradeAcceptError' : 'tradeRejectError'));
     }
   };
 
@@ -188,9 +188,9 @@ function AreaChat({
             </h4>
             <span style={{ fontSize: '0.8rem', color: hayBloqueoActivo ? '#ff4d4d' : '#00ffcc' }}>
               {yoLoHeBloqueado
-                ? 'Usuario Bloqueado por ti'
+                ? t('blockedByYou')
                 : meHaBloqueadoAEstudiando
-                ? 'Te ha bloqueado'
+                ? t('blockedYouShort')
                 : chatSeleccionado.estado}
             </span>
           </div>
@@ -284,7 +284,7 @@ function AreaChat({
                               fontSize: '0.75rem',
                               lineHeight: 1,
                             }}
-                            title={mensajeActual.leido ? 'Leído' : 'Enviado'}
+                            title={mensajeActual.leido ? t('messageRead') : t('messageSent')}
                           >
                             {mensajeActual.leido ? '✓✓' : '✓'}
                           </span>
@@ -377,7 +377,7 @@ function AreaChat({
             type="text"
             value={borrador}
             onChange={(e) => setBorrador(e.target.value)}
-            placeholder={`Escribe a ${chatSeleccionado.nombre}…`}
+            placeholder={t('writeToUser', { name: chatSeleccionado.nombre })}
             maxLength={LARGO_MAXIMO}
             style={{
               flex: 1,

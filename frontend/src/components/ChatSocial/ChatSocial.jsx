@@ -346,7 +346,7 @@ function ChatSocial() {
     if (!textoLimpio || enviando) return;
 
     if (textoLimpio.length > LARGO_MAXIMO) {
-      alert(`El mensaje no puede pasar de ${LARGO_MAXIMO} caracteres.`);
+      alert(t('messageTooLong', { max: LARGO_MAXIMO }));
       return;
     }
 
@@ -373,7 +373,7 @@ function ChatSocial() {
         // Ahora se enseña el motivo que dé el servidor y NO se borra lo
         // escrito, para que no haya que teclearlo otra vez.
         setError(datosRespuesta.detail || datosRespuesta.error
-                 || 'No se ha podido enviar el mensaje.');
+                 || t('messageSendError'));
         return;
       }
 
@@ -464,10 +464,10 @@ function ChatSocial() {
         const motivoError = Array.isArray(datos.non_field_errors)
           ? datos.non_field_errors[0]
           : datos.detail;
-        alert(motivoError || 'No se ha podido enviar la solicitud.');
+        alert(motivoError || t('friendRequestSendError'));
         return;
       }
-      alert(`Solicitud enviada a ${usuarioObjetivo.nombre}. Aparecerá en tu lista cuando la acepte.`);
+      alert(t('friendRequestSent', { name: usuarioObjetivo.nombre }));
       setCandidatos((prev) => prev.filter((candidato) => candidato.id !== usuarioObjetivo.id));
     } catch (err) {
       console.error('Error al enviar la solicitud:', err);
@@ -485,7 +485,7 @@ function ChatSocial() {
         body: JSON.stringify({ action: accion === 'aceptar' ? 'accept' : 'decline' }),
       });
       if (!respuesta.ok) {
-        alert('No se ha podido responder a la solicitud.');
+        alert(t('friendRequestReplyError'));
         return;
       }
       await recargarDatosSociales();

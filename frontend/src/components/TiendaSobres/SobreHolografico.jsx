@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { useI18n } from '../../i18n';
 
 /* ¿Puede este navegador dibujar en 3D?
  *
@@ -164,7 +165,11 @@ function holoPatch(context, x, y, radius, brightness = 1, palette = PACK_PALETTE
   context.stroke();
 }
 
-function createPackTexture(palette) {
+/* ⚠️ Recibe `t` como parametro y no por el gancho: esta funcion vive FUERA
+ * del componente y pinta el texto DENTRO de la textura del sobre, asi que
+ * necesita traducir. Los hooks solo valen dentro del componente. Mismo
+ * patron que obtenerEtiquetaDelDia en ChatSocial/AreaChat.jsx. */
+function createPackTexture(palette, t) {
   const [image, context] = canvas(1024, 1384);
   const background = context.createLinearGradient(0, 0, 0, image.height);
   background.addColorStop(0, palette.dark);
@@ -277,10 +282,10 @@ function createPackTexture(palette) {
   context.textAlign = 'center';
   context.font = '700 17px monospace';
   context.fillStyle = 'rgba(220,232,255,.92)';
-  context.fillText('3 CARTAS  ·  1 HOLOGRAFICA  ·  FOIL', 512, 1138);
+  context.fillText(t('packFoilLine'), 512, 1138);
   context.font = '400 14px monospace';
   context.fillStyle = 'rgba(170,190,220,.6)';
-  context.fillText('SERIE LIMITADA  ·  Nº 0042 / ∞', 512, 1170);
+  context.fillText(t('packLimitedSeries'), 512, 1170);
 
   // Fin del bloque bajado: a partir de aquí las alturas vuelven a ser las
   // del lienzo. La cabecera va pegada arriba y no se mueve.
@@ -318,7 +323,7 @@ function createPackTexture(palette) {
   context.fillStyle = palette.accent;
   context.font = '700 17px monospace';
   context.textAlign = 'center';
-  context.fillText('DESLIZA PARA ABRIR', 512, 82);
+  context.fillText(t('packSwipeToOpen'), 512, 82);
 
   const texture = new THREE.CanvasTexture(image);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -365,7 +370,8 @@ function createEmissionTexture(palette) {
   return texture;
 }
 
-function createStripTexture(palette) {
+/* Igual que createPackTexture: `t` entra como parametro. */
+function createStripTexture(palette, t) {
   const [image, context] = canvas(1024, 150);
   context.fillStyle = '#07080d';
   context.fillRect(0, 0, image.width, image.height);
@@ -382,7 +388,7 @@ function createStripTexture(palette) {
   context.fillStyle = palette.accent;
   context.font = '700 18px monospace';
   context.textAlign = 'center';
-  context.fillText('DESLIZA PARA ABRIR', image.width / 2, 75);
+  context.fillText(t('packSwipeToOpen'), image.width / 2, 75);
   const texture = new THREE.CanvasTexture(image);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
@@ -466,6 +472,7 @@ function buildShell(start, end, widthSegments, heightSegments, yOffset = 0) {
 }
 
 export default function SobreHolografico({ tipo = 'comun', onOpen, onProgress }) {
+  const { t } = useI18n();
   const mountRef = useRef(null);
   const callbacksRef = useRef({ onOpen, onProgress });
   callbacksRef.current = { onOpen, onProgress };
@@ -526,9 +533,9 @@ export default function SobreHolografico({ tipo = 'comun', onOpen, onProgress })
     controls.zoomSpeed = 0.7;
 
     const palette = PACK_PALETTES[tipo] || PACK_PALETTES.comun;
-    const texture = createPackTexture(palette);
+    const texture = createPackTexture(palette, t);
     const emission = createEmissionTexture(palette);
-    const stripTexture = createStripTexture(palette);
+    const stripTexture = createStripTexture(palette, t);
     const backTexture = texture.clone();
     backTexture.repeat.x = -1;
     backTexture.offset.x = 1;
@@ -791,5 +798,5 @@ export default function SobreHolografico({ tipo = 'comun', onOpen, onProgress })
     );
   }
 
-  return <div ref={mountRef} className="holo-pack" aria-label="Sobre holográfico. Arrastra la tira superior para abrirlo." />;
+  return <div ref={mountRef} className="holo-pack" aria-label={t('packHolographicAria')} />;
 }

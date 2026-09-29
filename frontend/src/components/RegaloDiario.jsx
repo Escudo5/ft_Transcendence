@@ -117,7 +117,7 @@ function RegaloDiario() {
   const recoger = async () => {
     if (reclamando) return; // un doble clic no debe reclamar dos veces
     if (!disponible) {
-      setAviso('Ya has recogido tu regalo de hoy. Vuelve mañana 🌙');
+      setAviso(t('giftAlreadyClaimedNotice'));
       return;
     }
 
@@ -135,17 +135,17 @@ function RegaloDiario() {
       const datos = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setAviso(datos.error || 'No se ha podido recoger el regalo.');
+        setAviso(datos.error || t('giftClaimError'));
         setDisponible(false);
         return;
       }
 
-      setAviso(`🎉 ¡+${datos.sobres_recibidos} sobres! Ábrelos en la tienda.`);
+      setAviso(t('giftReceived', { count: datos.sobres_recibidos }));
       setSobres(datos.sobres_totales ?? sobres);
       setDisponible(false);
     } catch (e) {
       console.error('Error al recoger el regalo:', e);
-      setAviso('No se ha podido conectar con el servidor.');
+      setAviso(t('serverConnectionError'));
     } finally {
       setReclamando(false);
     }
@@ -175,7 +175,7 @@ function RegaloDiario() {
 
       {sobres > 0 && (
         <span style={estilos.contador}>
-          {sobres} {sobres === 1 ? 'sobre sin abrir' : 'sobres sin abrir'}
+          {t('unopenedPacks', { count: sobres, s: sobres === 1 ? '' : 's' })}
         </span>
       )}
 

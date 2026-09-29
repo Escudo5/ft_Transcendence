@@ -159,7 +159,7 @@ function TiendaSobres() {
   const confirmarDescarte = async () => {
     const cartas = Object.entries(seleccionDescarte).map(([carta, grupos]) => ({ carta, grupos }));
     if (!cartas.length) return;
-    if (!window.confirm('Vas a quemar las cartas seleccionadas. Esta acción no se puede deshacer. ¿Continuar?')) return;
+    if (!window.confirm(t('burnConfirm'))) return;
 
     setProcesandoDescarte(true);
     setMensajeDescarte('');
@@ -173,12 +173,12 @@ function TiendaSobres() {
         body: JSON.stringify({ tipo_sobre: sobreSeleccionado.backendType || sobreSeleccionado.id, cartas }),
       });
       const datos = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(datos.detail || datos.error || 'No se han podido quemar las cartas.');
+      if (!res.ok) throw new Error(datos.detail || datos.error || t('burnError'));
 
       setAlbum((actual) => actual
         .map((card) => ({ ...card, cantidad: card.cantidad - ((seleccionDescarte[card.cardId] || 0) * 4) }))
         .filter((card) => card.cantidad > 0));
-      setMensajeDescarte(`Listo: has creado ${datos.sobres_creados} sobre${datos.sobres_creados === 1 ? '' : 's'}.`);
+      setMensajeDescarte(t('burnDone', { count: datos.sobres_creados, s: datos.sobres_creados === 1 ? '' : 's' }));
       setSeleccionDescarte({});
       consultarSobres();
     } catch (e) {
@@ -222,7 +222,7 @@ function TiendaSobres() {
       const datos = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(datos.error || datos.detail || 'No se ha podido abrir el sobre.');
+        setError(datos.error || datos.detail || t('packOpenError'));
         return false;
       }
 
@@ -234,7 +234,7 @@ function TiendaSobres() {
       return true;
     } catch (e) {
       console.error('Error al abrir el sobre:', e);
-      setError('No se ha podido conectar con el servidor.');
+      setError(t('serverConnectionError'));
       return false;
     } finally {
       setAbriendo(false);
@@ -672,10 +672,10 @@ function TiendaSobres() {
                       <strong>{card.login}</strong>
                       <span>{card.cantidad} copias</span>
                     </div>
-                    <div className="discard-stepper" role="group" aria-label={`Grupos de ${card.login} para quemar`}>
-                      <button type="button" onClick={() => cambiarGruposSeleccionados(card.cardId, grupos - 1)} disabled={grupos === 0 || procesandoDescarte} aria-label={`Quitar un grupo de ${card.login}`}>−</button>
-                      <span aria-live="polite"><strong>{grupos}</strong><small>{grupos === 1 ? ' grupo' : ' grupos'}</small></span>
-                      <button type="button" onClick={() => cambiarGruposSeleccionados(card.cardId, grupos + 1)} disabled={grupos === maxGrupos || procesandoDescarte} aria-label={`Añadir un grupo de ${card.login}`}>+</button>
+                    <div className="discard-stepper" role="group" aria-label={t('burnGroupsOf', { login: card.login })}>
+                      <button type="button" onClick={() => cambiarGruposSeleccionados(card.cardId, grupos - 1)} disabled={grupos === 0 || procesandoDescarte} aria-label={t('burnRemoveGroupOf', { login: card.login })}>−</button>
+                      <span aria-live="polite"><strong>{grupos}</strong><small>{' ' + t('groupsWord', { s: grupos === 1 ? '' : 's' })}</small></span>
+                      <button type="button" onClick={() => cambiarGruposSeleccionados(card.cardId, grupos + 1)} disabled={grupos === maxGrupos || procesandoDescarte} aria-label={t('burnAddGroupOf', { login: card.login })}>+</button>
                     </div>
                   </div>
                 );

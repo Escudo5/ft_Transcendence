@@ -56,7 +56,7 @@ function ModalCarta({ carta, registrados, onCerrar }) {
         {carta.foto ? (
           <img
             src={carta.foto}
-            alt={`Foto de ${carta.login}`}
+            alt={t('photoOfUser', { login: carta.login })}
             style={{
               width: "100%", maxHeight: "260px", objectFit: "cover",
               borderRadius: "12px", border: "2px solid var(--border-default)",
@@ -284,7 +284,7 @@ export default function Catalogo() {
         className={`card-item rarity-${card.rareza}`}
         role="button"
         tabIndex={0}
-        aria-label={`Ver el detalle de la carta de ${card.login}`}
+        aria-label={t('viewCardOf', { login: card.login })}
         style={{ cursor: "pointer" }}
         onClick={() => setCartaAbierta(card)}
         onKeyDown={(e) => {
@@ -320,7 +320,7 @@ export default function Catalogo() {
           {card.cantidad > 1 && (
             <span
               className="card-copies-badge"
-              title={`Tienes ${card.cantidad} copias de esta carta`}
+              title={t('youHaveCopies', { count: card.cantidad })}
             >
               ×{card.cantidad}
             </span>

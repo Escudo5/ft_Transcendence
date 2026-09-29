@@ -62,7 +62,7 @@ export default function ClavesApi() {
     setError('');
     try {
       const res = await fetch(`${apiBaseUrl}/publica/claves/`, { credentials: 'include' });
-      if (!res.ok) throw new Error('No se han podido cargar tus claves.');
+      if (!res.ok) throw new Error(t('apiKeysLoadError'));
       const datos = await res.json();
       setClaves(datos.resultados || []);
       setMaximo(datos.maximo ?? 5);
@@ -95,7 +95,7 @@ export default function ClavesApi() {
         body: JSON.stringify({ nombre: limpio }),
       });
       const datos = await res.json();
-      if (!res.ok) throw new Error(datos.detail || 'No se ha podido crear la clave.');
+      if (!res.ok) throw new Error(datos.detail || t('apiKeyCreateError'));
 
       setReciencreada({ clave: datos.clave, nombre: datos.nombre });
       setCopiado(false);
@@ -120,7 +120,7 @@ export default function ClavesApi() {
       });
       if (!res.ok) {
         const datos = await res.json();
-        throw new Error(datos.detail || 'No se ha podido cambiar la clave.');
+        throw new Error(datos.detail || t('apiKeyToggleError'));
       }
       recargar();
     } catch (e) {
@@ -139,7 +139,7 @@ export default function ClavesApi() {
       });
       if (!res.ok) {
         const datos = await res.json();
-        throw new Error(datos.detail || 'No se ha podido borrar la clave.');
+        throw new Error(datos.detail || t('apiKeyDeleteError'));
       }
       setBorrandoId(null);
       recargar();
