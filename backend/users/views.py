@@ -270,6 +270,24 @@ def _logros(usuario, stats):
 
     Cada logro lleva su progreso, para que en pantalla se vea lo que falta y no
     solo un sí o un no.
+
+    ──────────────────────────────────────────────────────────────────────────
+    🌐 AQUÍ NO HAY TEXTO (Nacho, 29/09)
+
+    Antes cada logro traía su nombre y su descripción escritos en español
+    dentro de este fichero, y el front los pintaba tal cual. Así que con la web
+    en inglés o en árabe el panel de logros salía en español: se nos quedó
+    fuera al cerrar el módulo de idiomas, y el subject pide que TODO el texto
+    sea traducible.
+
+    Ahora de aquí sale solo el DATO (qué logro es, cuánto llevas, cuánto falta)
+    y el texto lo pone el front desde i18n.jsx, que es donde vive todo lo que
+    el usuario lee.
+
+    ⚠️ Si añades un logro, hace falta su línea en el mapa LOGROS de
+    components/Perfil/Perfil.jsx y sus claves en i18n.jsx EN LOS TRES IDIOMAS.
+    Si te olvidas, en pantalla sale el nombre de la clave en crudo: se ve a la
+    primera, no falla en silencio.
     """
     from cards.models import UserCard
     from cards.rarezas import LEGENDARIO, TRANSCENDER, STAFF
@@ -282,50 +300,49 @@ def _logros(usuario, stats):
     coaliciones = {uc.card.coalition for uc in mis_cartas if uc.card.coalition}
     max_copias = max((uc.cantidad for uc in mis_cartas), default=0)
 
-    def logro(id, nombre, descripcion, icono, actual, objetivo):
-        return {
+    def logro(id, icono, actual, objetivo, rareza=None):
+        datos = {
             'id': id,
-            'nombre': nombre,
-            'descripcion': descripcion,
             'icono': icono,
             'actual': min(actual, objetivo),
             'objetivo': objetivo,
             'conseguido': actual >= objetivo,
         }
+        # 🎴 Los tres logros de rareza dicen "Consigue una carta Legendario".
+        # El nombre de la rareza va como DATO y no metido en la frase: así el
+        # front lo traduce con la clave que ya tiene para las rarezas
+        # (rarityLegendario, rarityStaff...) y la frase es UNA sola traducción
+        # que sirve para los tres.
+        if rareza:
+            datos['rareza'] = rareza
+        return datos
 
+    # Los números (el 10, el 25, el 5...) van SOLO aquí, en 'objetivo'. El front
+    # los mete en la frase traducida, así que "Reúne 10 cartas distintas" no
+    # tiene el 10 escrito en ningún texto: si mañana se sube a 15, cambia esta
+    # línea y la frase se actualiza sola en los tres idiomas.
     return [
-        logro('primera', 'Primera carta', 'Consigue tu primera carta', '🎴', distintas, 1),
-        logro('coleccionista', 'Coleccionista', 'Reúne 10 cartas distintas', '📚', distintas, 10),
-        logro('veterano', 'Veterano', 'Reúne 25 cartas distintas', '🏅', distintas, 25),
-        logro('medio_album', 'Medio álbum', 'Completa la mitad del álbum', '📖',
-              int(stats['porcentaje']), 50),
-        logro('completista', 'Completista', 'Completa el álbum entero', '👑',
-              distintas, total_catalogo),
+        logro('primera', '🎴', distintas, 1),
+        logro('coleccionista', '📚', distintas, 10),
+        logro('veterano', '🏅', distintas, 25),
+        logro('medio_album', '📖', int(stats['porcentaje']), 50),
+        logro('completista', '👑', distintas, total_catalogo),
         # 🎴 CAMBIO (Nacho, 10/09 y 15/09). Estos logros miraban rarezas que
         # ya no existen: "Buscador de Alumni" se había vuelto IMPOSIBLE de
         # conseguir, y el 15/09 el nombre volvió a cambiar (Legendaria ->
         # Legendario) al pasar a cinco rarezas.
         #
-        # Los nombres salen de cards/rarezas.py, nunca escritos a mano, que es
+        # Las rarezas salen de cards/rarezas.py, nunca escritas a mano, que es
         # justo lo que hizo que esto se rompiera las dos veces. Si el import
         # de arriba falla, es que alguien renombró una rareza y este fichero
         # se enterará EN EL ARRANQUE, no cuando un usuario abra su perfil.
-        logro('leyenda', 'Cazador de leyendas',
-              f'Consigue una carta {LEGENDARIO}', '✨',
-              1 if LEGENDARIO in tiers else 0, 1),
-        # 👔 Nuevo con la quinta rareza: solo 26 cartas de 805.
-        logro('staff', 'Has visto al staff',
-              f'Consigue una carta {STAFF}', '👔',
-              1 if STAFF in tiers else 0, 1),
-        logro('transcender', 'Más allá del tronco común',
-              f'Consigue una carta {TRANSCENDER}', '🎓',
-              1 if TRANSCENDER in tiers else 0, 1),
-        logro('coaliciones', 'Diplomático', 'Ten cartas de las cuatro coaliciones', '🏳️',
-              len(coaliciones), 4),
-        logro('acumulador', 'Acumulador', 'Ten 5 copias de una misma carta', '🗃️',
-              max_copias, 5),
-        logro('madrugador', 'Madrugador', 'Recoge tu regalo diario', '🎁',
-              1 if usuario.ultimo_regalo_diario else 0, 1),
+        logro('leyenda', '✨', 1 if LEGENDARIO in tiers else 0, 1, rareza=LEGENDARIO),
+        # 👔 Nuevo con la quinta rareza: solo 9 cartas de 824.
+        logro('staff', '👔', 1 if STAFF in tiers else 0, 1, rareza=STAFF),
+        logro('transcender', '🎓', 1 if TRANSCENDER in tiers else 0, 1, rareza=TRANSCENDER),
+        logro('coaliciones', '🏳️', len(coaliciones), 4),
+        logro('acumulador', '🗃️', max_copias, 5),
+        logro('madrugador', '🎁', 1 if usuario.ultimo_regalo_diario else 0, 1),
     ]
 
 

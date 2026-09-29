@@ -550,10 +550,65 @@ function ColeccionPerfil({ coleccion, puntos, esMiPerfil }) {
   );
 }
 
+/* 🏆 LOS TEXTOS DE LOS LOGROS (Nacho, 29/09)
+ *
+ * El backend manda solo el dato: qué logro es, cuánto llevas y cuánto falta.
+ * El nombre y la descripción salen de i18n.jsx, que es donde vive todo lo que
+ * el usuario lee. Antes venían escritos en español desde Django, así que el
+ * panel de logros salía en español aunque la web estuviera en inglés o árabe.
+ *
+ * Hay 11 logros pero solo 8 descripciones, porque varios comparten la frase:
+ *
+ *   'achDistinctCardsDesc'  ->  Coleccionista y Veterano ("Reúne {n} cartas
+ *                               distintas"); cambia el número, no la frase
+ *   'achRarityCardDesc'     ->  Cazador de leyendas, Has visto al staff y Más
+ *                               allá del tronco común ("Consigue una carta
+ *                               {rareza}"); cambia la rareza
+ *
+ * Se traducen una vez y se rellena el hueco. El {n} sale de `objetivo` y la
+ * {rareza} de `rareza`, los dos del backend: así el número no está escrito en
+ * ninguna frase y subir un logro de 10 a 15 cartas es cambiar una línea en
+ * Django, sin tocar los tres idiomas.
+ *
+ * ⚠️ LOGRO NUEVO = una línea aquí + sus claves en i18n.jsx EN LOS TRES
+ * IDIOMAS. Si falta la línea, en pantalla sale el id en crudo ('medio_album')
+ * y si falta la clave sale el nombre de la clave: las dos cosas se ven a la
+ * primera, no fallan en silencio.
+ */
+const LOGROS = {
+  primera:       { nombre: 'achFirstCard',    desc: 'achFirstCardDesc' },
+  coleccionista: { nombre: 'achCollector',    desc: 'achDistinctCardsDesc' },
+  veterano:      { nombre: 'achVeteran',      desc: 'achDistinctCardsDesc' },
+  medio_album:   { nombre: 'achHalfAlbum',    desc: 'achHalfAlbumDesc' },
+  completista:   { nombre: 'achCompletist',   desc: 'achCompletistDesc' },
+  leyenda:       { nombre: 'achLegendHunter', desc: 'achRarityCardDesc' },
+  staff:         { nombre: 'achStaffSpotted', desc: 'achRarityCardDesc' },
+  transcender:   { nombre: 'achBeyondCore',   desc: 'achRarityCardDesc' },
+  coaliciones:   { nombre: 'achDiplomat',     desc: 'achDiplomatDesc' },
+  acumulador:    { nombre: 'achHoarder',      desc: 'achHoarderDesc' },
+  madrugador:    { nombre: 'achEarlyBird',    desc: 'achEarlyBirdDesc' },
+};
+
 // Lista de Logros
 function LogrosPerfil({ logros }) {
   const { t } = useI18n();
   if (!logros) return null;
+
+  /* El nombre y la descripción de un logro, ya traducidos.
+   *
+   * La rareza se traduce con las claves que ya existen para las rarezas
+   * ('rarityLegendario', 'rarityStaff'...), las mismas que usa el álbum: así
+   * "Consigue una carta Legendario" sale coherente con el resto de la web y no
+   * hay dos traducciones de la misma palabra. */
+  const textosDe = (l) => {
+    const claves = LOGROS[l.id];
+    if (!claves) return { nombre: l.id, descripcion: '' };
+
+    const huecos = { n: l.objetivo };
+    if (l.rareza) huecos.rareza = t(`rarity${l.rareza}`);
+
+    return { nombre: t(claves.nombre), descripcion: t(claves.desc, huecos) };
+  };
   return (
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -564,16 +619,23 @@ function LogrosPerfil({ logros }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '0.8rem', marginTop: '1rem' }}>
-        {logros.map((l) => (
-          <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', background: 'var(--surface-overlay)', border: `1px solid ${l.conseguido ? 'var(--accent)' : 'var(--border-default)'}`, borderRadius: '10px', padding: '0.8rem', opacity: l.conseguido ? 1 : 0.55 }}>
-            <span style={{ fontSize: '1.7rem', filter: l.conseguido ? 'none' : 'grayscale(1)' }}>{l.icono}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>{l.nombre}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>{l.conseguido ? l.descripcion : `${l.actual} de ${l.objetivo}`}</div>
+        {logros.map((l) => {
+          const { nombre, descripcion } = textosDe(l);
+          return (
+            <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', background: 'var(--surface-overlay)', border: `1px solid ${l.conseguido ? 'var(--accent)' : 'var(--border-default)'}`, borderRadius: '10px', padding: '0.8rem', opacity: l.conseguido ? 1 : 0.55 }}>
+              <span style={{ fontSize: '1.7rem', filter: l.conseguido ? 'none' : 'grayscale(1)' }}>{l.icono}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>{nombre}</div>
+                {/* Conseguido: se dice qué era. A medias: por dónde vas. El "de"
+                    también es texto, así que va por i18n como todo lo demás. */}
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
+                  {l.conseguido ? descripcion : t('achProgress', { actual: l.actual, objetivo: l.objetivo })}
+                </div>
+              </div>
+              {l.conseguido && <span style={{ color: 'var(--accent)', fontWeight: 800 }}>✓</span>}
             </div>
-            {l.conseguido && <span style={{ color: 'var(--accent)', fontWeight: 800 }}>✓</span>}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );

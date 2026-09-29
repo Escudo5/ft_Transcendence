@@ -137,6 +137,42 @@ const translations = {
     aboutMe: 'Sobre mí',
     accept: 'Aceptar',
     achievements: 'Logros',
+    /* 🏆 LOS 11 LOGROS DEL PERFIL (Nacho, 29/09)
+     *
+     * Antes estos textos venían escritos en español desde Django, así que el
+     * panel de logros salía en español aunque la web estuviera en inglés o en
+     * árabe. Ahora el backend manda solo el dato y el texto está aquí.
+     *
+     * Son 11 nombres y 8 descripciones: 'achDistinctCardsDesc' la comparten
+     * Coleccionista y Veterano, y 'achRarityCardDesc' la comparten los tres
+     * logros de rareza. Cambia el hueco, no la frase.
+     *
+     * Los huecos los rellena components/Perfil/Perfil.jsx:
+     *    {n}        el objetivo del logro, que vive en el backend
+     *    {rareza}   ya traducida con las claves rarityXxx de más abajo
+     *
+     * ⚠️ Van en grupo y no por orden alfabético a propósito: es más fácil ver
+     * de un golpe si falta alguno en un idioma. */
+    achFirstCard: 'Primera carta',
+    achFirstCardDesc: 'Consigue tu primera carta',
+    achCollector: 'Coleccionista',
+    achVeteran: 'Veterano',
+    achDistinctCardsDesc: 'Reúne {n} cartas distintas',
+    achHalfAlbum: 'Medio álbum',
+    achHalfAlbumDesc: 'Completa la mitad del álbum',
+    achCompletist: 'Completista',
+    achCompletistDesc: 'Completa el álbum entero',
+    achLegendHunter: 'Cazador de leyendas',
+    achStaffSpotted: 'Has visto al staff',
+    achBeyondCore: 'Más allá del tronco común',
+    achRarityCardDesc: 'Consigue una carta {rareza}',
+    achDiplomat: 'Diplomático',
+    achDiplomatDesc: 'Ten cartas de las cuatro coaliciones',
+    achHoarder: 'Acumulador',
+    achHoarderDesc: 'Ten {n} copias de una misma carta',
+    achEarlyBird: 'Madrugador',
+    achEarlyBirdDesc: 'Recoge tu regalo diario',
+    achProgress: '{actual} de {objetivo}',
     albumCompleted: 'Álbum completado',
     avatarWrongType: 'Solo se admiten imágenes JPG, PNG o WEBP.',
     boardAndMore: 'y {count} más…',
@@ -430,6 +466,27 @@ const translations = {
     aboutMe: 'About me',
     accept: 'Accept',
     achievements: 'Achievements',
+    /* 🏆 Los 11 logros del perfil. Ver la nota en el bloque de español. */
+    achFirstCard: 'First card',
+    achFirstCardDesc: 'Get your first card',
+    achCollector: 'Collector',
+    achVeteran: 'Veteran',
+    achDistinctCardsDesc: 'Collect {n} different cards',
+    achHalfAlbum: 'Half the album',
+    achHalfAlbumDesc: 'Complete half of the album',
+    achCompletist: 'Completist',
+    achCompletistDesc: 'Complete the whole album',
+    achLegendHunter: 'Legend hunter',
+    achStaffSpotted: "You've seen the staff",
+    achBeyondCore: 'Beyond the common core',
+    achRarityCardDesc: 'Get a {rareza} card',
+    achDiplomat: 'Diplomat',
+    achDiplomatDesc: 'Own cards from all four coalitions',
+    achHoarder: 'Hoarder',
+    achHoarderDesc: 'Own {n} copies of the same card',
+    achEarlyBird: 'Early bird',
+    achEarlyBirdDesc: 'Claim your daily gift',
+    achProgress: '{actual} of {objetivo}',
     albumCompleted: 'Album completed',
     avatarWrongType: 'Only JPG, PNG or WEBP images are allowed.',
     boardAndMore: 'and {count} more…',
@@ -718,6 +775,40 @@ const translations = {
     aboutMe: 'نبذة عني',
     accept: 'قبول',
     achievements: 'الإنجازات',
+    /* 🏆 Los 11 logros del perfil. Ver la nota en el bloque de español.
+     *
+     * ⚠️ SERGIO: esto lo he traducido yo (Nacho, 29/09) para que no se quedara
+     * en español, pero una traducción no la puedo comprobar como compruebo el
+     * código. Pásale el ojo y corrige lo que suene mal. Los huecos {n},
+     * {rareza}, {actual} y {objetivo} NO se traducen: son los números y la
+     * rareza que mete el programa.
+     *
+     * 🔍 Y hay una cosa concreta que mirar, que yo no sé resolver:
+     * 'achDistinctCardsDesc' lleva un número que cambia (10 para Coleccionista
+     * y 25 para Veterano), y en árabe el nombre contado no se dice igual según
+     * la cifra. Con un solo texto no se puede acertar en los dos casos, así que
+     * dime cómo lo dejamos: o una forma que valga para todos los números, o
+     * separamos la frase en dos claves. */
+    achFirstCard: 'البطاقة الأولى',
+    achFirstCardDesc: 'احصل على بطاقتك الأولى',
+    achCollector: 'جامع البطاقات',
+    achVeteran: 'مخضرم',
+    achDistinctCardsDesc: 'اجمع {n} بطاقة مختلفة',
+    achHalfAlbum: 'نصف الألبوم',
+    achHalfAlbumDesc: 'أكمل نصف الألبوم',
+    achCompletist: 'مكمّل الألبوم',
+    achCompletistDesc: 'أكمل الألبوم بالكامل',
+    achLegendHunter: 'صائد الأساطير',
+    achStaffSpotted: 'رأيت الطاقم',
+    achBeyondCore: 'ما بعد الجذع المشترك',
+    achRarityCardDesc: 'احصل على بطاقة {rareza}',
+    achDiplomat: 'دبلوماسي',
+    achDiplomatDesc: 'امتلك بطاقات من التحالفات الأربعة',
+    achHoarder: 'مكتنز',
+    achHoarderDesc: 'امتلك {n} نسخًا من البطاقة نفسها',
+    achEarlyBird: 'المستيقظ مبكرًا',
+    achEarlyBirdDesc: 'استلم هديتك اليومية',
+    achProgress: '{actual} من {objetivo}',
     albumCompleted: 'اكتمل الألبوم',
     availablePacks: 'الحزم المتاحة',
     avatarWrongType: 'يُسمح فقط بصور JPG أو PNG أو WEBP.',
