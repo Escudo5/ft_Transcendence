@@ -1,3 +1,4 @@
+import csv
 import io
 import json
 import re
@@ -6,7 +7,7 @@ import os
 import uuid
 from django.conf import settings
 from django.core.files.base import ContentFile
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.shortcuts import redirect
 from django.contrib.auth import login, logout
@@ -16,7 +17,6 @@ from django.core.validators import validate_email
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.middleware.csrf import get_token
-from django.http import JsonResponse
 from django.db import transaction
 from .models import CustomUser
 from cards.models import Card
@@ -632,11 +632,130 @@ def mi_avatar(request):
 # credenciales en el .env) y avisar al descargar datos y al borrar la cuenta.
 # =====================================================================
 
+def _generar_csv_datos(datos):
+    """
+    Convierte el diccionario de datos del usuario en un formato CSV legible
+    organizado por secciones (datos de cuenta, álbum de cartas y sobres).
+    """
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+
+    # 1. Sección Datos de Cuenta
+    writer.writerow(['=== DATOS DE LA CUENTA ==='])
+    writer.writerow(['Campo', 'Valor'])
+    cuenta = datos.get('cuenta', {})
+    for clave, valor in cuenta.items():
+        writer.writerow([clave, valor if valor is not None else ''])
+
+    writer.writerow([])
+
+    # 2. Sección Álbum de Cartas
+    writer.writerow(['=== ALBUM DE CARTAS ==='])
+    writer.writerow(['Carta', 'Rareza', 'Copias', 'Obtenida El'])
+    for c in datos.get('album', []):
+        writer.writerow([c.get('carta'), c.get('rareza'), c.get('copias'), c.get('obtenida_el')])
+
+    writer.writerow([])
+
+    # 3. Sección Sobres en Inventario
+    writer.writerow(['=== SOBRES DISPONIBLES ==='])
+    writer.writerow(['Tipo de Sobre', 'Cantidad'])
+    for s in datos.get('sobres', []):
+        writer.writerow([s.get('tipo'), s.get('cantidad')])
+
+    return buffer.getvalue()
+
+
+def _generar_html_datos(datos):
+    """
+    Genera un informe estructurado en formato HTML estético y legible
+    para el cumplimiento del requisito de acceso en "formato legible" del RGPD.
+    """
+    cuenta = datos.get('cuenta', {})
+    album = datos.get('album', [])
+    sobres = datos.get('sobres', [])
+
+    filas_cuenta = "".join([
+        f"<tr><th style='text-align:left; padding:8px; border-bottom:1px solid #334155;'>{k}</th>"
+        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{v if v is not None else '-'}</td></tr>"
+        for k, v in cuenta.items()
+    ])
+
+    filas_album = "".join([
+        f"<tr><td style='padding:8px; border-bottom:1px solid #334155;'>{c.get('carta')}</td>"
+        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{c.get('rareza')}</td>"
+        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{c.get('copias')}</td>"
+        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{c.get('obtenida_el')}</td></tr>"
+        for c in album
+    ]) or "<tr><td colspan='4' style='padding:8px;'>Sin cartas en el álbum</td></tr>"
+
+    filas_sobres = "".join([
+        f"<tr><td style='padding:8px; border-bottom:1px solid #334155;'>{s.get('tipo')}</td>"
+        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{s.get('cantidad')}</td></tr>"
+        for s in sobres
+    ]) or "<tr><td colspan='2' style='padding:8px;'>Sin sobres disponibles</td></tr>"
+
+    html = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mis Datos - Transcendence</title>
+    <style>
+        body {{ font-family: system-ui, -apple-system, sans-serif; margin: 30px; background: #0f172a; color: #f8fafc; }}
+        .card {{ background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }}
+        h1 {{ color: #38bdf8; margin-bottom: 8px; }}
+        h2 {{ color: #cbd5e1; border-bottom: 2px solid #334155; padding-bottom: 8px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 12px; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Transcendence - Informe de Datos de Usuario</h1>
+        <p>Exportado el: <strong>{datos.get('exportado_el')}</strong></p>
+    </div>
+
+    <div class="card">
+        <h2>Datos de la Cuenta</h2>
+        <table>{filas_cuenta}</table>
+    </div>
+
+    <div class="card">
+        <h2>Álbum de Cartas ({len(album)})</h2>
+        <table>
+            <thead>
+                <tr style="text-align:left; background:#334155;">
+                    <th style="padding:8px;">Carta</th>
+                    <th style="padding:8px;">Rareza</th>
+                    <th style="padding:8px;">Copias</th>
+                    <th style="padding:8px;">Obtenida El</th>
+                </tr>
+            </thead>
+            <tbody>{filas_album}</tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Sobres en Inventario</h2>
+        <table>
+            <thead>
+                <tr style="text-align:left; background:#334155;">
+                    <th style="padding:8px;">Tipo</th>
+                    <th style="padding:8px;">Cantidad</th>
+                </tr>
+            </thead>
+            <tbody>{filas_sobres}</tbody>
+        </table>
+    </div>
+</body>
+</html>"""
+    return html
+
+
 @require_http_methods(["GET", "POST"])
 def descargar_mis_datos(request):
     """
-    Devuelve TODO lo que guardamos de esta persona, en un fichero JSON que se
-    descarga, y ADEMÁS le manda una copia por correo si tiene uno.
+    Devuelve TODO lo que guardamos de esta persona en el formato solicitado (JSON por defecto,
+    o bien CSV o HTML), y ADEMÁS le manda una copia por correo si tiene uno.
 
     Las dos cosas a la vez y no una u otra, a propósito (Nacho, 22/09):
 
@@ -645,8 +764,10 @@ def descargar_mis_datos(request):
       - El correo es la confirmación: sirve para que te enteres si alguien
         que no eres tú se ha bajado tus datos.
 
-    El correo va con fail_silently: si el servidor de correo está caído, te
-    descargas los datos igual.
+    Formatos aceptados vía parametro GET 'format':
+      - format=json (por defecto): Genera el JSON original estructurado.
+      - format=csv: Genera una representación en formato CSV.
+      - format=html: Genera un informe en HTML estético y legible.
     """
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
@@ -654,13 +775,6 @@ def descargar_mis_datos(request):
     from cards.models import UserCard, UserPack
 
     u = request.user
-
-    # ⚠️ Nacho, 22/09: aquí había un corte que devolvía un 400 si la cuenta no
-    # tenía correo. Se quita: ahora los datos se descargan igual y el correo
-    # es un extra para quien lo tenga (ver el paso 3). Quedarse sin poder
-    # sacar tus propios datos por no tener correo es justo lo que el RGPD no
-    # permite, y pasa de verdad: el login de 42 deja el email a None cuando
-    # la Intra no devuelve ninguno.
 
     # 1. Recopilamos todos sus datos
     datos = {
@@ -697,33 +811,33 @@ def descargar_mis_datos(request):
         ],
     }
 
-    # 2. Generamos el contenido JSON en memoria como una cadena formateada
-    contenido_json = json.dumps(datos, indent=2, ensure_ascii=False)
-    nombre_archivo = f"mis-datos-{u.username}.json"
+    # 2. Leemos el parámetro de formato ('json' por defecto)
+    fmt = request.GET.get('format', 'json').lower()
+
+    if fmt == 'csv':
+        contenido = _generar_csv_datos(datos)
+        nombre_archivo = f"mis-datos-{u.username}.csv"
+        mime_type = 'text/csv'
+        respuesta = HttpResponse(contenido, content_type='text/csv; charset=utf-8')
+    elif fmt == 'html':
+        contenido = _generar_html_datos(datos)
+        nombre_archivo = f"mis-datos-{u.username}.html"
+        mime_type = 'text/html'
+        respuesta = HttpResponse(contenido, content_type='text/html; charset=utf-8')
+    else:
+        # Formato JSON por defecto
+        contenido = json.dumps(datos, indent=2, ensure_ascii=False)
+        nombre_archivo = f"mis-datos-{u.username}.json"
+        mime_type = 'application/json'
+        respuesta = JsonResponse(datos, json_dumps_params={'indent': 2, 'ensure_ascii': False})
 
     # 3. 📧 EL CORREO CON LOS DATOS ADJUNTOS.
-    #
-    # ⚠️ Nacho, 22/09: el correo SE SUMA a la descarga, no la sustituye.
-    #
-    # Tal como estaba, los datos SOLO llegaban por correo, y eso tenía dos
-    # problemas serios:
-    #
-    #   1. Quien no tiene correo se quedaba sin sus datos. Y eso puede
-    #      pasar: el campo admite vacío y el login de 42 lo deja a None si
-    #      la Intra no devuelve correo. Para esa persona, el derecho de
-    #      acceso del RGPD dejaba de existir.
-    #   2. Si el servidor de correo fallaba, la respuesta era un 500 y no
-    #      había forma de conseguir los datos.
-    #
-    # Así que ahora se hacen las dos cosas: el fichero se descarga siempre,
-    # y además llega una copia por correo a quien tenga. Si el correo falla,
-    # la descarga sigue funcionando: por eso fail_silently=True.
     if u.email:
         correo = EmailMessage(
             subject='Tus datos de Transcendence',
             body=(
                 f'Hola {u.username},\n\n'
-                'Adjunto a este correo encontrarás el archivo JSON con toda la información '
+                f'Adjunto a este correo encontrarás el archivo ({fmt.upper()}) con toda la información '
                 'asociada a tu cuenta, de acuerdo con nuestro compromiso de transparencia y el RGPD.\n\n'
                 'Si no has sido tú quien ha pedido esta copia, avísanos.\n\n'
                 'Un saludo,\nEl equipo de Transcendence.'
@@ -731,13 +845,10 @@ def descargar_mis_datos(request):
             from_email=None,  # Utiliza DEFAULT_FROM_EMAIL definido en settings.py
             to=[u.email],
         )
-        correo.attach(nombre_archivo, contenido_json, 'application/json')
+        correo.attach(nombre_archivo, contenido, mime_type)
         correo.send(fail_silently=True)
 
-    # 4. Y la descarga de siempre, que es la que el front pide con un enlace
-    #    (Perfil.jsx). Devolver aquí otra cosa dejaba al usuario mirando un
-    #    JSON en una pestaña en blanco, fuera de la web.
-    respuesta = JsonResponse(datos, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+    # 4. Y la descarga de siempre en el navegador
     respuesta['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
     return respuesta
 

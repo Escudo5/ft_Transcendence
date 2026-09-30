@@ -681,6 +681,8 @@ function SeccionAjustesCuenta({ apiBaseUrl, setAviso, onAbrirLogoutModal }) {
 
       <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.2rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <a href={`${apiBaseUrl}/users/me/datos/`} className="ui-button ui-button-secondary">⬇️ Descargar mis datos</a>
+        <a href={`${apiBaseUrl}/users/me/datos/?format=csv`} className="ui-button ui-button-secondary">📊 CSV</a>
+        <a href={`${apiBaseUrl}/users/me/datos/?format=html`} className="ui-button ui-button-secondary">📄 HTML</a>
         <SecondaryButton onClick={onAbrirLogoutModal}>{t('logout')}</SecondaryButton>
         <SecondaryButton className="danger-button" onClick={() => { setBorrandoCuenta(true); setAviso(null); }}>
           🗑️ Borrar mi cuenta
