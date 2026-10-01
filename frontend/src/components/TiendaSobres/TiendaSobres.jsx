@@ -317,30 +317,35 @@ function TiendaSobres() {
       case 'creator': // La más exclusiva (Verde Esmeralda Radiante / Neón)
         return {
           color: 'var(--rarity-creator)',
+		  background: 'var(--rarity-creator-bg)',
           border: '3px solid var(--rarity-creator)',
           shadow: '0 0 30px rgba(0, 255, 135, 0.8), 0 0 10px rgba(96, 239, 255, 0.5)'
         };
       case 'staff': // 5. La más exclusiva
         return {
           color: 'var(--rarity-staff)',
+		  background: 'var(--rarity-staff-bg)',
           border: '3px solid var(--rarity-staff)',
           shadow: '0 0 30px rgba(236, 72, 153, 0.8), 0 0 10px rgba(236, 72, 153, 0.5)'
         };
       case 'legendary': // 4. Legendario
         return {
           color: 'var(--rarity-legendary)',
+		  background: 'var(--rarity-legendary-bg)',
           border: '3px solid var(--rarity-legendary)',
           shadow: '0 0 25px rgba(217, 119, 6, 0.7)'
         };
       case 'epic': // 3. Transcender
         return {
           color: 'var(--rarity-epic)',
+		  background: 'var(--rarity-epic-bg)',
           border: '3px solid var(--rarity-epic)',
           shadow: '0 0 20px rgba(168, 85, 247, 0.6)'
         };
       case 'rare': // 2. Senior
         return {
           color: 'var(--rarity-rare)',
+		  background: 'var(--rarity-rare-bg)',
           border: '3px solid var(--rarity-rare)',
           shadow: '0 0 15px rgba(2, 132, 199, 0.5)'
         };
@@ -348,6 +353,7 @@ function TiendaSobres() {
       default:
         return {
           color: 'var(--rarity-common)',
+		  background: 'var(--rarity-common-bg)',
           border: '2px solid var(--rarity-common)',
           shadow: '0 0 10px rgba(148, 163, 184, 0.3)'
         };
@@ -477,6 +483,7 @@ function TiendaSobres() {
                   cursor: estaVolteada ? 'default' : 'pointer', // Quita la mano si ya está revelada
                   perspective: '1000px' // Da profundidad para el efecto 3D
                 }}
+				
               >
                 {/* Contenedor animable en 3D de Framer Motion */}
                 <motion.div
@@ -518,7 +525,7 @@ function TiendaSobres() {
                       height: '100%',
                       backfaceVisibility: 'hidden',
                       transform: 'rotateY(180deg)', // Arranca invertida para el efecto de giro
-                      backgroundColor: 'rgba(9, 9, 11, 0.95)',
+                      background: 'rgba(9,9,11,0.95)',
                       borderRadius: '12px',
                       border: estiloRareza.border,
                       boxShadow: estiloRareza.shadow,
@@ -536,12 +543,12 @@ function TiendaSobres() {
                       </span>
                     </div>
 
-                    <div style={{ width: '100%', height: '110px', backgroundColor: 'var(--surface-overlay)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', overflow: 'hidden' }}>
+                    <div  style={{ width: '100%', height: '110px', background:estiloRareza.background,borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', overflow: 'hidden' }}>
                       {carta.foto ? (
                         <img
                           src={carta.foto}
                           alt={carta.login}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          style={{height: '110px', maxWidth: '85px', objectFit: 'cover', objectPosition: 'center top', borderRadius: '0.05px' }}
                         />
                       ) : (
                         // Por si ese alumno no tiene foto en la Intra

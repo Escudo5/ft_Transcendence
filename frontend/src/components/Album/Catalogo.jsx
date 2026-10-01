@@ -326,7 +326,7 @@ export default function Catalogo() {
             </span>
           )}
           {card.foto ? (
-            <img className="card-photo" src={card.foto} alt={card.login} />
+            <img className="card-photo" src={card.foto} alt={card.login} style={{height: 'fit', maxWidth: '100px', objectFit: 'cover', objectPosition: 'center top', borderRadius: '0.05px' }}/>
           ) : (
             <div className="artwork-symbol">👤</div>
           )}
