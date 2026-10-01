@@ -380,7 +380,7 @@ def _mejor_carta_del_catalogo():
 
     carta = (Card.objects
              .annotate(nota=nota_por_rareza)
-             .order_by('-nota', '-cursus_lvl', 'login')
+             .order_by('-cursus_lvl', '-nota', 'login')
              .first())
     if carta is None:
         return None
