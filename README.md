@@ -85,10 +85,11 @@ Then open your browser and navigate to:
 
 ## 4. Project Management
 
-- **Git Branching Strategy:** Development followed a feature-branch workflow (`feature/name`, `lab/db/test` for integration, and `main` for stable releases). Direct pushes to `main` were restricted.
-- **Integration Workflow:** All individual components were merged and validated into the common `lab/db/test` integration branch prior to final release.
-- **Code Reviews & Quality Control:** Team members conducted peer code reviews before merging branches to prevent regressions and maintain code consistency.
-- **Communication & Meetings:** Daily stand-up meetings on 42 Madrid campus paired with dedicated WhatsApp and Discord communication channels.
+- **Work Organization:** The work was mainly split between backend (`nmagro-r`, `pablalva`) and frontend (`smarquez`, `ksudyn`). The frontend built each screen first with sample data; when it needed data that did not exist yet, it asked the backend, which created the endpoint and connected the screen. `pablalva` set the priorities as Product Owner and `osmunoz-` coordinated the team as Project Manager.
+- **Branches:** Each task was developed in its own branch (for example `konrad_filtro_tiempo`, `nacho/traducir-logros` or `makefile`) and then merged into `lab/db/test`, the common integration branch. `main` is kept for the final version: the integrated code is moved there once the project is finished.
+- **Code Reviews:** Larger changes were proposed as GitHub pull requests (21 in total) so that a teammate could review them before merging; smaller fixes were pushed directly to `lab/db/test`.
+- **Tools:** GitHub (branches and pull requests) to organize and review the work.
+- **Meetings & Communication:** Weekly meetings on Mondays at the 42 Madrid campus, regular calls on Discord, and a WhatsApp group for day-to-day coordination.
 
 ---
 
