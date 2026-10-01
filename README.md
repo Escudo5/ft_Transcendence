@@ -137,7 +137,7 @@ The database architecture is built around 9 primary Django models:
 
 1. **42 OAuth 2.0 Login (`nmagro-r`):** Single Sign-On with 42 Intra credentials without storing external passwords.
 2. **Email & Password Authentication (`nmagro-r`):** Secondary login mechanism with salted & hashed passwords.
-3. **42 Campus Synchronization Engine (`pablalva`, `nmagro-r`):** Synchronizes entire campus directory into collectible cards.
+3. **42 Campus Synchronization Engine (`pablalva`):** Synchronizes entire campus directory into collectible cards.
 4. **Dynamic Rarity & Point System (`pablalva`):** Calculates rarities (Junior, Senior, Transcender, Legendary, Staff) from level and achievements.
 5. **Card Album & Search Catalog (`ksudyn`, `smarquez`):** Real-time text search, rarity filters, date filters, 4 sorting modes, and pagination.
 6. **Card Visuals & Neon Aesthetics (`ksudyn`, `smarquez`):** Custom borders, neon glowing effects per tier, and Creator cards.
