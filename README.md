@@ -46,7 +46,7 @@ Set the following variables inside `.env` (the template marks the ones you must 
 - `EMAIL_HOST_USER` and `EMAIL_HOST_PASSWORD` (optional): a Gmail account with an app password, used to send the GDPR confirmation emails. If they are left empty, everything still works; the emails are simply not sent.
 
 ### Quick Start
-To build, start all containers, and automatically sync 100 test student cards:
+To build, start all containers, and sync a first batch of cards (the first 100 students of the campus list plus the team members):
 
 ```bash
 make start
@@ -60,14 +60,15 @@ Then open your browser and navigate to:
 | Command | Description |
 | :--- | :--- |
 | `make start` | Builds containers, starts services, and runs quick test card sync. |
-| `make up` / `make down` | Starts or stops all Docker containers in the background. |
+| `make up` | Starts all containers in the foreground, showing their logs (Ctrl+C stops them). |
+| `make up_silent` | Starts all containers in the background. |
+| `make down` | Stops and removes the containers. The database is kept. |
 | `make logs` | Displays live logs for all services (or `make logs SERVICE=backend`). |
 | `make migrate` | Executes Django database migrations. |
 | `make superuser` | Creates an administrative user for the Django Admin panel. |
-| `make sync-quick` | Fetches 100 test student cards plus team member cards. |
-| `make sync-full` | **Full Campus Sync:** Fetches ~700 requests from 42 API (~6-7 minutes). |
+| `make sync-quick` | Syncs the first page of the campus list (100 students, some of them skipped by the filters) plus the 5 team members' cards. |
+| `make sync-full` | **Full campus sync:** requests the profile of every student that passes the filters, pausing between requests to respect the 42 API rate limit, so it takes several minutes. |
 | `make pwa` | Builds and serves the PWA production build on `http://localhost:4173`. |
-| `make clean` | Stops containers and cleans up unused Docker resources. |
 
 ---
 
