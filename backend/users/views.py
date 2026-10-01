@@ -5,6 +5,10 @@ import re
 import requests
 import os
 import uuid
+# Nacho, 1/10: con otro nombre a propósito. _generar_html_datos tiene una
+# variable local llamada `html`, y en Python eso la hace local en TODA la
+# función: un `html.escape(...)` dentro reventaría con UnboundLocalError.
+from html import escape as escapar_html
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.http import JsonResponse, HttpResponse
@@ -620,17 +624,40 @@ def mi_avatar(request):
 # Va de la mano de la Política de Privacidad: ahí prometemos esto, aquí se
 # cumple.
 #
-# ⚠️ OJO CON EL MÓDULO DEL SUBJECT: el de "GDPR compliance" pide CUATRO cosas
-# y aquí solo hay tres:
+# El módulo de "GDPR compliance" del subject pide CUATRO cosas, y están las
+# cuatro (Nacho, 1/10: actualizado; antes ponía que los correos faltaban):
 #   ✔ que el usuario pueda pedir sus datos      -> descargar_mis_datos
 #   ✔ borrado con confirmación                  -> borrar_mi_cuenta
-#   ✔ exportarlos en formato legible            -> el JSON descargable
-#   ✘ CORREOS DE CONFIRMACIÓN de las operaciones -> NO IMPLEMENTADO
-# Mientras falte lo último, el módulo NO se puede reclamar (el subject solo
-# permite "al menos 3 de" en Gamification; en este los lista todos).
-# Para cerrarlo haría falta configurar el envío de correo (servidor SMTP y sus
-# credenciales en el .env) y avisar al descargar datos y al borrar la cuenta.
+#   ✔ exportarlos en formato legible            -> JSON, CSV o HTML (?format=)
+#   ✔ correos de confirmación de las operaciones -> al descargar y al borrar
+#     (servidor SMTP con las credenciales del .env, desde el 21-22/09)
 # =====================================================================
+
+class _EscritorCsvSeguro:
+    """
+    Envuelve al csv.writer para que ninguna celda se pueda ejecutar como
+    fórmula (Nacho, 1/10, sobre el CSV de Óscar).
+
+    Excel y LibreOffice tratan como fórmula cualquier celda que empiece por
+    = + - @ (o por tabulador o retorno de carro). Una biografía que empiece
+    por "=HYPERLINK(...)" se ejecutaría al abrir el fichero. Se neutraliza
+    poniendo una comilla delante, que es lo que se recomienda para esto.
+
+    Coste asumido: un texto legítimo que empiece por + o - (por ejemplo un
+    nombre visible "+34 600...") sale con esa comilla delante en el CSV. El
+    JSON y el HTML no cambian.
+    """
+    PELIGROSOS = ('=', '+', '-', '@', '\t', '\r')
+
+    def __init__(self, escritor):
+        self.escritor = escritor
+
+    def writerow(self, fila):
+        self.escritor.writerow([
+            "'" + celda if isinstance(celda, str) and celda.startswith(self.PELIGROSOS) else celda
+            for celda in fila
+        ])
+
 
 def _generar_csv_datos(datos):
     """
@@ -638,10 +665,16 @@ def _generar_csv_datos(datos):
     organizado por secciones (datos de cuenta, álbum de cartas y sobres).
     """
     buffer = io.StringIO()
-    writer = csv.writer(buffer)
+    writer = _EscritorCsvSeguro(csv.writer(buffer))   # Nacho, 1/10: ver la clase de arriba
+
+    # Nacho, 1/10: el JSON y el HTML dicen cuándo se exportaron; el CSV no.
+    writer.writerow(['Exportado el', datos.get('exportado_el')])
+    writer.writerow([])
 
     # 1. Sección Datos de Cuenta
-    writer.writerow(['=== DATOS DE LA CUENTA ==='])
+    # (Nacho, 1/10: los títulos eran "=== ... ===" y, al empezar por "=", la
+    #  hoja de cálculo los leía como fórmula a CUALQUIER usuario)
+    writer.writerow(['DATOS DE LA CUENTA'])
     writer.writerow(['Campo', 'Valor'])
     cuenta = datos.get('cuenta', {})
     for clave, valor in cuenta.items():
@@ -650,7 +683,7 @@ def _generar_csv_datos(datos):
     writer.writerow([])
 
     # 2. Sección Álbum de Cartas
-    writer.writerow(['=== ALBUM DE CARTAS ==='])
+    writer.writerow(['ALBUM DE CARTAS'])
     writer.writerow(['Carta', 'Rareza', 'Copias', 'Obtenida El'])
     for c in datos.get('album', []):
         writer.writerow([c.get('carta'), c.get('rareza'), c.get('copias'), c.get('obtenida_el')])
@@ -658,12 +691,14 @@ def _generar_csv_datos(datos):
     writer.writerow([])
 
     # 3. Sección Sobres en Inventario
-    writer.writerow(['=== SOBRES DISPONIBLES ==='])
+    writer.writerow(['SOBRES DISPONIBLES'])
     writer.writerow(['Tipo de Sobre', 'Cantidad'])
     for s in datos.get('sobres', []):
         writer.writerow([s.get('tipo'), s.get('cantidad')])
 
-    return buffer.getvalue()
+    # Nacho, 1/10: la marca BOM delante. Sin ella, Excel abre el UTF-8 como si
+    # fuera otra codificación y las tildes y eñes salen rotas ("Ã±").
+    return '\ufeff' + buffer.getvalue()
 
 
 def _generar_html_datos(datos):
@@ -675,23 +710,30 @@ def _generar_html_datos(datos):
     album = datos.get('album', [])
     sobres = datos.get('sobres', [])
 
+    # Nacho, 1/10: TODO dato que entra en el HTML pasa por h(). Antes iban
+    # tal cual, y una biografía "<script>...</script>" salía en el fichero como
+    # código que el navegador ejecuta al abrirlo. Va en todos, no solo en lo que
+    # escribe el usuario: los logins de las cartas vienen de la API de 42.
+    def h(valor):
+        return escapar_html(str(valor))
+
     filas_cuenta = "".join([
-        f"<tr><th style='text-align:left; padding:8px; border-bottom:1px solid #334155;'>{k}</th>"
-        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{v if v is not None else '-'}</td></tr>"
+        f"<tr><th style='text-align:left; padding:8px; border-bottom:1px solid #334155;'>{h(k)}</th>"
+        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{h(v) if v is not None else '-'}</td></tr>"
         for k, v in cuenta.items()
     ])
 
     filas_album = "".join([
-        f"<tr><td style='padding:8px; border-bottom:1px solid #334155;'>{c.get('carta')}</td>"
-        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{c.get('rareza')}</td>"
-        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{c.get('copias')}</td>"
-        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{c.get('obtenida_el')}</td></tr>"
+        f"<tr><td style='padding:8px; border-bottom:1px solid #334155;'>{h(c.get('carta'))}</td>"
+        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{h(c.get('rareza'))}</td>"
+        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{h(c.get('copias'))}</td>"
+        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{h(c.get('obtenida_el'))}</td></tr>"
         for c in album
     ]) or "<tr><td colspan='4' style='padding:8px;'>Sin cartas en el álbum</td></tr>"
 
     filas_sobres = "".join([
-        f"<tr><td style='padding:8px; border-bottom:1px solid #334155;'>{s.get('tipo')}</td>"
-        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{s.get('cantidad')}</td></tr>"
+        f"<tr><td style='padding:8px; border-bottom:1px solid #334155;'>{h(s.get('tipo'))}</td>"
+        f"<td style='padding:8px; border-bottom:1px solid #334155;'>{h(s.get('cantidad'))}</td></tr>"
         for s in sobres
     ]) or "<tr><td colspan='2' style='padding:8px;'>Sin sobres disponibles</td></tr>"
 
@@ -711,7 +753,7 @@ def _generar_html_datos(datos):
 <body>
     <div class="card">
         <h1>Transcendence - Informe de Datos de Usuario</h1>
-        <p>Exportado el: <strong>{datos.get('exportado_el')}</strong></p>
+        <p>Exportado el: <strong>{h(datos.get('exportado_el'))}</strong></p>
     </div>
 
     <div class="card">
@@ -764,6 +806,10 @@ def descargar_mis_datos(request):
       - El correo es la confirmación: sirve para que te enteres si alguien
         que no eres tú se ha bajado tus datos.
 
+    El correo va con fail_silently: si el servidor de correo está caído, te
+    descargas los datos igual. (Recuperado el 1/10: lo había borrado el
+    commit de la exportación en CSV y HTML.)
+
     Formatos aceptados vía parametro GET 'format':
       - format=json (por defecto): Genera el JSON original estructurado.
       - format=csv: Genera una representación en formato CSV.
@@ -775,6 +821,13 @@ def descargar_mis_datos(request):
     from cards.models import UserCard, UserPack
 
     u = request.user
+
+    # ⚠️ Nacho, 22/09 (recuperado el 1/10): aquí había un corte que devolvía
+    # un 400 si la cuenta no tenía correo. Se quita: ahora los datos se
+    # descargan igual y el correo es un extra para quien lo tenga (ver el
+    # paso 3). Quedarse sin poder sacar tus propios datos por no tener correo
+    # es justo lo que el RGPD no permite, y pasa de verdad: el login de 42
+    # deja el email a None cuando la Intra no devuelve ninguno.
 
     # 1. Recopilamos todos sus datos
     datos = {
@@ -813,6 +866,11 @@ def descargar_mis_datos(request):
 
     # 2. Leemos el parámetro de formato ('json' por defecto)
     fmt = request.GET.get('format', 'json').lower()
+    # Nacho, 1/10: lo que no sea csv ni html se trata como json, también en el
+    # texto del correo. Antes ?format=xml descargaba un JSON y el correo decía
+    # "archivo (XML)".
+    if fmt not in ('csv', 'html'):
+        fmt = 'json'
 
     if fmt == 'csv':
         contenido = _generar_csv_datos(datos)
@@ -832,6 +890,23 @@ def descargar_mis_datos(request):
         respuesta = JsonResponse(datos, json_dumps_params={'indent': 2, 'ensure_ascii': False})
 
     # 3. 📧 EL CORREO CON LOS DATOS ADJUNTOS.
+    #
+    # ⚠️ Nacho, 22/09 (recuperado el 1/10): el correo SE SUMA a la descarga,
+    # no la sustituye.
+    #
+    # Tal como estaba, los datos SOLO llegaban por correo, y eso tenía dos
+    # problemas serios:
+    #
+    #   1. Quien no tiene correo se quedaba sin sus datos. Y eso puede
+    #      pasar: el campo admite vacío y el login de 42 lo deja a None si
+    #      la Intra no devuelve correo. Para esa persona, el derecho de
+    #      acceso del RGPD dejaba de existir.
+    #   2. Si el servidor de correo fallaba, la respuesta era un 500 y no
+    #      había forma de conseguir los datos.
+    #
+    # Así que ahora se hacen las dos cosas: el fichero se descarga siempre,
+    # y además llega una copia por correo a quien tenga. Si el correo falla,
+    # la descarga sigue funcionando: por eso fail_silently=True.
     if u.email:
         correo = EmailMessage(
             subject='Tus datos de Transcendence',
@@ -845,10 +920,18 @@ def descargar_mis_datos(request):
             from_email=None,  # Utiliza DEFAULT_FROM_EMAIL definido en settings.py
             to=[u.email],
         )
-        correo.attach(nombre_archivo, contenido, mime_type)
+        # Nacho, 1/10: en BYTES UTF-8, no como texto. Con texto, Django solo
+        # codifica bien los adjuntos text/* (CSV, HTML); el JSON (application/*)
+        # lo trata como binario y Python lo convertía por su cuenta: las tildes
+        # llegaban en Latin-1 y el árabe y los emojis como "\u0645...". Pasaba
+        # desde el 22/09 y solo se nota con letras fuera del ASCII.
+        correo.attach(nombre_archivo, contenido.encode('utf-8'), mime_type)
         correo.send(fail_silently=True)
 
-    # 4. Y la descarga de siempre en el navegador
+    # 4. Y la descarga de siempre en el navegador, que es la que el front pide
+    #    con un enlace (Perfil.jsx). Devolver aquí otra cosa dejaba al usuario
+    #    mirando el fichero en una pestaña en blanco, fuera de la web.
+    #    (Nacho, 22/09; recuperado el 1/10)
     respuesta['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
     return respuesta
 
