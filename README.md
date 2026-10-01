@@ -39,9 +39,11 @@ Before starting the application, copy the environment template and provide your 
 cp .env.example .env
 ```
 
-Set the following variables inside `.env`:
-- `CLIENT_ID_NACHO` and `CLIENT_SECRET_NACHO`: Obtained from `profile.intra.42.fr` -> **Settings** -> **API Applications**.
-- `FORTYTWO_REDIRECT_URI`: Must match **letter-by-letter** the URL used in your browser (e.g., `https://localhost:3000/auth/callback`).
+Set the following variables inside `.env` (the template marks the ones you must fill in with `RELLENAR`, Spanish for "fill in"):
+- `CLIENT_ID_NACHO` and `CLIENT_SECRET_NACHO`: credentials of the 42 application used for the **web login**. Obtained from `profile.intra.42.fr` -> **Settings** -> **API** -> your application.
+- `CLIENT_ID_PABLO` and `CLIENT_SECRET_PABLO`: credentials of the 42 application used by the **card sync scripts** (`make start`, `make sync-quick`, `make sync-full`). Without them the application starts, but no cards are loaded.
+- `FORTYTWO_REDIRECT_URI`: already set to `https://localhost:3000` in the template. It must match **letter by letter** the address you open in the browser and the redirect URI registered in your 42 application, with no path and no trailing slash.
+- `EMAIL_HOST_USER` and `EMAIL_HOST_PASSWORD` (optional): a Gmail account with an app password, used to send the GDPR confirmation emails. If they are left empty, everything still works; the emails are simply not sent.
 
 ### Quick Start
 To build, start all containers, and automatically sync 100 test student cards:
