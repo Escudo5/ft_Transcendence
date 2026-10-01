@@ -76,8 +76,8 @@ Then open your browser and navigate to:
 
 | Login | Assigned Role | Primary Responsibilities |
 | :--- | :--- | :--- |
-| **`nmagro-r`** | Tech Lead · Backend | System architecture and technical decisions. OAuth 2.0 authentication, 42 API synchronization engine, Public API, PWA integration, chat backend, and code review/merge management. |
-| **`pablalva`** | Backend · DevOps | Core game logic: rarity algorithms, card economics, point system, trading contracts, friend systems, leaderboard rankings, GDPR compliance (data export & deletion), Docker Compose, and Makefile infrastructure. |
+| **`nmagro-r`** | Tech Lead · Backend | System architecture and technical decisions. OAuth 2.0 authentication, Public API, PWA integration, chat backend, and code review/merge management. |
+| **`pablalva`** | Product Owner (PO) · Backend · DevOps | Product vision and feature priorities. 42 API synchronization engine (module of choice). Core game logic: rarity algorithms, card economics, point system, trading contracts, friend systems, leaderboard rankings, GDPR compliance (data export & deletion), Docker Compose, and Makefile infrastructure. |
 | **`smarquez`** | Frontend | Full internationalization (3 languages + RTL layout engine), interactive 3D card pack openings with Three.js, motion animations, and visual styling/color palette design. |
 | **`ksudyn`** | Frontend | Card visual design, rarity neon effects, Creator tier cards, album/catalog view, pack store UI, pagination, filter controls, and private chat UI enhancements. |
 | **`osmunoz-`** | Project Manager (PM) · Documentation | Facilitated team coordination, removed technical obstacles, aligned UI requirements with DB schemas, and authored the project README. |
@@ -173,7 +173,7 @@ Total points built: **21 Points** (19 points maximum evaluation cap + 2 buffer p
 | **Standard User Management** | `pablalva`, `ksudyn` | Profile editing, avatar upload, friend online status, and public profile pages. |
 | **Advanced 3D Graphics** | `smarquez` | Three.js rendering engine: perspective camera, PBR materials, image-based lighting (`RoomEnvironment`), and OrbitControls for 3D pack opening. |
 | **Public API** | `nmagro-r` | 9 REST endpoints, API key authentication stored as SHA-256 hashes, HTTP 429 rate limiting, and auto-generated documentation. |
-| **Module of Choice: 42 Sync Engine** | `nmagro-r` | Custom 993-line synchronization engine mapping 42 Intra API data into collectible cards. *(See detailed justification below)*. |
+| **Module of Choice: 42 Sync Engine** | `pablalva` | Custom 993-line synchronization engine mapping 42 Intra API data into collectible cards. *(See detailed justification below)*. |
 
 ### Minor Modules (1 Point Each)
 
@@ -216,12 +216,12 @@ Comprising 993 lines of Python code across 4 modular services, it handles extern
 ## 9. Individual Contributions & Challenges Faced
 
 ### `nmagro-r`
-- **Contributions:** Architected backend REST APIs, OAuth 2.0 42 authentication, Public API with SHA-256 key hashing and rate limiting, 42 API sync engine, and PWA integration.
+- **Contributions:** Architected backend REST APIs, OAuth 2.0 42 authentication, Public API with SHA-256 key hashing and rate limiting, and PWA integration.
 - **Challenge Faced:** OAuth `redirect_uri` mismatches between browser and server resulted in silent login failures.
 - **Resolution:** Standardized environment configuration in `.env` and documented exact host matching requirements.
 
 ### `pablalva`
-- **Contributions:** Developed card rarity algorithms, economy scoring, trading contracts, friend systems, leaderboard logic, GDPR data export/deletion endpoints, Docker Compose setup, and Makefile.
+- **Contributions:** Built the 42 API synchronization engine (module of choice). Developed card rarity algorithms, economy scoring, trading contracts, friend systems, leaderboard logic, GDPR data export/deletion endpoints, Docker Compose setup, and Makefile.
 - **Challenge Faced:** Django's default `user.delete()` deleted database records but left uploaded avatar image files orphaned on the disk.
 - **Resolution:** Implemented explicit disk file removal before calling database deletion hooks to satisfy strict GDPR privacy requirements.
 
