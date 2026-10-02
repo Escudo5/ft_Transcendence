@@ -296,7 +296,15 @@ function TiendaSobres() {
 
   // COMPONENTE: REPARTIENDO CARTAS DESDE EL CENTRO
   //FC
+// COMPONENTE: REPARTIENDO CARTAS DESDE EL CENTRO
   const PantallaCincoCartas = () => {
+
+    const voltearCarta = (index) => {
+      if (cartasVolteadas[index]) return;
+      const nuevoEstado = [...cartasVolteadas];
+      nuevoEstado[index] = true;
+      setCartasVolteadas(nuevoEstado);
+    };
 
     return (
       <div
@@ -320,13 +328,18 @@ function TiendaSobres() {
             const estaVolteada = cartasVolteadas[index];
 
             return (
-              <RepartoNaipes>
+              <RepartoNaipes 
+                key={index} 
+                index={index} 
+                estaVolteada={estaVolteada} 
+                alHacerClic={() => voltearCarta(index)}
+              >
                 {/* Contenedor animable en 3D de Framer Motion */}
-                <VoltearNaipe >
-                  {/* CARA A (BOCABAJO): Reverso adaptado con el color de su categoría */}
+                <VoltearNaipe estaVolteada={estaVolteada}>
+                  {/* CARA A (BOCABAJO) */}
                   <NaipeCaraA rareza={configRareza} />
-                  {/* CARA B (BOCARRIBA): Datos reales de la carta */}
-                  <NaipeCaraB rareza={configRareza} />
+                  {/* CARA B (BOCARRIBA) */}
+                  <NaipeCaraB rareza={configRareza} carta={carta} />
                 </VoltearNaipe>
               </RepartoNaipes>
             );

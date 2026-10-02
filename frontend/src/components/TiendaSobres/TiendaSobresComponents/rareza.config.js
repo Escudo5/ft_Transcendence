@@ -11,7 +11,7 @@ export const rareza = {
           border: '3px solid var(--rarity-staff)',
           shadow: '0 0 30px rgba(236, 72, 153, 0.8), 0 0 10px rgba(236, 72, 153, 0.5)'
         },
-        legedary: {
+        legendary: {
           color: 'var(--rarity-legendary)',
           background: 'var(--rarity-legendary-bg)',
           border: '3px solid var(--rarity-legendary)',

@@ -1,4 +1,4 @@
-export const NaipeCaraB = ({  rareza }) => {
+export const NaipeCaraB = ({ rareza, carta }) => {
     return (
         <div
             style={{
@@ -9,8 +9,8 @@ export const NaipeCaraB = ({  rareza }) => {
                 transform: 'rotateY(180deg)', // Arranca invertida para el efecto de giro
                 background: 'rgba(9,9,11,0.95)',
                 borderRadius: '12px',
-                border: rareza.border,
-                boxShadow: rareza.shadow,
+                border: rareza?.border,
+                boxShadow: rareza?.shadow,
                 display: 'flex',
                 flexDirection: 'column',
                 padding: '1rem',
@@ -19,14 +19,14 @@ export const NaipeCaraB = ({  rareza }) => {
             }}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
-                <span style={{ fontWeight: 'bold' }}>{carta.login}</span>
-                <span style={{ color: rareza.color, fontWeight: 'bold', fontSize: '0.65rem', textTransform: 'uppercase' }}>
-                    {carta.tier}
+                <span style={{ fontWeight: 'bold' }}>{carta?.login}</span>
+                <span style={{ color: rareza?.color, fontWeight: 'bold', fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                    {carta?.tier}
                 </span>
             </div>
 
-            <div style={{ width: '100%', height: '110px', background: rareza.background, borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', overflow: 'hidden' }}>
-                {carta.foto ? (
+            <div style={{ width: '100%', height: '110px', background: rareza?.background, borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', overflow: 'hidden' }}>
+                {carta?.foto ? (
                     <img
                         src={carta.foto}
                         alt={carta.login}
@@ -39,8 +39,8 @@ export const NaipeCaraB = ({  rareza }) => {
             </div>
 
             <div style={{ textAlign: 'center', fontSize: '1rem', fontWeight: 'bold', borderTop: '1px solid #333', paddingTop: '0.5rem' }}>
-                {carta.nombre}
+                {carta?.nombre}
             </div>
         </div>
-    )
-}
+    );
+};
