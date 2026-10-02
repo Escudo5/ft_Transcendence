@@ -1,26 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import FondoTiendaSobres from './FondoTiendaSobres';
-import SobreHolografico from './SobreHolografico';
-import { Alert, Modal } from '../ui';
+import { Alert } from '../ui';
 import { CLASE_RAREZA } from '../rarezas';
 import { useI18n } from '../../i18n';
-import { TituloSeccion } from './TiendaSobresComponents/TituloSeccion';
-import { SubtituloSeccion } from './TiendaSobresComponents/SubtituloSeccion';
-import { IconoSobre } from './TiendaSobresComponents/IconoSobre';
-import { RepartoNaipes } from './TiendaSobresComponents/RepartoNaipes.motion';
-import { VoltearNaipe } from './TiendaSobresComponents/VoltearNaipe.motion';
-import { NaipeCaraA } from './TiendaSobresComponents/NaipeCaraA';
-import { NaipeCaraB } from './TiendaSobresComponents/NaipeCaraB';
-import { rareza } from './TiendaSobresComponents/rareza.config';
+
+// Componentes extraídos
+import { BotonVolver } from './TiendaSobresComponents/BotonVolver';
+import { CrearSobreSeccion } from './TiendaSobresComponents/CrearSobreSeccion';
+import { ModalDescarteSobre } from './TiendaSobresComponents/ModalDescarteSobre';
+import { AbrirSobreSeccion } from './TiendaSobresComponents/AbrirSobreSeccion';
+import { SobrePreapertura } from './TiendaSobresComponents/SobrePreapertura';
+import { PantallaCincoCartas } from './TiendaSobresComponents/PantallaCincoCartas';
 
 function TiendaSobres() {
-  const { t } = useI18n();
+  const { t: traduccion } = useI18n();
   const navigate = useNavigate();
 
   const [fase, setFase] = useState('SELECCION');
-
   const [cartasCargadas, setCartasCargadas] = useState([]);
   const [error, setError] = useState('');
   const [abriendo, setAbriendo] = useState(false);
@@ -31,106 +28,108 @@ function TiendaSobres() {
   const [seleccionDescarte, setSeleccionDescarte] = useState({});
   const [procesandoDescarte, setProcesandoDescarte] = useState(false);
   const [mensajeDescarte, setMensajeDescarte] = useState('');
+  const [cartasVolteadas, setCartasVolteadas] = useState([false, false, false, false, false]);
 
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
 
   const SOBRES = [
-    { id: 'comun', nombre: t('packCommon'), rarezas: ['Junior'], color: 'var(--rarity-common)' },
-    { id: 'raro', nombre: t('packRare'), rarezas: ['Senior'], color: 'var(--rarity-rare)' },
-    { id: 'legendario', backendType: 'epico', nombre: t('packLegendary'), rarezas: ['Transcender', 'Legendario', 'Staff', 'Creator'], color: 'var(--rarity-legendary)' },
+    { id: 'comun', nombre: traduccion('packCommon'), rarezas: ['Junior'], color: 'var(--rarity-common)' },
+    { id: 'raro', nombre: traduccion('packRare'), rarezas: ['Senior'], color: 'var(--rarity-rare)' },
+    { id: 'legendario', backendType: 'epico', nombre: traduccion('packLegendary'), rarezas: ['Transcender', 'Legendario', 'Staff', 'Creator'], color: 'var(--rarity-legendary)' },
   ];
 
   const TIER_A_RAREZA = CLASE_RAREZA;
 
-  // Convierte una carta del backend al formato que pinta esta pantalla
-  const adaptarCarta = (c) => ({
-    login: c.login,
-    nombre: c.title || c.login,
-    foto: c.photo,
-    tier: c.tier, // Esto seria el nombre : "SENIOR", POR EJEMPLO
-    rareza: TIER_A_RAREZA[c.tier] || 'common',
+  const adaptarCarta = (cartaRaw) => ({
+    login: cartaRaw.login,
+    nombre: cartaRaw.title || cartaRaw.login,
+    foto: cartaRaw.photo,
+    tier: cartaRaw.tier,
+    rareza: TIER_A_RAREZA[cartaRaw.tier] || 'common',
   });
 
   useEffect(() => {
     async function cargarAlbum() {
       try {
-        const res = await fetch(`${apiBaseUrl}/cards/album/`, { credentials: 'include' });
-        if (!res.ok) return;
-        const datos = await res.json();
-        setAlbum((datos || []).map((item) => ({
-          cardId: item.card?.id,
-          cantidad: item.cantidad ?? 1,
-          login: item.card?.login || '',
-          tier: item.card?.tier || 'Junior',
+        const respuesta = await fetch(`${apiBaseUrl}/cards/album/`, { credentials: 'include' });
+        if (!respuesta.ok) return;
+        const datos = await respuesta.json();
+        setAlbum((datos || []).map((elemento) => ({
+          cardId: elemento.card?.id,
+          cantidad: elemento.cantidad ?? 1,
+          login: elemento.card?.login || '',
+          tier: elemento.card?.tier || 'Junior',
         })));
-      } catch (e) {
-        console.error('No se pudo cargar el álbum para crear sobres:', e);
+      } catch (errorCapturado) {
+        console.error('No se pudo cargar el álbum para crear sobres:', errorCapturado);
       }
     }
     cargarAlbum();
   }, [apiBaseUrl]);
 
-  // Al entrar preguntamos cuantos sobres tiene, para no dejarle romper el sobre
-  // si no le queda ninguno.
   const consultarSobres = async () => {
     try {
-      const res = await fetch(`${apiBaseUrl}/cards/sobres/`, { credentials: 'include' });
-      if (!res.ok) return;
-      const datos = await res.json();
+      const respuesta = await fetch(`${apiBaseUrl}/cards/sobres/`, { credentials: 'include' });
+      if (!respuesta.ok) return;
+      const datos = await respuesta.json();
       setSobresDisponibles({
         comun: datos.sobres?.comun ?? 0,
         raro: datos.sobres?.raro ?? 0,
         epico: datos.sobres?.epico ?? 0,
       });
-    } catch (e) {
-      console.error('No se pudo consultar el inventario de sobres:', e);
+    } catch (errorCapturado) {
+      console.error('No se pudo consultar el inventario de sobres:', errorCapturado);
     }
   };
 
-  useEffect(() => { consultarSobres(); }, []);
+  useEffect(() => {
+    consultarSobres();
+  }, []);
 
   const abrirSelectorSobre = useCallback((sobre) => {
     setMensajeDescarte('');
     setSeleccionDescarte({});
     setSobreSeleccionado(sobre);
-  }, []); // TODO: revisar dependencias, no parece que tenga
+  }, []);
 
   const cambiarGruposSeleccionados = useCallback((cardId, grupos) => {
-    setSeleccionDescarte((actual) => {
-      const siguiente = { ...actual };
-      if (grupos > 0) siguiente[cardId] = grupos;
-      else delete siguiente[cardId];
-      return siguiente;
+    setSeleccionDescarte((estadoActual) => {
+      const siguienteEstado = { ...estadoActual };
+      if (grupos > 0) siguienteEstado[cardId] = grupos;
+      else delete siguienteEstado[cardId];
+      return siguienteEstado;
     });
-  }, []); // TODO: revisar dependencias, no parece que tenga
+  }, []);
 
   const confirmarDescarte = async () => {
     const cartas = Object.entries(seleccionDescarte).map(([carta, grupos]) => ({ carta, grupos }));
     if (!cartas.length) return;
-    if (!window.confirm(t('burnConfirm'))) return;
+    if (!window.confirm(traduccion('burnConfirm'))) return;
 
     setProcesandoDescarte(true);
     setMensajeDescarte('');
     try {
-      const resToken = await fetch(`${apiBaseUrl}/users/csrf/`, { credentials: 'include' });
-      const { csrfToken } = await resToken.json();
-      const res = await fetch(`${apiBaseUrl}/cards/descartar/`, {
+      const respuestaToken = await fetch(`${apiBaseUrl}/users/csrf/`, { credentials: 'include' });
+      const { csrfToken } = await respuestaToken.json();
+      const respuesta = await fetch(`${apiBaseUrl}/cards/descartar/`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
         body: JSON.stringify({ tipo_sobre: sobreSeleccionado.backendType || sobreSeleccionado.id, cartas }),
       });
-      const datos = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(datos.detail || datos.error || t('burnError'));
+      const datos = await respuesta.json().catch(() => ({}));
+      if (!respuesta.ok) throw new Error(datos.detail || datos.error || traduccion('burnError'));
 
-      setAlbum((actual) => actual
-        .map((card) => ({ ...card, cantidad: card.cantidad - ((seleccionDescarte[card.cardId] || 0) * 4) }))
-        .filter((card) => card.cantidad > 0));
-      setMensajeDescarte(t('burnDone', { count: datos.sobres_creados, s: datos.sobres_creados === 1 ? '' : 's' }));
+      setAlbum((estadoActual) =>
+        estadoActual
+          .map((carta) => ({ ...carta, cantidad: carta.cantidad - ((seleccionDescarte[carta.cardId] || 0) * 4) }))
+          .filter((carta) => carta.cantidad > 0)
+      );
+      setMensajeDescarte(traduccion('burnDone', { count: datos.sobres_creados, s: datos.sobres_creados === 1 ? '' : 's' }));
       setSeleccionDescarte({});
       consultarSobres();
-    } catch (e) {
-      setMensajeDescarte(e.message);
+    } catch (errorCapturado) {
+      setMensajeDescarte(errorCapturado.message);
     } finally {
       setProcesandoDescarte(false);
     }
@@ -139,11 +138,11 @@ function TiendaSobres() {
   const seleccionarTipoSobre = (tipo) => {
     const disponibles = sobresDisponibles[tipo];
     if (disponibles === null) {
-      setError(t('packsChecking'));
+      setError(traduccion('packsChecking'));
       return;
     }
     if (disponibles < 1) {
-      setError(t('noPacksLeft', { type: tipo }));
+      setError(traduccion('noPacksLeft', { type: tipo }));
       return;
     }
     setTipoSobreActivo(tipo);
@@ -152,68 +151,63 @@ function TiendaSobres() {
     setError('');
   };
 
-  // Pide al backend que abra un sobre de verdad: descuenta uno del inventario,
-  // sortea 5 cartas segun las probabilidades y las guarda en el album.
   const abrirSobreEnBackend = async () => {
     setAbriendo(true);
     setError('');
     try {
-      // Django exige un token para las peticiones que envian datos
-      const resToken = await fetch(`${apiBaseUrl}/users/csrf/`, { credentials: 'include' });
-      const { csrfToken } = await resToken.json();
+      const respuestaToken = await fetch(`${apiBaseUrl}/users/csrf/`, { credentials: 'include' });
+      const { csrfToken } = await respuestaToken.json();
 
-      const res = await fetch(`${apiBaseUrl}/cards/sobres/abrir/${tipoSobreActivo}/`, {
+      const respuesta = await fetch(`${apiBaseUrl}/cards/sobres/abrir/${tipoSobreActivo}/`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
       });
-      const datos = await res.json().catch(() => ({}));
+      const datos = await respuesta.json().catch(() => ({}));
 
-      if (!res.ok) {
-        setError(datos.error || datos.detail || t('packOpenError'));
+      if (!respuesta.ok) {
+        setError(datos.error || datos.detail || traduccion('packOpenError'));
         return false;
       }
 
       setCartasCargadas((datos.cartas || []).map(adaptarCarta));
-      // El backend nos dice cuantos le quedan tras abrir este
       if (typeof datos.sobres_restantes === 'number') {
-        setSobresDisponibles((actual) => ({ ...actual, [tipoSobreActivo]: datos.sobres_restantes }));
+        setSobresDisponibles((estadoActual) => ({ ...estadoActual, [tipoSobreActivo]: datos.sobres_restantes }));
       }
       return true;
-    } catch (e) {
-      console.error('Error al abrir el sobre:', e);
-      setError(t('serverConnectionError'));
+    } catch (errorCapturado) {
+      console.error('Error al abrir el sobre:', errorCapturado);
+      setError(traduccion('serverConnectionError'));
       return false;
     } finally {
       setAbriendo(false);
     }
   };
 
-  // Array de control: registra qué carta está bocarriba (true) o bocabajo (false)
-  const [cartasVolteadas, setCartasVolteadas] = useState([false, false, false, false, false]);
-
   const clickVolver = () => {
     navigate('/catalogo');
   };
 
-  // La escena 3D llama a esta función cuando la tira termina de rasgarse.
   const tocarSobre = async () => {
-    if (abriendo) return; // evita abrir dos veces si se hace doble clic
+    if (abriendo) return;
 
-    // 🔒 Si no le quedan sobres, ni siquiera empieza a romperse: seria abrir un
-    // regalo para encontrarlo vacio.
     if (sobresDisponibles[tipoSobreActivo] !== null && sobresDisponibles[tipoSobreActivo] < 1) {
-      setError(t('noPacksLeft', { type: tipoSobreActivo }));
+      setError(traduccion('noPacksLeft', { type: tipoSobreActivo }));
       return;
     }
 
     const haIdoBien = await abrirSobreEnBackend();
-    if (!haIdoBien) {
-      return;
-    }
+    if (!haIdoBien) return;
 
-    setCartasVolteadas([false, false, false, false, false]); // todas bocabajo
+    setCartasVolteadas([false, false, false, false, false]);
     setFase('REVELADO');
+  };
+
+  const voltearCarta = (indice) => {
+    if (cartasVolteadas[indice]) return;
+    const nuevoEstado = [...cartasVolteadas];
+    nuevoEstado[indice] = true;
+    setCartasVolteadas(nuevoEstado);
   };
 
   const resetearFases = () => {
@@ -228,155 +222,19 @@ function TiendaSobres() {
     setFase('SELECCION');
   };
 
-  //FC
-  const renderBotonVolver = () => {
-    return (
-      <button
-        onClick={clickVolver}
-        className="back-btn-link floating-pack-back-button"
-        style={{
-          padding: '0.8rem 1.5rem',
-          fontSize: '1.2rem',
-          cursor: 'pointer',
-          borderRadius: '50px',
-          backgroundColor: 'var(--surface-raised)',
-          color: '#fff',
-          border: '2px solid #ff9ffc',
-          boxShadow: '0 0 10px rgba(255,159,252,0.3)'
-        }}
-      >
-        {t('backToCatalog')}
-      </button>
-    );
-  };
-
-  //FC
-  const Sobrepreeapertura = () => {
-    return (
-      <div className="apertura-stage">
-        {/* ⚠️ El aviso va ARRIBA del sobre: el sobre mide 800px y cualquier cosa
-            que se ponga debajo se queda fuera de la pantalla y no se ve. */}
-        {error && (
-          // Aviso del sistema de diseño (ui.jsx): los colores y el role="alert"
-          // para lectores de pantalla los pone él. Aquí solo se mantiene la
-          // posición fija arriba, que es lo que este caso necesita.
-          <Alert
-            tone="error"
-            style={{
-              position: 'fixed',
-              top: '1.5rem',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              zIndex: 50,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-            }}
-          >
-            {error}
-          </Alert>
-        )}
-
-        <SobreHolografico
-          tipo={tipoSobreActivo}
-          onOpen={tocarSobre}
-          onProgress={() => { }}
-        />
-
-        <button
-          type="button"
-          className="cancel-pack-button"
-          onClick={cancelarApertura}
-          disabled={abriendo}
-        >
-          {t('backToChoosePack')}
-        </button>
-
-      </div>
-    );
-  };
-
-  // COMPONENTE: REPARTIENDO CARTAS DESDE EL CENTRO
-  //FC
-// COMPONENTE: REPARTIENDO CARTAS DESDE EL CENTRO
-  const PantallaCincoCartas = () => {
-
-    const voltearCarta = (index) => {
-      if (cartasVolteadas[index]) return;
-      const nuevoEstado = [...cartasVolteadas];
-      nuevoEstado[index] = true;
-      setCartasVolteadas(nuevoEstado);
-    };
-
-    return (
-      <div
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 5,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '3rem',
-          width: '95vw'
-        }}
-      >
-        {/* Fila horizontal que posiciona las 5 cartas juntas una al lado de la otra */}
-        <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', width: '100%', flexWrap: 'wrap' }}>
-          {cartasCargadas.map((carta, index) => {
-            const configRareza = rareza[carta.rareza];
-            const estaVolteada = cartasVolteadas[index];
-
-            return (
-              <RepartoNaipes 
-                key={index} 
-                index={index} 
-                estaVolteada={estaVolteada} 
-                alHacerClic={() => voltearCarta(index)}
-              >
-                {/* Contenedor animable en 3D de Framer Motion */}
-                <VoltearNaipe estaVolteada={estaVolteada}>
-                  {/* CARA A (BOCABAJO) */}
-                  <NaipeCaraA rareza={configRareza} />
-                  {/* CARA B (BOCARRIBA) */}
-                  <NaipeCaraB rareza={configRareza} carta={carta} />
-                </VoltearNaipe>
-              </RepartoNaipes>
-            );
-          })}
-        </div>
-
-        {/* Solo aparece si el usuario ha revelado las 5 cartas */}
-        {cartasVolteadas.every(Boolean) && (
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={resetearFases}
-            style={{
-              padding: '0.9rem 3rem',
-              fontSize: '1.2rem',
-              backgroundColor: '#00babc',
-              color: '#101418',
-              border: '2px solid #7fffee',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              boxShadow: '0 0 20px rgba(0, 186, 188, 0.55)',
-              maxWidth: 'calc(100vw - 2rem)',
-              textAlign: 'center'
-            }}
-          >
-            {t('exitOpening')}
-          </motion.button>
-        )}
-      </div>
-    );
-  };
-
-  const PaginaTiendaSobres = () => {
-    return (
-      <main className={`app-container tienda-sobres-app ${fase !== 'SELECCION' ? 'modo-apertura' : ''}`} style={{ position: 'relative', minHeight: '100vh', padding: fase === 'SELECCION' ? '2rem' : 0, overflowX: 'hidden' }}>
-        {fase === 'SELECCION' && <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}>
+  return (
+    <main
+      className={`app-container tienda-sobres-app ${fase !== 'SELECCION' ? 'modo-apertura' : ''}`}
+      style={{
+        position: 'relative',
+        minHeight: '100vh',
+        padding: fase === 'SELECCION' ? '2rem' : 0,
+        overflowX: 'hidden',
+      }}
+    >
+      {/* Fondo solo en SELECCION */}
+      {fase === 'SELECCION' && (
+        <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}>
           <FondoTiendaSobres
             topColor="#5227FF"
             bottomColor="#FF9FFC"
@@ -391,150 +249,73 @@ function TiendaSobres() {
             mixBlendMode="screen"
             quality="high"
           />
-        </div>}
+        </div>
+      )}
 
-        {/** {fase === 'SELECCION' && <VolverButton/>} */}
-        {fase === 'SELECCION' && renderBotonVolver()}
+      {/* FASE SELECCIÓN */}
+      {fase === 'SELECCION' && (
+        <>
+          <BotonVolver alHacerClic={clickVolver} texto={traduccion('backToCatalog')} />
 
-        {/** {fase === 'SELECCION' && <ErrorAlert/>} */}
-        {fase === 'SELECCION' && error && (
-          <Alert tone="error" style={{ position: 'relative', zIndex: 3, maxWidth: '620px', margin: '1rem auto' }}>
-            {error}
-          </Alert>
-        )}
+          {error && (
+            <Alert tone="error" style={{ position: 'relative', zIndex: 3, maxWidth: '620px', margin: '1rem auto' }}>
+              {error}
+            </Alert>
+          )}
 
-        {/** {fase === 'SELECCION' && <CrearSobre props/>} */}
-        {fase === 'SELECCION' && <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '4rem auto 2rem' }} aria-labelledby="crear-sobres-titulo">
-          <div className="grid-meta">
-            <TituloSeccion id="crear-sobres-titulo">{t('getPacksWithDuplicates')}</TituloSeccion> //TODO: Revisar el renderizado
-            //   CORRECTO
-<SubtituloSeccion>{t('burn4KeepOne')}</SubtituloSeccion>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
-            {SOBRES.map((sobre) => (
-              <button key={sobre.id} type="button" className={`pack-option pack-option-${sobre.id}`} onClick={() => abrirSelectorSobre(sobre)} style={{ '--pack-color': sobre.color }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                  <IconoSobre /> {sobre.nombre}
-                </span>
-                {/* Qué hay que quemar para llevarse ESTE sobre. Sin esto, el
-                    recuadro dice lo que te dan pero no lo que cuesta, y no hay
-                    forma de saber que 4 Transcender dan un sobre legendario
-                    hasta que abres el modal. */}
-                <span style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '0.74rem',
-                  fontWeight: 600,
-                  letterSpacing: '0.02em',
-                  opacity: 0.85,
-                  textAlign: 'center',
-                  lineHeight: 1.35,
-                }}>
-                  {t('burnsDuplicatesOf')}<br />
-                  {sobre.rarezas.join(' o ')}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>}
+          <CrearSobreSeccion
+            listaSobres={SOBRES}
+            alSeleccionarSobre={abrirSelectorSobre}
+            traduccion={traduccion}
+          />
 
-        {/** {sobreSeleccionado && <SeleccionarSobre props/>} */}
-        {sobreSeleccionado && (
-          <Modal onClose={() => !procesandoDescarte && setSobreSeleccionado(null)} labelledBy="selector-sobre-titulo" className="discard-modal">
-            <div className="discard-modal-header">
-              <div>
-                <span className="discard-modal-kicker">{t('duplicatesExchange')}</span>
-                <h2 id="selector-sobre-titulo">{sobreSeleccionado.nombre}</h2>
-              </div>
-              <button type="button" className="discard-modal-close" onClick={() => setSobreSeleccionado(null)} aria-label={t('closeSelector')} disabled={procesandoDescarte}>×</button>
-            </div>
-            <p className="discard-modal-intro">{t('discardIntro')}</p>
-            <div className="discard-card-list">
-              {album.filter((card) => sobreSeleccionado.rarezas.includes(card.tier) && card.cantidad >= 5).map((card) => {
-                const maxGrupos = Math.floor((card.cantidad - 1) / 4);
-                const grupos = seleccionDescarte[card.cardId] || 0;
-                return (
-                  <div key={card.cardId} className="discard-card-row" style={{ '--discard-color': sobreSeleccionado.color }}>
-                    <div className="discard-card-info">
-                      <strong>{card.login}</strong>
-                      <span>{card.cantidad} copias</span>
-                    </div>
-                    <div className="discard-stepper" role="group" aria-label={t('burnGroupsOf', { login: card.login })}>
-                      <button type="button" onClick={() => cambiarGruposSeleccionados(card.cardId, grupos - 1)} disabled={grupos === 0 || procesandoDescarte} aria-label={t('burnRemoveGroupOf', { login: card.login })}>−</button>
-                      <span aria-live="polite"><strong>{grupos}</strong><small>{' ' + t('groupsWord', { s: grupos === 1 ? '' : 's' })}</small></span>
-                      <button type="button" onClick={() => cambiarGruposSeleccionados(card.cardId, grupos + 1)} disabled={grupos === maxGrupos || procesandoDescarte} aria-label={t('burnAddGroupOf', { login: card.login })}>+</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {album.filter((card) => sobreSeleccionado.rarezas.includes(card.tier) && card.cantidad >= 5).length === 0 && (
-              <p className="discard-empty">{t('discardEmpty')}</p>
-            )}
-            {mensajeDescarte && <p role="status">{mensajeDescarte}</p>}
-            <div className="discard-modal-actions">
-              <button type="button" className="discard-cancel-button" onClick={() => setSobreSeleccionado(null)} disabled={procesandoDescarte}>{t('cancel')}</button>
-              <button type="button" className="discard-confirm-button" onClick={confirmarDescarte} disabled={procesandoDescarte || !Object.keys(seleccionDescarte).length}>
-                {procesandoDescarte ? t('burning') : t('confirmAndBurn')}
-              </button>
-            </div>
-          </Modal>
-        )}
+          <AbrirSobreSeccion
+            listaSobres={SOBRES}
+            sobresDisponibles={sobresDisponibles}
+            tipoSobreActivo={tipoSobreActivo}
+            alSeleccionarTipo={seleccionarTipoSobre}
+            traduccion={traduccion}
+          />
+        </>
+      )}
 
-        {/** {fase === 'SELECCION' && <AbrirSobre props/>} */}
-        {fase === 'SELECCION' && <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '2rem auto' }} aria-labelledby="abrir-sobres-titulo">
-          <div className="grid-meta">
-          <TituloSeccion id="abrir-sobres-titulo">{t('availablePacks')}</TituloSeccion>            <SubtituloSeccion>{t('choosePackQuality')}</SubtituloSeccion> //TODO: revisar el renderizado
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
-            {SOBRES.map((sobre) => {
-              const tipo = sobre.backendType || sobre.id;
-              const cuantos = sobresDisponibles[tipo];
-              return (
-                <button key={sobre.id} type="button" className={`pack-option pack-option-${sobre.id} ${tipoSobreActivo === tipo ? 'is-selected' : ''}`} onClick={() => seleccionarTipoSobre(tipo)} style={{ '--pack-color': sobre.color }}>
-                  <IconoSobre /> {sobre.nombre}
-                  {/* Solo el número: la palabra "disponibles" ya la dice el
-                      título de la sección, repetirla en cada recuadro sobra. */}
-                  <span style={{ fontSize: '1.15rem', fontWeight: 900 }}>
-                    {cuantos ?? '…'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>}
+      {/* MODAL DE DESCARTE / SOBRE SELECCIONADO */}
+      <ModalDescarteSobre
+        sobreSeleccionado={sobreSeleccionado}
+        album={album}
+        seleccionDescarte={seleccionDescarte}
+        procesandoDescarte={procesandoDescarte}
+        mensajeDescarte={mensajeDescarte}
+        alCerrar={() => setSobreSeleccionado(null)}
+        alCambiarGrupos={cambiarGruposSeleccionados}
+        alConfirmarDescarte={confirmarDescarte}
+        traduccion={traduccion}
+      />
 
-        {/** {fase === 'SELECCION' && <PreaperturaSobre props/>} */}
-        {fase === 'PRE_APERTURA' && Sobrepreeapertura()}
+      {/* FASE PRE_APERTURA */}
+      {fase === 'PRE_APERTURA' && (
+        <SobrePreapertura
+          error={error}
+          tipoSobreActivo={tipoSobreActivo}
+          alTocarSobre={tocarSobre}
+          alCancelarApertura={cancelarApertura}
+          estaAbriendo={abriendo}
+          traduccion={traduccion}
+        />
+      )}
 
-        {/** {fase === 'SELECCION' && <ManoCartas props/>} */}
-        {fase === 'REVELADO' && PantallaCincoCartas()}
-      </main>
-    );
-  };
-
-  return PaginaTiendaSobres();
+      {/* FASE REVELADO */}
+      {fase === 'REVELADO' && (
+        <PantallaCincoCartas
+          cartasCargadas={cartasCargadas}
+          cartasVolteadas={cartasVolteadas}
+          alVoltearCarta={voltearCarta}
+          alResetearFases={resetearFases}
+          traduccion={traduccion}
+        />
+      )}
+    </main>
+  );
 }
 
 export default TiendaSobres;
-
-/**
- * const componenteConSuLogicaDeRender = (sobreSeleccionado) => sobreSeleccionado && <SeleccionarSobre props/>
- *  
- * fase === 'SELECCION' && ((componenteConSuLogicaDeRender) => (
- * <VolverBtn/>
- * error && <ErrorAlert/>
- * componenteConSuLogicaDeRender -> se mete en su lugar del layout en cada fase
- * <SeleccionarSobre props/>
- * <AbrirSobre props/>
- * ))
- * 
- * fase === 'PRE_APERTURA' && (componenteConSuLogicaDeRender) => (
- * componenteConSuLogicaDeRender -> se mete en su lugar del layout en cada fase
- * <PreaperturaSobre props/>}
- * )
- * 
- * fase === 'REVELADO' && (componenteConSuLogicaDeRender) => (
- * componenteConSuLogicaDeRender -> se mete en su lugar del layout en cada fase
- * <ManoCartas props/>
- * )
- */
