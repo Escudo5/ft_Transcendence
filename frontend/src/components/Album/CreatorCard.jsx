@@ -69,7 +69,12 @@ export default function CreatorCard({ carta, onClick }) {
             </span>
           )}
           {carta.foto ? (
-            <img className="card-photo" src={carta.foto} alt={carta.login} />
+            <img className="card-photo" 
+            src={carta.foto} 
+            alt={carta.login}
+            style={{
+              height:"110%", width: "95px", maxHeight: "260px", objectFit: "cover", 
+            }} />
           ) : (
             <div className="artwork-symbol">👤</div>
           )}
