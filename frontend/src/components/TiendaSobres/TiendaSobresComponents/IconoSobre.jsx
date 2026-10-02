@@ -1,12 +1,3 @@
-/* 🎁 EL REGALO, DIBUJADO EN VEZ DE PUESTO COMO EMOJI (Nacho, 10/09)
- *
- * Antes era el emoji 🎁, y un emoji no se puede pintar de otro color: lo
- * dibuja el sistema operativo siempre igual, así que el regalo salía naranja
- * al lado de un recuadro azul o dorado.
- *
- * Esto es el mismo regalo pero en SVG, con currentColor: toma el color del
- * texto de donde esté metido. Como cada recuadro ya lleva el color de su
- * rareza, el lazo se pinta solo del color que toca, sin pasarle nada. */
 export const IconoSobre = ({ size = 22 }) => (
   <svg
     width={size} height={size} viewBox="0 0 24 24" fill="none"

@@ -1,7 +1,5 @@
 export const TituloSeccion = ({ id, children }) => {
-    /* Tipografía de los títulos de las dos secciones. Solo del TEXTO: los
- * recuadros se quedan como están. Usa las fuentes del sistema de diseño de
- * Sergio (styles.css), no una nueva. */
+
     const tituloSeccion = {
         fontFamily: 'var(--font-heading)',
         fontSize: '1.35rem',
