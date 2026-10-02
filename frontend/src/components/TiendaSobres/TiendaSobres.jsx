@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion'; // 👈 IMPORTAMOS FRAMER MOTION
+import { motion } from 'framer-motion';
 import FondoTiendaSobres from './FondoTiendaSobres';
 import SobreHolografico from './SobreHolografico';
 import { Alert, Modal } from '../ui';
@@ -14,8 +14,6 @@ import { VoltearNaipe } from './TiendaSobresComponents/VoltearNaipe.motion';
 import { NaipeCaraA } from './TiendaSobresComponents/NaipeCaraA';
 import { NaipeCaraB } from './TiendaSobresComponents/NaipeCaraB';
 import { rareza } from './TiendaSobresComponents/rareza.config';
-
-// 1. IMPORTA LAS 3 IMÁGENES DE TUS SOBRES
 
 function TiendaSobres() {
   const { t } = useI18n();
@@ -36,24 +34,12 @@ function TiendaSobres() {
 
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
 
-  // ⚠️ Nacho, 10/09: las rarezas de aquí eran las de ayer (Junior, Senior,
-  // Alumni, Blackhole) y yo las cambié el mismo día. Con las viejas, el
-  // servidor rechazaba 44 de las 54 cartas al descartar. Ahora coinciden con
-  // las de backend/cards/rarezas.py, que es donde se decide cuáles hay.
-  //
-  // SERGIO: son 3 sobres y 4 rarezas, así que las dos de arriba comparten el
-  // sobre épico, igual que hacías tú antes con Alumni y Transcender.
   const SOBRES = [
     { id: 'comun', nombre: t('packCommon'), rarezas: ['Junior'], color: 'var(--rarity-common)' },
     { id: 'raro', nombre: t('packRare'), rarezas: ['Senior'], color: 'var(--rarity-rare)' },
     { id: 'legendario', backendType: 'epico', nombre: t('packLegendary'), rarezas: ['Transcender', 'Legendario', 'Staff', 'Creator'], color: 'var(--rarity-legendary)' },
   ];
 
-  // Las rarezas del backend (tier) no se llaman igual que los estilos de esta
-  // pantalla, asi que las traducimos. El color sube conforme sube la rareza,
-  // que es lo que importa aunque los nombres no coincidan.
-  // (El mismo diccionario esta en Catalogo.jsx: si se cambia uno, el otro.)
-  // El diccionario vive en rarezas.js, en un solo sitio.
   const TIER_A_RAREZA = CLASE_RAREZA;
 
   // Convierte una carta del backend al formato que pinta esta pantalla
@@ -242,73 +228,6 @@ function TiendaSobres() {
     setFase('SELECCION');
   };
 
-  // Asigna colores, bordes y sombras dinámicas según la rareza/categoría
-  // Orden de exclusividad: Junior < Senior < Transcender < Legendario < Staff
-  // ⚠️ Nacho, 18/09: los COLORES vuelven a salir de styles.css.
-  //
-  // Konrad los había escrito a mano aquí, y tres de los cinco no coincidían
-  // con los del resto de la web: la misma carta salía dorada al abrir el
-  // sobre y ámbar en el catálogo, y el Staff rosa neón aquí y magenta allí.
-  //
-  // Es el mismo fallo que está contado en rarezas.js: el mismo dato en
-  // varios sitios se queda viejo a trozos y sin dar ningún error. Con
-  // var(--rarity-*) basta con tocar styles.css y cambia en todas partes.
-  //
-  // Los RGBA del brillo sí van a mano, porque box-shadow no puede sacar la
-  // transparencia de una variable sin color-mix(), y color-mix() es
-  // reciente y nos evalúan en Firefox. Cada uno es su var de al lado:
-  //     common #94a3b8 · rare #0284c7 · epic #a855f7
-  //     legendary #d97706 · staff #ec4899
-  // Si algún día se cambia un color, hay que cambiar también su rgba.
-  // const obtenerEstiloRareza = (rareza) => {
-  //   switch (rareza) {
-  //     case 'creator': // La más exclusiva (Verde Esmeralda Radiante / Neón)
-  //       return {
-  //         color: 'var(--rarity-creator)',
-  //         background: 'var(--rarity-creator-bg)',
-  //         border: '3px solid var(--rarity-creator)',
-  //         shadow: '0 0 30px rgba(0, 255, 135, 0.8), 0 0 10px rgba(96, 239, 255, 0.5)'
-  //       };
-  //     case 'staff': // 5. La más exclusiva
-  //       return {
-  //         color: 'var(--rarity-staff)',
-  //         background: 'var(--rarity-staff-bg)',
-  //         border: '3px solid var(--rarity-staff)',
-  //         shadow: '0 0 30px rgba(236, 72, 153, 0.8), 0 0 10px rgba(236, 72, 153, 0.5)'
-  //       };
-  //     case 'legendary': // 4. Legendario
-  //       return {
-  //         color: 'var(--rarity-legendary)',
-  //         background: 'var(--rarity-legendary-bg)',
-  //         border: '3px solid var(--rarity-legendary)',
-  //         shadow: '0 0 25px rgba(217, 119, 6, 0.7)'
-  //       };
-  //     case 'epic': // 3. Transcender
-  //       return {
-  //         color: 'var(--rarity-epic)',
-  //         background: 'var(--rarity-epic-bg)',
-  //         border: '3px solid var(--rarity-epic)',
-  //         shadow: '0 0 20px rgba(168, 85, 247, 0.6)'
-  //       };
-  //     case 'rare': // 2. Senior
-  //       return {
-  //         color: 'var(--rarity-rare)',
-  //         background: 'var(--rarity-rare-bg)',
-  //         border: '3px solid var(--rarity-rare)',
-  //         shadow: '0 0 15px rgba(2, 132, 199, 0.5)'
-  //       };
-  //     case 'common': // 1. Junior
-  //     default:
-  //       return {
-  //         color: 'var(--rarity-common)',
-  //         background: 'var(--rarity-common-bg)',
-  //         border: '2px solid var(--rarity-common)',
-  //         shadow: '0 0 10px rgba(148, 163, 184, 0.3)'
-  //       };
-  //   }
-  // };
-
-
   //FC
   const renderBotonVolver = () => {
     return (
@@ -397,7 +316,7 @@ function TiendaSobres() {
         {/* Fila horizontal que posiciona las 5 cartas juntas una al lado de la otra */}
         <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', width: '100%', flexWrap: 'wrap' }}>
           {cartasCargadas.map((carta, index) => {
-            const rareza = rareza[carta.rareza];
+            const configRareza = rareza[carta.rareza];
             const estaVolteada = cartasVolteadas[index];
 
             return (
@@ -405,9 +324,9 @@ function TiendaSobres() {
                 {/* Contenedor animable en 3D de Framer Motion */}
                 <VoltearNaipe >
                   {/* CARA A (BOCABAJO): Reverso adaptado con el color de su categoría */}
-                  <NaipeCaraA rareza={rareza} />
+                  <NaipeCaraA rareza={configRareza} />
                   {/* CARA B (BOCARRIBA): Datos reales de la carta */}
-                  <NaipeCaraB rareza={rareza} />
+                  <NaipeCaraB rareza={configRareza} />
                 </VoltearNaipe>
               </RepartoNaipes>
             );
@@ -475,7 +394,8 @@ function TiendaSobres() {
         {fase === 'SELECCION' && <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '4rem auto 2rem' }} aria-labelledby="crear-sobres-titulo">
           <div className="grid-meta">
             <TituloSeccion id="crear-sobres-titulo">{t('getPacksWithDuplicates')}</TituloSeccion> //TODO: Revisar el renderizado
-            <span style={subtituloSeccion}>{t('burn4KeepOne')}</span>
+            //   CORRECTO
+<SubtituloSeccion>{t('burn4KeepOne')}</SubtituloSeccion>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
             {SOBRES.map((sobre) => (
@@ -516,13 +436,7 @@ function TiendaSobres() {
             </div>
             <p className="discard-modal-intro">{t('discardIntro')}</p>
             <div className="discard-card-list">
-              {/* ⚠️ Nacho, 10/09: era `>= 4`, y con 4 copias justas la pantalla
-                  te dejaba elegirla pero el servidor la rechazaba. Ahora hacen
-                  falta 5, porque quemar 4 te dejaria SIN esa carta en el album
-                  y eso no lo queremos. Mismo criterio que los contratos. */}
               {album.filter((card) => sobreSeleccionado.rarezas.includes(card.tier) && card.cantidad >= 5).map((card) => {
-                // Las copias que puedes quemar son todas menos una: la ultima
-                // se queda siempre para no perder la carta.
                 const maxGrupos = Math.floor((card.cantidad - 1) / 4);
                 const grupos = seleccionDescarte[card.cardId] || 0;
                 return (
@@ -556,8 +470,7 @@ function TiendaSobres() {
         {/** {fase === 'SELECCION' && <AbrirSobre props/>} */}
         {fase === 'SELECCION' && <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '2rem auto' }} aria-labelledby="abrir-sobres-titulo">
           <div className="grid-meta">
-            <h2 id="abrir-sobres-titulo" style={tituloSeccion}>{t('availablePacks')}</h2>
-            <SubtituloSeccion>{t('choosePackQuality')}</SubtituloSeccion> //TODO: revisar el renderizado
+          <TituloSeccion id="abrir-sobres-titulo">{t('availablePacks')}</TituloSeccion>            <SubtituloSeccion>{t('choosePackQuality')}</SubtituloSeccion> //TODO: revisar el renderizado
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
             {SOBRES.map((sobre) => {

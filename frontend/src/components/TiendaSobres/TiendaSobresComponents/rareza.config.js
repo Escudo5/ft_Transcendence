@@ -1,22 +1,4 @@
-    // Asigna colores, bordes y sombras dinámicas según la rareza/categoría
-  // Orden de exclusividad: Junior < Senior < Transcender < Legendario < Staff
-  // ⚠️ Nacho, 18/09: los COLORES vuelven a salir de styles.css.
-  //
-  // Konrad los había escrito a mano aquí, y tres de los cinco no coincidían
-  // con los del resto de la web: la misma carta salía dorada al abrir el
-  // sobre y ámbar en el catálogo, y el Staff rosa neón aquí y magenta allí.
-  //
-  // Es el mismo fallo que está contado en rarezas.js: el mismo dato en
-  // varios sitios se queda viejo a trozos y sin dar ningún error. Con
-  // var(--rarity-*) basta con tocar styles.css y cambia en todas partes.
-  //
-  // Los RGBA del brillo sí van a mano, porque box-shadow no puede sacar la
-  // transparencia de una variable sin color-mix(), y color-mix() es
-  // reciente y nos evalúan en Firefox. Cada uno es su var de al lado:
-  //     common #94a3b8 · rare #0284c7 · epic #a855f7
-  //     legendary #d97706 · staff #ec4899
-  // Si algún día se cambia un color, hay que cambiar también su rgba.
-  export const rareza = {
+export const rareza = {
     creator: {
           color: 'var(--rarity-creator)',
           background: 'var(--rarity-creator-bg)',
