@@ -6,7 +6,7 @@ export const NaipeCaraB = ({ rareza, carta }) => {
                 width: '100%',
                 height: '100%',
                 backfaceVisibility: 'hidden',
-                transform: 'rotateY(180deg)', // Arranca invertida para el efecto de giro
+                transform: 'rotateY(180deg)',
                 background: 'rgba(9,9,11,0.95)',
                 borderRadius: '12px',
                 border: rareza?.border,

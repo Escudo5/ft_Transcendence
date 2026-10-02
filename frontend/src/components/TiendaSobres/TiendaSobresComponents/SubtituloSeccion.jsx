@@ -1,6 +1,5 @@
 export const SubtituloSeccion = ({ children }) => {
-
-    const subtituloSeccion = {
+    const estiloSubtitulo = {
         fontFamily: 'var(--font-heading)',
         fontSize: '0.82rem',
         fontWeight: 600,
@@ -8,5 +7,6 @@ export const SubtituloSeccion = ({ children }) => {
         textTransform: 'uppercase',
         color: 'var(--text-secondary)',
     };
-    return (<span style={subtituloSeccion}>{children}</span>)
-}
+
+    return <span style={estiloSubtitulo}>{children}</span>;
+};

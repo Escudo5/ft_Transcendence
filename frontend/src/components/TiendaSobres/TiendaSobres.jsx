@@ -263,17 +263,17 @@ function TiendaSobres() {
             </Alert>
           )}
 
-          <CrearSobreSeccion
-            listaSobres={SOBRES}
-            alSeleccionarSobre={abrirSelectorSobre}
-            traduccion={traduccion}
-          />
-
           <AbrirSobreSeccion
             listaSobres={SOBRES}
             sobresDisponibles={sobresDisponibles}
             tipoSobreActivo={tipoSobreActivo}
             alSeleccionarTipo={seleccionarTipoSobre}
+            traduccion={traduccion}
+          />
+
+          <CrearSobreSeccion
+            listaSobres={SOBRES}
+            alSeleccionarSobre={abrirSelectorSobre}
             traduccion={traduccion}
           />
         </>

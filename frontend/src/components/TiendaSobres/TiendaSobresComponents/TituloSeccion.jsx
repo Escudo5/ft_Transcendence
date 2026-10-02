@@ -1,6 +1,5 @@
 export const TituloSeccion = ({ id, children }) => {
-
-    const tituloSeccion = {
+    const estiloTitulo = {
         fontFamily: 'var(--font-heading)',
         fontSize: '1.35rem',
         fontWeight: 800,
@@ -8,6 +7,10 @@ export const TituloSeccion = ({ id, children }) => {
         margin: 0,
         color: 'var(--text-primary)',
     };
-    return
-    <h2 id={id} style={tituloSeccion}>{children}</h2>
-}
+
+    return (
+        <h2 id={id} style={estiloTitulo}>
+            {children}
+        </h2>
+    );
+};

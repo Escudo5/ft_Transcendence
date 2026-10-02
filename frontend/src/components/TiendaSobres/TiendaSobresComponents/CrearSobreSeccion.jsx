@@ -6,7 +6,7 @@ export const CrearSobreSeccion = ({ listaSobres, alSeleccionarSobre, traduccion 
   return (
     <section
       className="control-panel"
-      style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '4rem auto 2rem' }}
+      style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '3rem auto' }}
       aria-labelledby="crear-sobres-titulo"
     >
       <div className="grid-meta">

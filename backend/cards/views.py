@@ -298,7 +298,7 @@ def ranking(request):
     obligaría a recorrer el álbum de cada usuario: 50 consultas en vez de una.
     """
     total_catalogo = Card.objects.count() or 1
-    orden = request.query_params.get('orden', 'coleccion')
+    orden = request.query_params.get('orden', 'puntos')
 
     # Traduce la rareza de cada carta a sus puntos DENTRO de la consulta, para
     # que sume la base de datos y no nosotros. Los pares salen del diccionario
@@ -321,10 +321,10 @@ def ranking(request):
         )
     )
 
-    if orden == 'puntos':
-        usuarios = usuarios.order_by('-puntos', '-distintas', 'username')[:50]
-    else:
+    if orden == 'coleccion':
         usuarios = usuarios.order_by('-distintas', '-copias', 'username')[:50]
+    else:
+        usuarios = usuarios.order_by('-puntos', '-distintas', 'username')[:50]
 
     clasificacion = []
     for posicion, u in enumerate(usuarios, start=1):
