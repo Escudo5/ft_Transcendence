@@ -27,7 +27,7 @@ function obtenerFotoPerfil(usuario) {
     <img
       src={usuario.profile_image}
       alt={usuario.username}
-      style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+      style={{ width: '75px', height: '75px', borderRadius: '50%', objectFit: 'cover' }}
     />
   );
 }
