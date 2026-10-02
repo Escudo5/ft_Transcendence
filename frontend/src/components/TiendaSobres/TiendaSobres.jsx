@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion'; // 👈 IMPORTAMOS FRAMER MOTION
 import FondoTiendaSobres from './FondoTiendaSobres';
@@ -6,54 +6,16 @@ import SobreHolografico from './SobreHolografico';
 import { Alert, Modal } from '../ui';
 import { CLASE_RAREZA } from '../rarezas';
 import { useI18n } from '../../i18n';
+import { TituloSeccion } from './TiendaSobresComponents/TituloSeccion';
+import { SubtituloSeccion } from './TiendaSobresComponents/SubtituloSeccion';
+import { IconoSobre } from './TiendaSobresComponents/IconoSobre';
+import { RepartoNaipes } from './TiendaSobresComponents/RepartoNaipes.motion';
+import { VoltearNaipe } from './TiendaSobresComponents/VoltearNaipe.motion';
+import { NaipeCaraA } from './TiendaSobresComponents/NaipeCaraA';
+import { NaipeCaraB } from './TiendaSobresComponents/NaipeCaraB';
+import { rareza } from './TiendaSobresComponents/rareza.config';
 
 // 1. IMPORTA LAS 3 IMÁGENES DE TUS SOBRES
-
-/* 🎁 EL REGALO, DIBUJADO EN VEZ DE PUESTO COMO EMOJI (Nacho, 10/09)
- *
- * Antes era el emoji 🎁, y un emoji no se puede pintar de otro color: lo
- * dibuja el sistema operativo siempre igual, así que el regalo salía naranja
- * al lado de un recuadro azul o dorado.
- *
- * Esto es el mismo regalo pero en SVG, con currentColor: toma el color del
- * texto de donde esté metido. Como cada recuadro ya lleva el color de su
- * rareza, el lazo se pinta solo del color que toca, sin pasarle nada. */
-const IconoSobre = ({ size = 22 }) => (
-  <svg
-    width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="1.7"
-    strokeLinecap="round" strokeLinejoin="round"
-    aria-hidden="true" focusable="false"
-    style={{ flexShrink: 0 }}
-  >
-    <polyline points="20 12 20 22 4 22 4 12" />
-    <rect x="2" y="7" width="20" height="5" rx="1" />
-    <line x1="12" y1="22" x2="12" y2="7" />
-    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-  </svg>
-);
-
-/* Tipografía de los títulos de las dos secciones. Solo del TEXTO: los
- * recuadros se quedan como están. Usa las fuentes del sistema de diseño de
- * Sergio (styles.css), no una nueva. */
-const tituloSeccion = {
-  fontFamily: 'var(--font-heading)',
-  fontSize: '1.35rem',
-  fontWeight: 800,
-  letterSpacing: '-0.01em',
-  margin: 0,
-  color: 'var(--text-primary)',
-};
-
-const subtituloSeccion = {
-  fontFamily: 'var(--font-heading)',
-  fontSize: '0.82rem',
-  fontWeight: 600,
-  letterSpacing: '0.06em',
-  textTransform: 'uppercase',
-  color: 'var(--text-secondary)',
-};
 
 function TiendaSobres() {
   const { t } = useI18n();
@@ -141,20 +103,20 @@ function TiendaSobres() {
 
   useEffect(() => { consultarSobres(); }, []);
 
-  const abrirSelectorSobre = (sobre) => {
+  const abrirSelectorSobre = useCallback((sobre) => {
     setMensajeDescarte('');
     setSeleccionDescarte({});
     setSobreSeleccionado(sobre);
-  };
+  }, []); // TODO: revisar dependencias, no parece que tenga
 
-  const cambiarGruposSeleccionados = (cardId, grupos) => {
+  const cambiarGruposSeleccionados = useCallback((cardId, grupos) => {
     setSeleccionDescarte((actual) => {
       const siguiente = { ...actual };
       if (grupos > 0) siguiente[cardId] = grupos;
       else delete siguiente[cardId];
       return siguiente;
     });
-  };
+  }, []); // TODO: revisar dependencias, no parece que tenga
 
   const confirmarDescarte = async () => {
     const cartas = Object.entries(seleccionDescarte).map(([carta, grupos]) => ({ carta, grupos }));
@@ -268,20 +230,6 @@ function TiendaSobres() {
     setFase('REVELADO');
   };
 
-  // Aqui volteamos la carta si no esta volteada ya
-  const voltearCarta = (index) => {
-    if (cartasVolteadas[index] === true)
-      return;
-
-    const nuevoEstado = [...cartasVolteadas];
-    nuevoEstado[index] = true;
-    setCartasVolteadas(nuevoEstado);
-  };
-
-  const comprobarTodasVolteadas = () => {
-    return cartasVolteadas.every(estado => estado === true);
-  };
-
   const resetearFases = () => {
     setFase('SELECCION');
     setCartasCargadas([]);
@@ -312,54 +260,56 @@ function TiendaSobres() {
   //     common #94a3b8 · rare #0284c7 · epic #a855f7
   //     legendary #d97706 · staff #ec4899
   // Si algún día se cambia un color, hay que cambiar también su rgba.
-  const obtenerEstiloRareza = (rareza) => {
-    switch (rareza) {
-      case 'creator': // La más exclusiva (Verde Esmeralda Radiante / Neón)
-        return {
-          color: 'var(--rarity-creator)',
-		  background: 'var(--rarity-creator-bg)',
-          border: '3px solid var(--rarity-creator)',
-          shadow: '0 0 30px rgba(0, 255, 135, 0.8), 0 0 10px rgba(96, 239, 255, 0.5)'
-        };
-      case 'staff': // 5. La más exclusiva
-        return {
-          color: 'var(--rarity-staff)',
-		  background: 'var(--rarity-staff-bg)',
-          border: '3px solid var(--rarity-staff)',
-          shadow: '0 0 30px rgba(236, 72, 153, 0.8), 0 0 10px rgba(236, 72, 153, 0.5)'
-        };
-      case 'legendary': // 4. Legendario
-        return {
-          color: 'var(--rarity-legendary)',
-		  background: 'var(--rarity-legendary-bg)',
-          border: '3px solid var(--rarity-legendary)',
-          shadow: '0 0 25px rgba(217, 119, 6, 0.7)'
-        };
-      case 'epic': // 3. Transcender
-        return {
-          color: 'var(--rarity-epic)',
-		  background: 'var(--rarity-epic-bg)',
-          border: '3px solid var(--rarity-epic)',
-          shadow: '0 0 20px rgba(168, 85, 247, 0.6)'
-        };
-      case 'rare': // 2. Senior
-        return {
-          color: 'var(--rarity-rare)',
-		  background: 'var(--rarity-rare-bg)',
-          border: '3px solid var(--rarity-rare)',
-          shadow: '0 0 15px rgba(2, 132, 199, 0.5)'
-        };
-      case 'common': // 1. Junior
-      default:
-        return {
-          color: 'var(--rarity-common)',
-		  background: 'var(--rarity-common-bg)',
-          border: '2px solid var(--rarity-common)',
-          shadow: '0 0 10px rgba(148, 163, 184, 0.3)'
-        };
-    }
-  };
+  // const obtenerEstiloRareza = (rareza) => {
+  //   switch (rareza) {
+  //     case 'creator': // La más exclusiva (Verde Esmeralda Radiante / Neón)
+  //       return {
+  //         color: 'var(--rarity-creator)',
+  //         background: 'var(--rarity-creator-bg)',
+  //         border: '3px solid var(--rarity-creator)',
+  //         shadow: '0 0 30px rgba(0, 255, 135, 0.8), 0 0 10px rgba(96, 239, 255, 0.5)'
+  //       };
+  //     case 'staff': // 5. La más exclusiva
+  //       return {
+  //         color: 'var(--rarity-staff)',
+  //         background: 'var(--rarity-staff-bg)',
+  //         border: '3px solid var(--rarity-staff)',
+  //         shadow: '0 0 30px rgba(236, 72, 153, 0.8), 0 0 10px rgba(236, 72, 153, 0.5)'
+  //       };
+  //     case 'legendary': // 4. Legendario
+  //       return {
+  //         color: 'var(--rarity-legendary)',
+  //         background: 'var(--rarity-legendary-bg)',
+  //         border: '3px solid var(--rarity-legendary)',
+  //         shadow: '0 0 25px rgba(217, 119, 6, 0.7)'
+  //       };
+  //     case 'epic': // 3. Transcender
+  //       return {
+  //         color: 'var(--rarity-epic)',
+  //         background: 'var(--rarity-epic-bg)',
+  //         border: '3px solid var(--rarity-epic)',
+  //         shadow: '0 0 20px rgba(168, 85, 247, 0.6)'
+  //       };
+  //     case 'rare': // 2. Senior
+  //       return {
+  //         color: 'var(--rarity-rare)',
+  //         background: 'var(--rarity-rare-bg)',
+  //         border: '3px solid var(--rarity-rare)',
+  //         shadow: '0 0 15px rgba(2, 132, 199, 0.5)'
+  //       };
+  //     case 'common': // 1. Junior
+  //     default:
+  //       return {
+  //         color: 'var(--rarity-common)',
+  //         background: 'var(--rarity-common-bg)',
+  //         border: '2px solid var(--rarity-common)',
+  //         shadow: '0 0 10px rgba(148, 163, 184, 0.3)'
+  //       };
+  //   }
+  // };
 
+
+  //FC
   const renderBotonVolver = () => {
     return (
       <button
@@ -381,6 +331,7 @@ function TiendaSobres() {
     );
   };
 
+  //FC
   const Sobrepreeapertura = () => {
     return (
       <div className="apertura-stage">
@@ -408,7 +359,7 @@ function TiendaSobres() {
         <SobreHolografico
           tipo={tipoSobreActivo}
           onOpen={tocarSobre}
-          onProgress={() => {}}
+          onProgress={() => { }}
         />
 
         <button
@@ -425,13 +376,9 @@ function TiendaSobres() {
   };
 
   // COMPONENTE: REPARTIENDO CARTAS DESDE EL CENTRO
+  //FC
   const PantallaCincoCartas = () => {
-    // Función para calcular desde qué punto X del centro sale cada carta
-    const obtenerXInicial = (index) => {
-      // Como son 5 cartas, la 0 y 1 vienen de la derecha del centro, la 3 y 4 de la izquierda
-      const offset = (index - 2) * -180; // Compensación exacta según el ancho de la carta + gap
-      return offset;
-    };
+
     return (
       <div
         style={{
@@ -450,124 +397,25 @@ function TiendaSobres() {
         {/* Fila horizontal que posiciona las 5 cartas juntas una al lado de la otra */}
         <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', width: '100%', flexWrap: 'wrap' }}>
           {cartasCargadas.map((carta, index) => {
-            const estiloRareza = obtenerEstiloRareza(carta.rareza);
+            const rareza = rareza[carta.rareza];
             const estaVolteada = cartasVolteadas[index];
 
             return (
-              <motion.div
-                key={index}
-                // 🎴 TODAS NACEN EN EL CENTRO EXACTO (x e y calculados desde el origen común)
-                initial={{ 
-                  scale: 0.1, 
-                  opacity: 0, 
-                  x: obtenerXInicial(index), // Vienen desplazadas horizontalmente hasta el centro
-                  y: 50 // Un pelín abajo donde estaba el sobre
-                }}
-                animate={{ 
-                  scale: 1, 
-                  opacity: 1, 
-                  x: 0, // Van a su posición normal en el Flexbox
-                  y: 0 
-                }}
-                transition={{
-                  duration: 0.6,
-                  delay: index * 0.2, // Salida en abanico secuencial
-                  type: 'spring',
-                  stiffness: 100,
-                  damping: 14
-                }}
-                onClick={() => voltearCarta(index)}
-                style={{
-                  width: '180px',
-                  height: '270px',
-                  cursor: estaVolteada ? 'default' : 'pointer', // Quita la mano si ya está revelada
-                  perspective: '1000px' // Da profundidad para el efecto 3D
-                }}
-				
-              >
+              <RepartoNaipes>
                 {/* Contenedor animable en 3D de Framer Motion */}
-                <motion.div
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    position: 'relative',
-                    transformStyle: 'preserve-3d'
-                  }}
-                  animate={{ rotateY: estaVolteada ? 180 : 0 }}
-                  transition={{ duration: 0.6, ease: 'easeInOut' }}
-                >
+                <VoltearNaipe >
                   {/* CARA A (BOCABAJO): Reverso adaptado con el color de su categoría */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      width: '100%',
-                      height: '100%',
-                      backfaceVisibility: 'hidden',
-                      backgroundColor: 'var(--surface-raised)',
-                      border: estiloRareza.border,
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: estiloRareza.shadow
-                    }}
-                  >
-                    <div style={{ color: estiloRareza.color, fontWeight: 'bold', fontSize: '2rem', textShadow: `0 0 10px ${estiloRareza.color}` }}>
-                      42
-                    </div>
-                  </div>
-
+                  <NaipeCaraA rareza={rareza} />
                   {/* CARA B (BOCARRIBA): Datos reales de la carta */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      width: '100%',
-                      height: '100%',
-                      backfaceVisibility: 'hidden',
-                      transform: 'rotateY(180deg)', // Arranca invertida para el efecto de giro
-                      background: 'rgba(9,9,11,0.95)',
-                      borderRadius: '12px',
-                      border: estiloRareza.border,
-                      boxShadow: estiloRareza.shadow,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      padding: '1rem',
-                      justifyContent: 'space-between',
-                      color: '#fff'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
-                      <span style={{ fontWeight: 'bold' }}>{carta.login}</span>
-                      <span style={{ color: estiloRareza.color, fontWeight: 'bold', fontSize: '0.65rem', textTransform: 'uppercase' }}>
-                        {carta.tier}
-                      </span>
-                    </div>
-
-                    <div  style={{ width: '100%', height: '110px', background:estiloRareza.background,borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', overflow: 'hidden' }}>
-                      {carta.foto ? (
-                        <img
-                          src={carta.foto}
-                          alt={carta.login}
-                          style={{height: '110px', maxWidth: '85px', objectFit: 'cover', objectPosition: 'center top', borderRadius: '0.05px' }}
-                        />
-                      ) : (
-                        // Por si ese alumno no tiene foto en la Intra
-                        '👤'
-                      )}
-                    </div>
-
-                    <div style={{ textAlign: 'center', fontSize: '1rem', fontWeight: 'bold', borderTop: '1px solid #333', paddingTop: '0.5rem' }}>
-                      {carta.nombre}
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
+                  <NaipeCaraB rareza={rareza} />
+                </VoltearNaipe>
+              </RepartoNaipes>
             );
           })}
         </div>
 
         {/* Solo aparece si el usuario ha revelado las 5 cartas */}
-        {comprobarTodasVolteadas() && (
+        {cartasVolteadas.every(Boolean) && (
           <motion.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -613,17 +461,20 @@ function TiendaSobres() {
           />
         </div>}
 
+        {/** {fase === 'SELECCION' && <VolverButton/>} */}
         {fase === 'SELECCION' && renderBotonVolver()}
 
+        {/** {fase === 'SELECCION' && <ErrorAlert/>} */}
         {fase === 'SELECCION' && error && (
           <Alert tone="error" style={{ position: 'relative', zIndex: 3, maxWidth: '620px', margin: '1rem auto' }}>
             {error}
           </Alert>
         )}
 
+        {/** {fase === 'SELECCION' && <CrearSobre props/>} */}
         {fase === 'SELECCION' && <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '4rem auto 2rem' }} aria-labelledby="crear-sobres-titulo">
           <div className="grid-meta">
-            <h2 id="crear-sobres-titulo" style={tituloSeccion}>{t('getPacksWithDuplicates')}</h2>
+            <TituloSeccion id="crear-sobres-titulo">{t('getPacksWithDuplicates')}</TituloSeccion> //TODO: Revisar el renderizado
             <span style={subtituloSeccion}>{t('burn4KeepOne')}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
@@ -653,6 +504,7 @@ function TiendaSobres() {
           </div>
         </section>}
 
+        {/** {sobreSeleccionado && <SeleccionarSobre props/>} */}
         {sobreSeleccionado && (
           <Modal onClose={() => !procesandoDescarte && setSobreSeleccionado(null)} labelledBy="selector-sobre-titulo" className="discard-modal">
             <div className="discard-modal-header">
@@ -701,10 +553,11 @@ function TiendaSobres() {
           </Modal>
         )}
 
+        {/** {fase === 'SELECCION' && <AbrirSobre props/>} */}
         {fase === 'SELECCION' && <section className="control-panel" style={{ position: 'relative', zIndex: 2, maxWidth: '1000px', margin: '2rem auto' }} aria-labelledby="abrir-sobres-titulo">
           <div className="grid-meta">
             <h2 id="abrir-sobres-titulo" style={tituloSeccion}>{t('availablePacks')}</h2>
-            <span style={subtituloSeccion}>{t('choosePackQuality')}</span>
+            <SubtituloSeccion>{t('choosePackQuality')}</SubtituloSeccion> //TODO: revisar el renderizado
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
             {SOBRES.map((sobre) => {
@@ -724,7 +577,10 @@ function TiendaSobres() {
           </div>
         </section>}
 
+        {/** {fase === 'SELECCION' && <PreaperturaSobre props/>} */}
         {fase === 'PRE_APERTURA' && Sobrepreeapertura()}
+
+        {/** {fase === 'SELECCION' && <ManoCartas props/>} */}
         {fase === 'REVELADO' && PantallaCincoCartas()}
       </main>
     );
@@ -734,3 +590,25 @@ function TiendaSobres() {
 }
 
 export default TiendaSobres;
+
+/**
+ * const componenteConSuLogicaDeRender = (sobreSeleccionado) => sobreSeleccionado && <SeleccionarSobre props/>
+ *  
+ * fase === 'SELECCION' && ((componenteConSuLogicaDeRender) => (
+ * <VolverBtn/>
+ * error && <ErrorAlert/>
+ * componenteConSuLogicaDeRender -> se mete en su lugar del layout en cada fase
+ * <SeleccionarSobre props/>
+ * <AbrirSobre props/>
+ * ))
+ * 
+ * fase === 'PRE_APERTURA' && (componenteConSuLogicaDeRender) => (
+ * componenteConSuLogicaDeRender -> se mete en su lugar del layout en cada fase
+ * <PreaperturaSobre props/>}
+ * )
+ * 
+ * fase === 'REVELADO' && (componenteConSuLogicaDeRender) => (
+ * componenteConSuLogicaDeRender -> se mete en su lugar del layout en cada fase
+ * <ManoCartas props/>
+ * )
+ */
