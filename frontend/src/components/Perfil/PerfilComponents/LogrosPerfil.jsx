@@ -1,5 +1,5 @@
-import { Card } from '../ui';
-import { useI18n } from '../../i18n';
+import { Card } from '../../ui';
+import { useI18n } from '../../../i18n';
 
 const DICCIONARIO_LOGROS = {
   primera:       { nombre: 'achFirstCard',    desc: 'achFirstCardDesc' },

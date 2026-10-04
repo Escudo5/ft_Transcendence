@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Button, SecondaryButton } from '../ui';
-import { useI18n } from '../../i18n';
+import { Button, SecondaryButton } from '../../ui';
+import { useI18n } from '../../../i18n';
 
 const estilosModal = {
   overlay: {

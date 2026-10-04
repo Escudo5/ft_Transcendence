@@ -1,461 +1,207 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Badge, Button, Modal, SecondaryButton, TextField } from "../ui";
-import ModalContratos, { BotonContratos } from "./Contratos";
+import { RAREZAS, CLASE_RAREZA } from "../rarezas";
+import ModalContratos from "./Contratos";
 import BotonAbrirSobres from "../TiendaSobres/BotonAbrirSobres";
-import { CLASE_RAREZA, RAREZAS } from "../rarezas";
-import ElectricBorder from "../Componentes/ElectricBorder";
-import CreatorCard from "./CreatorCard";
 import { useI18n } from "../../i18n";
 
-const TIER_A_RAREZA = CLASE_RAREZA;
+// Subcomponentes refactorizados
+import CabeceraCatalogo from "./CatalogoComponents/CabeceraCatalogo";
+import PanelFiltrosCatalogo from "./CatalogoComponents/PanelFiltrosCatalogo";
+import ModalDetalleCarta from "./CatalogoComponents/ModalDetalleCarta";
+import TarjetaCarta from "./CatalogoComponents/TarjetaCarta";
+import PaginacionCatalogo from "./CatalogoComponents/PaginacionCatalogo";
 
-const LOGOS_COALICIONES = {
-  zefiria: "/icons/zefiria_logo.png",
-  marventis: "/icons/marventis_logo.png",
-  tiamant: "/icons/logo_tiamant.png",
-  ignisaria: "/icons/ignisaria_logo.png",
-};
-
-const TIERS = [...RAREZAS].reverse();
-
-const RAREZA_TRADUCCIONES = Object.fromEntries(
-  RAREZAS.map((r) => [r, `rarity${r}`]),
-);
-
-/* 🔍 DETALLE DE UNA CARTA EN POP-UP */
-function ModalCarta({ carta, registrados, onCerrar }) {
-  const navigate = useNavigate();
-  const { t } = useI18n();
-
-  if (!carta) return null;
-
-  const tienePerfil = registrados.has(carta.login);
-  const visitarPerfil = () => navigate(`/perfil/${carta.login}`);
-  const logoCoalicion = LOGOS_COALICIONES[carta.coalicion?.toLowerCase()];
-
-  return (
-    <Modal open onClose={onCerrar} labelledBy="titulo-carta">
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          {logoCoalicion && (
-            <img
-              src={logoCoalicion}
-              alt={carta.coalicion}
-              title={carta.coalicion}
-              style={{ width: "34px", height: "34px", objectFit: "contain" }}
-            />
-          )}
-          <h2 id="titulo-carta" style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: "1.4rem" }}>
-            {carta.login}
-          </h2>
-          <Badge tone={carta.rareza}>{carta.tier.toUpperCase()}</Badge>
-        </div>
-
-        {carta.foto ? (
-          <img
-            src={carta.foto}
-            alt={t('photoOfUser', { login: carta.login })}
-            style={{
-              width: "100%", maxHeight: "260px", objectFit: "cover",
-              borderRadius: "12px", border: "2px solid var(--border-default)",
-            }}
-          />
-        ) : (
-          <div style={{ fontSize: "4rem", textAlign: "center" }}>👤</div>
-        )}
-
-        {carta.titulo && carta.titulo !== carta.login && (
-          <p style={{ margin: 0, color: "var(--text-secondary)", fontStyle: "italic", textAlign: "center" }}>
-            {carta.titulo}
-          </p>
-        )}
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
-          <Dato etiqueta={t("level")} valor={carta.nivel} />
-          <Dato etiqueta={t("coalition")} valor={carta.coalicion} />
-          <Dato etiqueta={t("evaluations")} valor={carta.evaluaciones} />
-          <Dato etiqueta={t("wallet")} valor={carta.altarians} />
-        </div>
-
-        {carta.cantidad > 1 && (
-          <p style={{ margin: 0, textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
-            {t("copiesOfCard", { count: carta.cantidad })}
-          </p>
-        )}
-
-        <div style={{ display: "flex", gap: "0.7rem", justifyContent: "center", flexWrap: "wrap", marginTop: "0.5rem" }}>
-          <SecondaryButton onClick={onCerrar}>{t("close")}</SecondaryButton>
-          {tienePerfil ? (
-            <Button onClick={visitarPerfil}>{t("viewTheirProfile")}</Button>
-          ) : (
-            <span style={{ alignSelf: "center", color: "var(--text-secondary)", fontSize: "0.82rem" }}>
-              {t("notRegisteredYet")}
-            </span>
-          )}
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-function Dato({ etiqueta, valor }) {
-  return (
-    <div style={{
-      background: "var(--surface-overlay)",
-      border: "1px solid var(--border-default)",
-      borderRadius: "10px",
-      padding: "0.6rem",
-      textAlign: "center",
-    }}>
-      <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, color: "var(--accent)" }}>{valor}</div>
-      <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", textTransform: "uppercase" }}>{etiqueta}</div>
-    </div>
-  );
-}
+const ORDEN_TIERS = [...RAREZAS].reverse();
+const CARTAS_POR_PAGINA = 8;
 
 export default function Catalogo() {
   const { t } = useI18n();
-  const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
+  const urlBaseApi = import.meta.env.VITE_API_URL || "/api";
 
-  const [album, setAlbum] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState("");
+  // Estados de datos principales
+  const [listaColeccion, setListaColeccion] = useState([]);
+  const [estaCargando, setEstaCargando] = useState(true);
+  const [mensajeError, setMensajeError] = useState("");
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [rarityFilter, setRarityFilter] = useState("all");
-  
-  // ⏱️ CAMBIO 1: Estado para el nuevo filtro de tiempo
-  const [timeFilter, setTimeFilter] = useState("all");
+  // Estados de control de filtros
+  const [textoBusqueda, setTextoBusqueda] = useState("");
+  const [filtroRareza, setFiltroRareza] = useState("all");
+  const [filtroTiempo, setFiltroTiempo] = useState("all");
+  const [criterioOrdenacion, setCriterioOrdenacion] = useState("login");
 
-  const [sortBy, setSortBy] = useState("login");
-  const [currentPage, setCurrentPage] = useState(1);
-  const cardsPerPage = 8;
+  // Estados de paginación y modales
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [modalContratosAbierto, setModalContratosAbierto] = useState(false);
+  const [contadorRefresco, setContadorRefresco] = useState(0);
 
-  const [contratosAbierto, setContratosAbierto] = useState(false);
-  const [refrescoAlbum, setRefrescoAlbum] = useState(0);
+  const [cartaSeleccionada, setCartaSeleccionada] = useState(null);
+  const [loginsRegistradosWeb, setLoginsRegistradosWeb] = useState(new Set());
 
-  const [cartaAbierta, setCartaAbierta] = useState(null);
-  const [registrados, setRegistrados] = useState(new Set());
-
+  // 1. Carga del álbum desde la API
   useEffect(() => {
-    async function cargarAlbum() {
+    async function obtenerAlbumUsuario() {
       try {
-        const res = await fetch(`${apiBaseUrl}/cards/album/`, { credentials: "include" });
+        const respuesta = await fetch(`${urlBaseApi}/cards/album/`, { credentials: "include" });
 
-        if (res.status === 401 || res.status === 403) {
-          setError(t("loginRequired"));
+        if (respuesta.status === 401 || respuesta.status === 403) {
+          setMensajeError(t("loginRequired"));
           return;
         }
-        if (!res.ok) {
-          setError(t("albumLoadError"));
+        if (!respuesta.ok) {
+          setMensajeError(t("albumLoadError"));
           return;
         }
 
-        const datos = await res.json();
+        const datos = await respuesta.json();
 
-        setAlbum(
-          (datos || []).map((item) => ({
-            id: item.id,
-            cardId: item.card?.id,
-            cantidad: item.cantidad ?? 1,
-            login: item.card?.login || "",
-            titulo: item.card?.title || item.card?.login || "",
-            coalicion: item.card?.coalition || t("noCoalition"),
-            foto: item.card?.photo,
-            tier: item.card?.tier || "Junior",
-            rareza: TIER_A_RAREZA[item.card?.tier] || "common",
-            nivel: item.card?.cursus_lvl ?? 0,
-            evaluaciones: item.card?.eval_point ?? 0,
-            altarians: item.card?.altarians ?? 0,
-            // Se usa el nombre exacto que manda el backend
-            created_at: item.fecha_obtencion || item.created_at || item.obtenida_en || null,          })),
+        setListaColeccion(
+          (datos || []).map((item) => {
+            const nivelBruto = item.card?.cursus_lvl ?? 0;
+            // 💡 Solución definitiva: Formateo de float a max 2 decimales limpios
+            const nivelLimpio = parseFloat(Number(nivelBruto).toFixed(2));
+
+            return {
+              idInstancia: item.id,
+              idCartaBase: item.card?.id,
+              cantidadCopias: item.cantidad ?? 1,
+              loginUsuario: item.card?.login || "",
+              tituloPersonalizado: item.card?.title || item.card?.login || "",
+              nombreCoalicion: item.card?.coalition || t("noCoalition"),
+              urlFoto: item.card?.photo,
+              categoriaTier: item.card?.tier || "Junior",
+              rarezaCss: CLASE_RAREZA[item.card?.tier] || "common",
+              nivelFormateado: nivelLimpio,
+              puntosEvaluacion: item.card?.eval_point ?? 0,
+              saldoAltarians: item.card?.altarians ?? 0,
+              fechaObtencion: item.fecha_obtencion || item.created_at || item.obtenida_en || null,
+            };
+          }),
         );
       } catch (e) {
         console.error("Error al cargar el álbum:", e);
-        setError(t("serverError"));
+        setMensajeError(t("serverError"));
       } finally {
-        setCargando(false);
+        setEstaCargando(false);
       }
     }
-    cargarAlbum();
-  }, [apiBaseUrl, refrescoAlbum, t]);
 
+    obtenerAlbumUsuario();
+  }, [urlBaseApi, contadorRefresco, t]);
+
+  // 2. Consulta secundaria de usuarios registrados en la plataforma
   useEffect(() => {
-    if (album.length === 0) return;
-    let cancelado = false;
+    if (listaColeccion.length === 0) return;
+    let consultaCancelada = false;
 
-    async function mirarQuienEstaEnLaWeb() {
+    async function verificarUsuariosRegistrados() {
       try {
-        const logins = [...new Set(album.map((c) => c.login))].filter(Boolean);
-        const res = await fetch(
-          `${apiBaseUrl}/users/list/?logins=${encodeURIComponent(logins.join(","))}`,
+        const listaLogins = [...new Set(listaColeccion.map((c) => c.loginUsuario))].filter(Boolean);
+        const respuesta = await fetch(
+          `${urlBaseApi}/users/list/?logins=${encodeURIComponent(listaLogins.join(","))}`,
           { credentials: "include" },
         );
-        if (!res.ok) return;
-        const datos = await res.json();
-        if (cancelado) return;
-        setRegistrados(new Set((datos.users || []).map((u) => u.username)));
+
+        if (!respuesta.ok) return;
+        const datos = await respuesta.json();
+        if (consultaCancelada) return;
+
+        setLoginsRegistradosWeb(new Set((datos.users || []).map((u) => u.username)));
       } catch (e) {
-        console.error("No se ha podido saber quién está registrado:", e);
+        console.error("No se ha podido consultar el registro de usuarios:", e);
       }
     }
-    mirarQuienEstaEnLaWeb();
 
-    return () => { cancelado = true; };
-  }, [album, apiBaseUrl]);
+    verificarUsuariosRegistrados();
 
-  // ⏱️ CAMBIO 3: Añadimos `timeFilter` a las dependencias para resetear la página a 1 al filtrar
+    return () => { consultaCancelada = true; };
+  }, [listaColeccion, urlBaseApi]);
+
+  // 3. Reseteo de página al cambiar cualquier filtro
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, rarityFilter, sortBy, timeFilter]);
+    setPaginaActual(1);
+  }, [textoBusqueda, filtroRareza, criterioOrdenacion, filtroTiempo]);
 
-  const filteredCards = album.filter((card) => {
-    const texto = searchTerm.toLowerCase();
-    const matchesSearch =
-      card.login.toLowerCase().includes(texto) ||
-      card.titulo.toLowerCase().includes(texto) ||
-      card.coalicion.toLowerCase().includes(texto);
-    const matchesRarity = rarityFilter === "all" || card.tier === rarityFilter;
+  // Lógica de filtrado
+  const cartasFiltradas = listaColeccion.filter((carta) => {
+    const textoBuscado = textoBusqueda.toLowerCase();
+    const coincideTexto =
+      carta.loginUsuario.toLowerCase().includes(textoBuscado) ||
+      carta.tituloPersonalizado.toLowerCase().includes(textoBuscado) ||
+      carta.nombreCoalicion.toLowerCase().includes(textoBuscado);
 
-    // ⏱️ CAMBIO 4: Lógica para filtrar por fecha
-    let matchesTime = true;
-    if (timeFilter !== "all" && card.created_at) {
-      const fechaCarta = new Date(card.created_at);
-      const ahora = new Date();
-      // Calculamos los días transcurridos entre hoy y el momento de obtención
-      const diferenciaDias = (ahora - fechaCarta) / (1000 * 60 * 60 * 24);
+    const coincideRareza = filtroRareza === "all" || carta.categoriaTier === filtroRareza;
 
-      if (timeFilter === "24h") {
-        matchesTime = diferenciaDias <= 1;
-      } else if (timeFilter === "7d") {
-        matchesTime = diferenciaDias <= 7;
-      } else if (timeFilter === "30d") {
-        matchesTime = diferenciaDias <= 30;
-      }
+    let coincideTiempo = true;
+    if (filtroTiempo !== "all" && carta.fechaObtencion) {
+      const fechaCarta = new Date(carta.fechaObtencion);
+      const fechaActual = new Date();
+      const diferenciaDias = (fechaActual - fechaCarta) / (1000 * 60 * 60 * 24);
+
+      if (filtroTiempo === "24h") coincideTiempo = diferenciaDias <= 1;
+      else if (filtroTiempo === "7d") coincideTiempo = diferenciaDias <= 7;
+      else if (filtroTiempo === "30d") coincideTiempo = diferenciaDias <= 30;
     }
 
-    return matchesSearch && matchesRarity && matchesTime;
+    return coincideTexto && coincideRareza && coincideTiempo;
   });
 
-  const sortedCards = [...filteredCards].sort((a, b) => {
-    if (sortBy === "login") return a.login.localeCompare(b.login);
-    if (sortBy === "nivel") return b.nivel - a.nivel;
-    if (sortBy === "repetidas") return b.cantidad - a.cantidad;
-    if (sortBy === "rareza") return TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier);
+  // Lógica de ordenación
+  const cartasOrdenadas = [...cartasFiltradas].sort((a, b) => {
+    if (criterioOrdenacion === "login") return a.loginUsuario.localeCompare(b.loginUsuario);
+    if (criterioOrdenacion === "nivel") return b.nivelFormateado - a.nivelFormateado;
+    if (criterioOrdenacion === "repetidas") return b.cantidadCopias - a.cantidadCopias;
+    if (criterioOrdenacion === "rareza") return ORDEN_TIERS.indexOf(a.categoriaTier) - ORDEN_TIERS.indexOf(b.categoriaTier);
     return 0;
   });
 
-  const totalCards = sortedCards.length;
-  const totalPages = Math.ceil(totalCards / cardsPerPage) || 1;
-  const activePage = currentPage > totalPages ? totalPages : currentPage;
+  // Paginación
+  const totalCartas = cartasOrdenadas.length;
+  const totalPaginas = Math.ceil(totalCartas / CARTAS_POR_PAGINA) || 1;
+  const paginaValidaActual = paginaActual > totalPaginas ? totalPaginas : paginaActual;
 
-  const indexOfLastCard = activePage * cardsPerPage;
-  const indexOfFirstCard = indexOfLastCard - cardsPerPage;
-  const currentCards = sortedCards.slice(indexOfFirstCard, indexOfLastCard);
+  const indiceUltimoItem = paginaValidaActual * CARTAS_POR_PAGINA;
+  const indicePrimerItem = indiceUltimoItem - CARTAS_POR_PAGINA;
+  const cartasVisibles = cartasOrdenadas.slice(indicePrimerItem, indiceUltimoItem);
 
-  const totalConRepetidas = album.reduce((suma, c) => suma + c.cantidad, 0);
-
-  const goToNextPage = () => {
-    if (activePage < totalPages) setCurrentPage(activePage + 1);
-  };
-  const goToPrevPage = () => {
-    if (activePage > 1) setCurrentPage(activePage - 1);
-  };
-
-  const renderCardContent = (card) => {
-    const isStaff = card.tier.toLowerCase() === "staff";
-    const isCreator = card.tier.toLowerCase() === "creator";
-
-    if (isCreator) {
-      return (
-        <CreatorCard
-          key={card.id}
-          carta={card}
-          onClick={() => setCartaAbierta(card)}
-        />
-      );
-    }
-
-    const cardMarkup = (
-      <motion.article
-        key={card.id}
-        className={`card-item rarity-${card.rareza}`}
-        role="button"
-        tabIndex={0}
-        aria-label={t('viewCardOf', { login: card.login })}
-        style={{ cursor: "pointer" }}
-        onClick={() => setCartaAbierta(card)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setCartaAbierta(card);
-          }
-        }}
-        initial={{ opacity: 0, y: 24, scale: 0.94 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.38, type: "spring", stiffness: 190, damping: 17 }}
-        whileHover={{ y: -6, scale: 1.02 }}
-        whileTap={{ scale: 0.96 }}
-      >
-        <div className="card-header">
-          {LOGOS_COALICIONES[card.coalicion.toLowerCase()] ? (
-            <img
-              className="card-coalition-logo"
-              src={LOGOS_COALICIONES[card.coalicion.toLowerCase()]}
-              alt={card.coalicion}
-              title={card.coalicion}
-            />
-          ) : (
-            <span className="card-type">{card.coalicion}</span>
-          )}
-          <Badge tone={card.rareza}>
-            {card.tier.toUpperCase()}
-          </Badge>
-        </div>
-
-        <div className="card-artwork">
-          <div className="artwork-glow"></div>
-          {card.cantidad > 1 && (
-            <span
-              className="card-copies-badge"
-              title={t('youHaveCopies', { count: card.cantidad })}
-            >
-              ×{card.cantidad}
-            </span>
-          )}
-          {card.foto ? (
-            <img className="card-photo" src={card.foto} alt={card.login} style={{height: 'fit', maxWidth: '100px', objectFit: 'cover', objectPosition: 'center top', borderRadius: '0.05px' }}/>
-          ) : (
-            <div className="artwork-symbol">👤</div>
-          )}
-        </div>
-
-        <div className="card-body">
-          <h3 className="card-title">{card.login}</h3>
-          <p className="card-description">{card.titulo}</p>
-        </div>
-
-        <div className="card-stats">
-          <div className="stat">
-            <span className="stat-label">{t("level")}</span>
-            <span className="stat-value">{card.nivel}</span>
-          </div>
-          <div className="stat-divider"></div>
-          <div className="stat">
-            <span className="stat-label">{t("evaluations")}</span>
-            <span className="stat-value">{card.evaluaciones}</span>
-          </div>
-          <div className="stat-divider"></div>
-          <div className="stat">
-            <span className="stat-label">{t("wallet")}</span>
-            <span className="stat-value stat-wallet-value">
-              {card.altarians}
-              <img className="stat-logo" src="/icons/Altarians_logo.png" alt="" aria-hidden="true" />
-            </span>
-          </div>
-        </div>
-      </motion.article>
-    );
-
-    if (isStaff) {
-      return (
-        <ElectricBorder
-          key={card.id}
-          color="#ec4899"
-          speed={1}
-          chaos={0.2}
-          borderRadius={16}
-        >
-          {cardMarkup}
-        </ElectricBorder>
-      );
-    }
-
-    return cardMarkup;
-  };
+  const totalCartasConRepetidas = listaColeccion.reduce((suma, c) => suma + c.cantidadCopias, 0);
 
   return (
     <main className="app-container">
-      <header className="app-header">
-        <div className="header-navigation floating-navigation">
-          <Link to="/home" className="back-btn-link">
-            {t("catalogBack")}
-          </Link>
-          <BotonAbrirSobres />
-          <BotonContratos onClick={() => setContratosAbierto(true)} />
-        </div>
-        <div className="logo-section" style={{ marginTop: "1rem" }}>
-          <span className="logo-icon">✨</span>
-          <h1 className="titulo-degradado">42 Card Album</h1>
-        </div>
-        <p className="subtitle">
-          {cargando
-            ? t("catalogLoadingCollection")
-            : t("catalogCollectionCount", { distinct: album.length, total: totalConRepetidas })}
-        </p>
-      </header>
+      <CabeceraCatalogo
+        cargando={estaCargando}
+        totalUnicas={listaColeccion.length}
+        totalConRepetidas={totalCartasConRepetidas}
+        onAbrirContratos={() => setModalContratosAbierto(true)}
+      />
 
-      <section className="control-panel">
-        <TextField
-          id="search"
-          type="text"
-          label={t("catalogSearch")}
-          placeholder={t("catalogSearchPlaceholder")}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-
-        <div className="control-group">
-          <label htmlFor="rarity">{t("rarity")}</label>
-          <select id="rarity" value={rarityFilter} onChange={(e) => setRarityFilter(e.target.value)}>
-            <option value="all">{t("allRarities")}</option>
-            {TIERS.map((tier) => (
-              <option key={tier} value={tier}>{t(RAREZA_TRADUCCIONES[tier])}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* ⏱️ CAMBIO 5: Inserción del selector de rango de tiempo en el panel de control */}
-        <div className="control-group">
-          <label htmlFor="time">{t("filterObtained")}</label>
-          <select id="time" value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)}>
-            <option value="all">{t("filterAllDates")}</option>
-            <option value="24h">{t("filterLast24h")}</option>
-            <option value="7d">{t("filterLast7d")}</option>
-            <option value="30d">{t("filterLast30d")}</option>
-          </select>
-        </div>
-
-        <div className="control-group">
-          <label htmlFor="sort">{t("sortBy")}</label>
-          <select id="sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-            <option value="login">{t("sortLogin")}</option>
-            <option value="rareza">{t("sortRarity")}</option>
-            <option value="nivel">{t("sortLevel")}</option>
-            <option value="repetidas">{t("sortDuplicates")}</option>
-          </select>
-        </div>
-      </section>
+      <PanelFiltrosCatalogo
+        textoBusqueda={textoBusqueda}
+        onChangeBusqueda={setTextoBusqueda}
+        filtroRareza={filtroRareza}
+        onChangeRareza={setFiltroRareza}
+        filtroTiempo={filtroTiempo}
+        onChangeTiempo={setFiltroTiempo}
+        criterioOrdenacion={criterioOrdenacion}
+        onChangeOrdenacion={setCriterioOrdenacion}
+      />
 
       <section className="album-grid-wrapper">
         <div className="grid-meta">
-          <span>{t("cardsFound")}: <strong>{totalCards}</strong></span>
-          <span>{t("pageOf", { page: activePage, total: totalPages })}</span>
+          <span>{t("cardsFound")}: <strong>{totalCartas}</strong></span>
+          <span>{t("pageOf", { page: paginaValidaActual, total: totalPaginas })}</span>
         </div>
 
-        {cargando ? (
+        {estaCargando ? (
           <div className="empty-state">
             <span className="empty-icon">⏳</span>
             <p>{t("catalogLoading")}</p>
           </div>
-        ) : error ? (
+        ) : mensajeError ? (
           <div className="empty-state">
             <span className="empty-icon">⚠️</span>
-            <p>{error}</p>
+            <p>{mensajeError}</p>
           </div>
-        ) : album.length === 0 ? (
+        ) : listaColeccion.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon">📂</span>
             <p>{t("catalogEmpty")}</p>
@@ -463,98 +209,40 @@ export default function Catalogo() {
               <BotonAbrirSobres>{t("goOpenPacks")}</BotonAbrirSobres>
             </div>
           </div>
-        ) : currentCards.length === 0 ? (
+        ) : cartasVisibles.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon">🔍</span>
             <p>{t("catalogNoMatch")}</p>
           </div>
         ) : (
           <div className="album-grid">
-            {currentCards.map((card) => renderCardContent(card))}
+            {cartasVisibles.map((carta) => (
+              <TarjetaCarta
+                key={carta.idInstancia}
+                carta={carta}
+                onSeleccionarCarta={setCartaSeleccionada}
+              />
+            ))}
           </div>
         )}
       </section>
 
-      {totalPages > 1 && (
-        <nav className="pagination-container" aria-label={t("pageSelector")}>
-          <button
-            className="pagination-btn arrow-btn"
-            onClick={goToPrevPage}
-            disabled={activePage === 1}
-          >
-            &larr; {t("previous")}
-          </button>
+      <PaginacionCatalogo
+        paginaActual={paginaValidaActual}
+        totalPaginas={totalPaginas}
+        onCambiarPagina={setPaginaActual}
+      />
 
-          <div className="page-numbers">
-            {(() => {
-              const pages = [];
-              const delta = 1;
-
-              for (let i = 1; i <= totalPages; i++) {
-                if (
-                  i === 1 ||
-                  i === totalPages ||
-                  (i >= activePage - delta && i <= activePage + delta)
-                ) {
-                  pages.push(i);
-                } else if (
-                  pages[pages.length - 1] !== "..." &&
-                  (i < activePage - delta || i > activePage + delta)
-                ) {
-                  pages.push("...");
-                }
-              }
-
-              return pages.map((page, index) => {
-                if (page === "...") {
-                  return (
-                    <span
-                      key={`ellipsis-${index}`}
-                      style={{
-                        padding: "0.5rem 0.6rem",
-                        color: "var(--text-secondary)",
-                        fontWeight: "bold",
-                        alignSelf: "center",
-                      }}
-                    >
-                      ...
-                    </span>
-                  );
-                }
-
-                return (
-                  <button
-                    key={page}
-                    className={`pagination-btn number-btn ${activePage === page ? "active" : ""}`}
-                    onClick={() => setCurrentPage(page)}
-                  >
-                    {page}
-                  </button>
-                );
-              });
-            })()}
-          </div>
-
-          <button
-            className="pagination-btn arrow-btn"
-            onClick={goToNextPage}
-            disabled={activePage === totalPages}
-          >
-            {t("next")} &rarr;
-          </button>
-        </nav>
-      )}
-
-      <ModalCarta
-        carta={cartaAbierta}
-        registrados={registrados}
-        onCerrar={() => setCartaAbierta(null)}
+      <ModalDetalleCarta
+        carta={cartaSeleccionada}
+        usuariosRegistrados={loginsRegistradosWeb}
+        onCerrar={() => setCartaSeleccionada(null)}
       />
 
       <ModalContratos
-        isOpen={contratosAbierto}
-        onClose={() => setContratosAbierto(false)}
-        alTerminar={() => setRefrescoAlbum((n) => n + 1)}
+        isOpen={modalContratosAbierto}
+        onClose={() => setModalContratosAbierto(false)}
+        alTerminar={() => setContadorRefresco((n) => n + 1)}
       />
     </main>
   );

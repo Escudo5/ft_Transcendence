@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import { Avatar, Button, Card, ProgressBar, StatusDot, TextField, SecondaryButton } from '../ui';
-import { useI18n } from '../../i18n';
+import { Avatar, Button, Card, ProgressBar, StatusDot, TextField, SecondaryButton } from '../../ui';
+import { useI18n } from '../../../i18n';
 
 const AVATAR_MAX_MB = 2;
 const AVATAR_TIPOS = ['image/jpeg', 'image/png', 'image/webp'];

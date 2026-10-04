@@ -1,6 +1,6 @@
-import { Card, ProgressBar } from '../ui';
-import { COLOR_RAREZA } from '../rarezas';
-import { useI18n } from '../../i18n';
+import { Card, ProgressBar } from '../../ui';
+import { COLOR_RAREZA } from '../../rarezas';
+import { useI18n } from '../../../i18n';
 
 const estilosColeccion = {
   rejilla: {

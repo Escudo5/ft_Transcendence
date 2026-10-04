@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Button, Card, SecondaryButton, TextField } from '../ui';
-import { useI18n } from '../../i18n';
+import { Button, Card, SecondaryButton, TextField } from '../../ui';
+import { useI18n } from '../../../i18n';
 
 const FRASE_BORRADO = 'BORRAR MI CUENTA';
 

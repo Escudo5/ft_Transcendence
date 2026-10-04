@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Alert, Card } from './ui';
-import { useI18n } from '../i18n';
+import { Alert, Card } from '../ui';
+import { useI18n } from '../../i18n';
 
 // Componentes modularizados de la carpeta PerfilComponents
 import PerfilHeader from './PerfilComponents/PerfilHeader';
