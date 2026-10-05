@@ -12,8 +12,6 @@ import './Chat.css';
 
 const API = import.meta.env.VITE_API_URL || '/api';
 
-// ⚠️ Nacho, 18/09 (con el visto bueno de Konrad): quitado 'ingame', que el
-// backend no escribía nunca. Es la única línea que se toca de este fichero.
 const TEXTO_ESTADO = {
   online: 'statusOnline',
   offline: 'statusOffline',
@@ -97,10 +95,6 @@ function ChatSocial() {
       }
 
       if (!resAmigos.ok) {
-        // Nacho, 10/09: aquí se cargaban amigos inventados cuando el servidor
-        // fallaba. Se quita, como dejó dicho Konrad al escribirlo: si algo va
-        // mal hay que verlo, no taparlo con datos falsos. En una evaluación,
-        // una pantalla que finge funcionar es peor que una que da error.
         setError(t('friendsLoadError'));
         return;
       }
@@ -115,9 +109,6 @@ function ChatSocial() {
 
       const listaAmigosServidor = await resAmigos.json();
       
-      // Exactamente lo que Konrad dejó escrito que había que poner aquí al
-      // juntarlo con el backend. Si no tienes amigos, la lista sale vacía y la
-      // pantalla ya sabe decir "todavía no tienes amigos".
       setAmigos(
         listaAmigosServidor.map((usuario) => ({
           ...adaptarAmigo(usuario),
@@ -131,7 +122,6 @@ function ChatSocial() {
       }
     } catch (err) {
       console.error('Error al cargar amigos y solicitudes:', err);
-      // Lo que Konrad dejó dicho que había que descomentar al juntarlo.
       setError(t('serverError'));
     } finally {
       setCargando(false);
@@ -142,8 +132,7 @@ function ChatSocial() {
     recargarDatosSociales();
   }, []);
 
-  // 🔔 ABRIR DIRECTAMENTE LA CONVERSACIÓN DE QUIEN NOS ESPERA (Nacho, 10/09)
-  //
+  // ABRIR DIRECTAMENTE LA CONVERSACIÓN DE QUIEN NOS ESPERA
   // El aviso flotante manda aquí con ?con=<login>. Sin esto te dejaba en la
   // lista de chats y tenías que adivinar quién te habia escrito o propuesto
   // un cambio, que es justo lo que el aviso venía a evitar.
@@ -201,8 +190,7 @@ function ChatSocial() {
   const [enviando, setEnviando] = useState(false);
   const ultimoMensajeIdRef = useRef(null);
 
-  // 🔄 Las propuestas de intercambio de esta conversación (Nacho, 10/09).
-  //
+
   // Van en un estado APARTE de los mensajes, y no mezcladas en la misma
   // petición, porque son dos cosas distintas: los mensajes solo crecen (se
   // piden los nuevos con ?desde=<id> y se añaden al final), pero una
@@ -244,10 +232,6 @@ function ChatSocial() {
         const respuesta = await fetch(urlPeticion, { credentials: 'include' });
         if (!estaMontado) return;
         if (!respuesta.ok) {
-          // Nacho, 10/09: aquí se enseñaba una conversación inventada cuando
-          // el servidor fallaba. Fuera. Se deja lo que hubiera y se avisa: la
-          // conversación se sigue pidiendo cada 3 segundos, así que si el
-          // servidor vuelve, se arregla solo.
           setError(t('messagesLoadError'));
           return;
         }
@@ -276,8 +260,7 @@ function ChatSocial() {
     };
   }, [loginUsuarioSeleccionado]);
 
-  // 🔄 LAS PROPUESTAS DE INTERCAMBIO DE ESTA CONVERSACIÓN (Nacho, 10/09)
-  //
+
   // Ciclo aparte del de los mensajes, y no por capricho: al refrescar las
   // propuestas (por ejemplo justo después de aceptar una) no queremos vaciar
   // y volver a pedir la conversación entera, que es lo que hace el otro
@@ -362,8 +345,6 @@ function ChatSocial() {
       const datosRespuesta = await respuesta.json().catch(() => ({}));
 
       if (!respuesta.ok) {
-        // ⚠️ Nacho, 10/09: ESTE ERA EL PEOR DE LOS TRES.
-        //
         // Cuando el servidor rechazaba el mensaje, se pintaba igual en la
         // pantalla y se borraba el cuadro de texto. O sea que veías tu mensaje
         // enviado y el otro no lo recibía nunca, sin ningún aviso. Y el
@@ -393,10 +374,6 @@ function ChatSocial() {
   const clickVolverHome = () => navigate('/Home');
   const visitarPerfil = (login) => navigate(`/perfil/${login}`);
 
-  // ⚠️ CAMBIO AQUÍ: Se corrige la lógica de bloqueo/desbloqueo.
-  // Ahora comprueba si el usuario ya está bloqueado y envía el verbo HTTP correspondiente:
-  // - DELETE para desbloquear (la vista BloquearView del backend elimina el registro de Bloqueo).
-  // - POST para bloquear (la vista BloquearView crea el registro de Bloqueo).
   const alternarBloqueoUsuario = async (loginTarget) => {
     const amigoTarget = amigos.find((a) => a.login === loginTarget);
     const estaBloqueado = amigoTarget ? amigoTarget.bloqueado : false;

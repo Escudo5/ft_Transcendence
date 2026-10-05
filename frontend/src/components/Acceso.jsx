@@ -13,12 +13,6 @@ import { useI18n } from '../i18n';
  *   2) Entrar con email y contraseña     -> formularios de login y registro
  *
  * Las dos son independientes: quien entra por una nunca pasa por la otra.
- *
- * 🎨 NOTA PARA KONRAD Y SERGIO: los estilos usan las variables de styles.css
- * (--surface-raised, --accent, etc.), así que si cambiáis la paleta esta
- * pantalla cambia con el resto. Está hecha para que funcione; el diseño fino
- * es vuestro, cambiadlo sin miedo. La lógica vive en las funciones de arriba
- * y lo visual está todo en el objeto 'estilos'.
  */
 
 // ==========================================================================

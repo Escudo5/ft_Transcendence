@@ -61,27 +61,10 @@ const smoothstep = (a, b, value) => {
 /* ═══════════════════════════════════════════════════════════════════════
    EL LOGO DE 42, SACADO DEL LOGO OFICIAL
 
-   ⚠️ Nacho, 14/09: antes esto eran dos listas (FOUR y TWO) dibujadas a mano,
-   y estaban MAL. El "2" salía con la esquina de abajo a la derecha cortada en
-   diagonal, cuando en el logo de verdad es recta. Por eso parecía descuadrado
-   mirases lo que mirases: la forma ya era incorrecta, y mover el conjunto solo
-   cambiaba de sitio el problema.
 
    Estas coordenadas NO están puestas a ojo. Salen de leer el PNG oficial
    píxel a píxel: se separan las 4 piezas sueltas, se sigue el contorno de
-   cada una y se simplifican las escaleras de píxeles a rectas. Comprobado
-   rasterizando el resultado y comparándolo con el PNG: 97% de coincidencia,
-   y el 3% que falta es el borde suavizado del propio PNG.
-
-   Son 23 vértices y el número no baja aunque se suba la tolerancia: esas son
-   las esquinas de verdad del logo, no una aproximación.
-
-   El script está en el historial de la conversación del 14/09. Si algún día
-   42 cambia el logo, se vuelve a pasar el PNG nuevo y se pegan las
-   coordenadas: NO se retocan a mano.
-
-   Van en una caja de 0 a 1 en los dos ejes, con proporción 1.4112 de ancho
-   por alto (también medida del PNG, no inventada).
+   cada una y se simplifican las escaleras de píxeles a rectas.
    ═══════════════════════════════════════════════════════════════════════ */
 const LOGO42_PROPORCION = 1.4112;
 const LOGO42 = [
@@ -116,10 +99,7 @@ function polygon(context, points, map) {
 }
 
 function draw42(context, centerX, centerY, width, color) {
-  /* Antes había aquí dos cuentas distintas, una para el 4 y otra para el 2,
-   * con dos números sueltos (0.5534 y 0.6311) que colocaban cada cifra por
-   * separado. Ya no hacen falta: las coordenadas de LOGO42 vienen del logo
-   * entero, con el hueco entre las dos cifras ya dentro. Una sola cuenta. */
+
   const height = width / LOGO42_PROPORCION;
   const x0 = centerX - width / 2;
   const y0 = centerY - height / 2;
@@ -201,7 +181,7 @@ function createPackTexture(palette, t) {
     }
   }
 
-  /* ⚠️ Nacho, 14/09: centrar el bloque en la cara del sobre.
+  /* 
    *
    * La cara visible NO es todo el lienzo: por arriba se le come 127 px la
    * tira que se rasga (es lo que dice TEAR_V). O sea, la cara va de y=127 a
@@ -230,7 +210,7 @@ function createPackTexture(palette, t) {
   plate.addColorStop(0, '#ffffff');
   plate.addColorStop(1, '#e4e9f3');
   context.fillStyle = plate;
-  /* ⚠️ Nacho, 14/09: el disco blanco estaba saliendo SIN QUERER.
+  /* 
    *
    * `roundRect` no abre trazado nuevo: añade al que haya abierto. Y holoPatch
    * (arriba) termina con un `beginPath` + `arc` que deja un círculo de radio
@@ -245,35 +225,14 @@ function createPackTexture(palette, t) {
   context.roundRect(192, 325, 640, 440, 26);
   context.fill();
   context.restore();
-  /* El logo va en 503, casi el centro del disco (512).
-   *
-   * Con la forma ANTERIOR, que estaba mal, hubo que irse hasta 446 para que
-   * no cantara, y aun asi seguia pareciendo torcido. Con el logo oficial ya
-   * no hace falta: su centro de tinta cae a 9 px del centro de su caja
-   * (el de antes estaba a 21,7), asi que con restar esos 9 basta.
-   *
-   * Los 9 px estan para que quede centrado A LA VISTA y no en el papel: el
-   * ojo mira donde esta la masa de negro, no donde esta el rectangulo que la
-   * contiene. */
+
   draw42(context, 503, 545, 500, '#090c12');
 
   holoPatch(context, 846, 808, 86);
 
-  /* ⚠️ Nacho, 14/09: "MADRID" NO SE VEÍA, y no es que faltara.
-   *
-   * Estaba en y=886 y el disco blanco llega hasta y=924: era texto casi
-   * blanco (#f3f6ff) pintado ENCIMA del disco blanco. La rayita cian de
-   * debajo, igual. Otra consecuencia del círculo que salía sin querer.
-   *
-   * Ahora baja a 1010, por debajo del disco, y el resto del bloque baja con
-   * ella para que no se amontone. Misma tipografía y mismo espaciado: solo
-   * cambia la altura. Debajo hay sitio de sobra, el texto siguiente está en
-   * 1128. */
   context.fillStyle = '#f3f6ff';
   context.font = '700 46px monospace';
   spaced(context, 'MADRID', 512, 1010, 20);
-  // 🎨 El color lo pone la paleta del sobre (Sergio, 17/09); la altura es la
-  //    nuestra, que "MADRID" estaba escondido debajo del disco blanco.
   context.fillStyle = palette.accent;
   context.fillRect(442, 1034, 140, 2);
   context.fillStyle = 'rgba(205,222,250,.9)';
@@ -334,18 +293,6 @@ function createEmissionTexture(palette) {
   const [image, context] = canvas(1024, 1384);
   context.fillStyle = '#000000';
   context.fillRect(0, 0, image.width, image.height);
-  /* ⚠️ Nacho, 14/09: ESTA textura tiene que moverse igual que la de color.
-   *
-   * Son dos lienzos distintos que se pintan uno encima del otro: el de color
-   * y este, que es el que brilla. Dibujan LAS MISMAS cosas en las MISMAS
-   * coordenadas, así que si se mueve una y no la otra, todo sale duplicado y
-   * separado. Me pasó: al bajar 85 px solo el de color salieron DOS sellos en
-   * el sobre, uno encima del otro, y la rayita cian se quedó suelta dentro
-   * del disco.
-   *
-   * Así que la misma bajada de 85, y la rayita a 1034 como en la de color.
-   * La línea de puntos y el óvalo de la tira van fuera: esos están en la
-   * parte de arriba que se rasga y ahí no se ha movido nada. */
   context.save();
   context.translate(0, 85);
   holoPatch(context, 846, 808, 86, 1, palette);
@@ -481,19 +428,6 @@ export default function SobreHolografico({ tipo = 'comun', onOpen, onProgress })
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return undefined;
-
-    /* ⚠️ Nacho, 14/09: red de seguridad, no tocamos nada del sobre.
-     *
-     * Si el navegador no puede con WebGL, `new THREE.WebGLRenderer()` lanza
-     * una excepción DENTRO de este efecto y React desmonta el árbol entero:
-     * la tienda de sobres se queda EN BLANCO. Y como arrastrar la tira es
-     * ahora la única forma de abrir un sobre, se cae el bucle central del
-     * juego sin decir por qué.
-     *
-     * En un Mac del campus con Chrome no va a pasar. Pero pasa con la
-     * aceleración por hardware desactivada, en una máquina virtual o en un
-     * navegador viejo, y no queremos descubrirlo el día de la evaluación.
-     * Si no hay 3D, más abajo se enseña un botón normal y se abre igual. */
     if (!hayWebGL()) {
       setSinWebGL(true);
       return undefined;
@@ -713,16 +647,6 @@ export default function SobreHolografico({ tipo = 'comun', onOpen, onProgress })
     const animate = () => {
       const time = performance.now() * 0.001;
       pack.position.y = 0.1 + Math.sin(time * 0.9) * 0.1;
-      /* ⚠️ Nacho, 14/09: esto era 0.42, o sea que el sobre estaba girado 24°
-       * a la derecha SIEMPRE. Y ahí está el "42 descuadrado": en la textura
-       * el logo está centrado al milímetro (129,5 px de margen a cada lado,
-       * medido sobre los polígonos), pero con el sobre girado la mitad donde
-       * vive el "2" se ve en escorzo y el "4" se ve de frente. Por eso parecía
-       * que el 2 se comía el borde del disco.
-       *
-       * Con 0.16 el sobre mira casi de frente y el balanceo (±0.12) sigue
-       * dando la sensación de 3D. Si se quiere más perfil, subir este número;
-       * el logo no se mueve, lo que cambia es desde dónde se mira. */
       pack.rotation.y = 0.16 + Math.sin(time * 0.45) * 0.12;
       pack.rotation.z = Math.sin(time * 0.5) * 0.03;
       rings.rotation.z = time * 0.05;
@@ -760,13 +684,6 @@ export default function SobreHolografico({ tipo = 'comun', onOpen, onProgress })
     };
   }, []);
 
-  /* Sin 3D, pero el sobre TIENE que poder abrirse igual.
-   *
-   * Ojo: este return va DESPUÉS de todos los hooks, nunca antes. Un `return`
-   * por delante de un hook fue lo que tiró el chat entero el 10/09.
-   *
-   * Los estilos van aquí dentro a propósito, para no tocar el styles.css de
-   * Sergio por un caso que casi nunca se va a dar. */
   if (sinWebGL) {
     return (
       <div

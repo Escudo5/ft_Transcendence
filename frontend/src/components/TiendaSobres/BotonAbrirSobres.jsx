@@ -2,37 +2,6 @@ import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useI18n } from '../../i18n';
 
-/* ===========================================================================
-   ✨ BOTÓN DE ABRIR SOBRES
-
-   Antes era un enlace gris con el emoji 🎁 delante. Funcionaba, pero es el
-   botón que lleva a lo más divertido del juego y no lo parecía.
-
-   QUÉ HACE Y POR QUÉ:
-
-   - El emoji se va. Un emoji lo dibuja el sistema operativo, siempre igual,
-     y ni se puede colorear ni animar. En su sitio va un SVG de tres cartas
-     abanicadas: se pinta con NUESTROS colores y se puede mover.
-
-   - Respira. Un resplandor detrás que sube y baja cada 2,8 segundos. Lento a
-     propósito: un parpadeo rápido cansa a los diez segundos y acaba
-     molestando más que llamando la atención.
-
-   - Un brillo lo cruza cada 5 segundos, como el reflejo en un cromo
-     plastificado. Es el guiño al álbum.
-
-   - Al pasar el ratón, las cartas se abren más y el resplandor sube.
-
-   ⚠️ NADA DE ESTO TOCA styles.css. Las animaciones van con framer-motion,
-   que ya usan en cinco pantallas, así que no se añade ninguna dependencia
-   ni se pisa el sistema de diseño de Sergio. Los colores salen de sus
-   variables (--accent, --degradado-titulo), no están escritos a mano.
-
-   ♿ Y si alguien tiene puesto "reducir movimiento" en su sistema, se queda
-   quieto del todo: sigue viéndose bien, pero sin nada moviéndose. Eso no es
-   un adorno, es lo correcto y además cuenta en la evaluación.
-   =========================================================================== */
-
 export default function BotonAbrirSobres({ to = '/tienda-sobre', children }) {
   const sinMovimiento = useReducedMotion();
   const { t } = useI18n();

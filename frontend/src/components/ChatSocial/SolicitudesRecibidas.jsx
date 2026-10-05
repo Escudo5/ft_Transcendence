@@ -1,14 +1,5 @@
 import { useI18n } from '../../i18n';
 
-/**
- * SOLICITUDES DE AMISTAD RECIBIDAS
- * --------------------------------
- * Las que te ha mandado OTRA gente y tú puedes aceptar o rechazar.
- *
- * Antes se llamaba SolicitudesEnviadas, que era justo lo contrario: las
- * enviadas son las tuyas y en esas no hay nada que decidir. Se renombra para
- * que el nombre diga lo que hace.
- */
 
 function SolicitudesRecibidas({ isOpen, onClose, solicitudes, responderSolicitud }) {
   const { t } = useI18n();

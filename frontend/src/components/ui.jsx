@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 
+
+/* Los 12 componentes que pide el subject, son reutilizables*/
+
 export function Button({ children, className = '', ...props }) {
   return (
     <button className={`ui-button ${className}`.trim()} {...props}>

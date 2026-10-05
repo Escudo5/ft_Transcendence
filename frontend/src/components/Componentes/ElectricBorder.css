@@ -5,17 +5,6 @@ isolation: isolate crea un nuevo contexto de apilamiento para evitar
 que los efectos de blur y glow se mezclen de forma no deseada con el fondo.
 */
 .electric-border {
-  /* ⚠️ Nacho, 18/09. Aquí ponía:
-   *
-   *     oklch(from var(--electric-border-color) l c h)
-   *
-   * Eso coge la luminosidad, el croma y el tono del color y los vuelve a
-   * juntar, o sea que DEVUELVE EL MISMO COLOR: no hacía nada. Pero es
-   * sintaxis de color muy reciente, y a nosotros nos evalúan en Firefox:
-   * en una versión que no la entienda, esta variable se queda inválida y
-   * el resplandor de fondo de abajo desaparece sin dar ningún aviso.
-   *
-   * Se cambia por el color tal cual. Mismo resultado, cero riesgo. */
   --electric-light-color: var(--electric-border-color);
   position: relative;
   border-radius: inherit;
@@ -81,10 +70,6 @@ Se eliminan las líneas de borde sólido (border: none) dejando
   border: none;
 }
 
-/* Aura/Resplandor suave de fondo, del color que se le pase al componente.
- * (Nacho, 18/09: aquí ponía "manteniendo el color cyan (#7df9ff)", que era
- *  un resto del ejemplo original. El color no está fijado aquí: llega desde
- *  Catalogo.jsx, y hoy es el magenta de la rareza Staff.) */
 .eb-background-glow {
   z-index: -1;
   transform: scale(1.05);

@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 
-// 🛠️ COMENTARIO DE IMPORTACIÓN: Cuando tengas tu imagen lista, descomenta la línea de abajo:
-// import imagenSobre del '../assets/mi-sobre.png';
-
 function SobreAnimado({ onOpen }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -51,26 +48,6 @@ function SobreAnimado({ onOpen }) {
     ctx.fillStyle = '#ff9ffc';
     ctx.font = '11px sans-serif';
     ctx.fillText('⚡ RASGA POR AQUÍ PARA ABRIR ⚡', canvas.width / 2, 30);
-
-    // -------------------------------------------------------------------------
-    // 🛠️ BLOQUE DE CARGA DE IMAGEN (Comenta todo lo de arriba y activa esto al tener tu PNG)
-    // -------------------------------------------------------------------------
-    /*
-    const img = new Image();
-    img.src = imagenSobre; // Usa la variable importada arriba
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      
-      // Dibujamos la guía de corte sobre tu imagen
-      ctx.strokeStyle = '#ff9ffc';
-      ctx.setLineDash([6, 6]);
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(15, 45);
-      ctx.lineTo(canvas.width - 15, 45);
-      ctx.stroke();
-    };
-    */
 
   }, []);
 

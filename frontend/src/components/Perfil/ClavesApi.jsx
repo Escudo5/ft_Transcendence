@@ -3,7 +3,7 @@ import { Alert, Badge, Button, Card, SecondaryButton, TextField } from '../ui';
 import { useI18n } from '../../i18n';
 
 /**
- * TUS CLAVES DE API
+ * CLAVES DE API
  * -----------------
  * Va dentro de tu propio perfil (Perfil.jsx) y solo ahí. Sirve para que un
  * alumno pueda sacarse una clave sin tocar la terminal, y usarla desde un
@@ -16,21 +16,18 @@ import { useI18n } from '../../i18n';
  * botón de copiar, que no se va hasta que lo cierras tú a propósito.
  *
  * Lo mismo que hacen GitHub y la propia Intra de 42 con sus secretos.
- *
- * 🎨 KONRAD Y SERGIO: el diseño es vuestro, cambiadlo sin miedo. Usa las
- * variables de styles.css y los componentes de ui.jsx, nada propio.
  */
 
 const MAX_NOMBRE = 60;
 
 export default function ClavesApi() {
-  /* ⚠️ VA LO PRIMERO, ANTES DE CUALQUIER OTRA COSA (Nacho, 28/09).
+  /* 
    * Los hooks de React tienen que llamarse siempre en el mismo orden y en el
    * cuerpo del componente. Y ademas `t` lo usa la funcion fecha() de mas
    * abajo, asi que si esta linea estuviera despues, `t` no existiria alli.
    *
    * languageInfo trae el locale del idioma activo (es-ES, en-US, ar): lo usa
-   * fecha() para que los dias y los meses salgan en el idioma elegido, en vez
+   * fecha() para que los dias y los meses salgan en el idioma elegido, en vez de
    * de en español siempre. */
   const { t, languageInfo } = useI18n();
 

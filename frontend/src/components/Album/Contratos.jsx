@@ -17,13 +17,6 @@ const API = import.meta.env.VITE_API_URL || '/api';
      - Contrato = puntería. 4 cartas de la MISMA RAREZA -> 1 carta mejor, y
        el servidor procura darte una que te FALTE.
 
-   Por eso existen los dos: el sobre es cantidad, el contrato es progreso.
-
-   🎨 KONRAD: está escrito siguiendo tu Intercambio.jsx — mismo modal oscuro
-   (#151821 con borde #2a2e3d), mismos colores de acento (#ffaa00 para lo
-   que se pide, #00ffcc para lo seleccionado) y los mismos estilos en línea.
-   El diseño es tuyo, cámbialo sin miedo: lo que no hay que tocar son los
-   nombres de los campos que se mandan al servidor.
    =========================================================================== */
 
 // Los colores salen de rarezas.js, que es el único sitio donde están.

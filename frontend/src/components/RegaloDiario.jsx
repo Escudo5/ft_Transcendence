@@ -11,10 +11,6 @@ import { useI18n } from '../i18n';
  *   1) Pregunta a /api/users/me/ si te toca regalo hoy (solo informa)
  *   2) Pregunta a /api/cards/sobres/ cuántos sobres tienes
  *   3) Al pulsar, llama a /api/cards/sobres/reclamar/ (esto sí entrega)
- *
- * 🎨 KONRAD Y SERGIO: va flotando arriba a la derecha para no tocar vuestra
- * maquetación. Usa las variables de color de styles.css. Movedlo, cambiadlo o
- * integradlo donde queráis: lo visual está todo en el objeto 'estilos'.
  */
 
 const estilos = {

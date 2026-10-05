@@ -76,11 +76,6 @@ const translations = {
     rarityEpic: 'Épica',
     rarityTranscender: 'Transcender',
     rarityLegendary: 'Legendaria',
-    // 🎴 Nacho, 22/09: las claves de rareza son 'rarity' + el nombre exacto
-    // que usa el backend (ver RAREZAS en components/rarezas.js). Las de
-    // antes (rarityCommon, rarityEpic, rarityLegendary) eran de las rarezas
-    // viejas y ya no las pide nadie: se quedan por si alguna carta antigua
-    // sigue con ese tier, pero lo que se usa son estas seis.
     rarityJunior: 'Junior',
     raritySenior: 'Senior',
     rarityLegendario: 'Legendario',
@@ -133,26 +128,9 @@ const translations = {
     unableToComplete: 'No se ha podido completar.',
     serverConnectionError: 'No se ha podido conectar con el servidor.',
 
-    // 🆕 Nacho, 22/09: perfil, tablon de la portada y pop-up del album.
     aboutMe: 'Sobre mí',
     accept: 'Aceptar',
     achievements: 'Logros',
-    /* 🏆 LOS 11 LOGROS DEL PERFIL (Nacho, 29/09)
-     *
-     * Antes estos textos venían escritos en español desde Django, así que el
-     * panel de logros salía en español aunque la web estuviera en inglés o en
-     * árabe. Ahora el backend manda solo el dato y el texto está aquí.
-     *
-     * Son 11 nombres y 8 descripciones: 'achDistinctCardsDesc' la comparten
-     * Coleccionista y Veterano, y 'achRarityCardDesc' la comparten los tres
-     * logros de rareza. Cambia el hueco, no la frase.
-     *
-     * Los huecos los rellena components/Perfil/Perfil.jsx:
-     *    {n}        el objetivo del logro, que vive en el backend
-     *    {rareza}   ya traducida con las claves rarityXxx de más abajo
-     *
-     * ⚠️ Van en grupo y no por orden alfabético a propósito: es más fácil ver
-     * de un golpe si falta alguno en un idioma. */
     achFirstCard: 'Primera carta',
     achFirstCardDesc: 'Consigue tu primera carta',
     achCollector: 'Coleccionista',
@@ -173,28 +151,13 @@ const translations = {
     achEarlyBird: 'Madrugador',
     achEarlyBirdDesc: 'Recoge tu regalo diario',
     achProgress: '{actual} de {objetivo}',
-    /* 🌐 LO QUE SE HABÍA QUEDADO EN ESPAÑOL (Nacho, 29/09)
-     *
-     * 50 textos repartidos por 13 componentes que no pasaban por aquí. No se
-     * vieron al cerrar el módulo de idiomas porque ninguno está en el cuerpo
-     * visible de una pantalla: son avisos que solo salen cuando algo falla,
-     * textos de accesibilidad que solo lee un lector de pantalla, tooltips,
-     * el marcador de posición de una caja de texto y el título de la pestaña.
-     *
-     * El peor de todos era el de quemar cartas: un aviso en español justo
-     * antes de una acción que no se puede deshacer.
-     *
-     * ⚠️ QUE SIGUE SIN TRADUCIR, A PROPÓSITO: cuando el backend rechaza algo,
-     * el front pinta el motivo que manda Django, y Django responde en español
-     * (hay 9 sitios así, con la forma `datos.error || t('...')`). Se queda
-     * porque el motivo concreto ("no tienes sobres raros") vale más que la
-     * traducción de un genérico. Para arreglarlo de verdad Django tendría que
-     * mandar códigos en vez de frases. Queda apuntado, no hecho.
-     *
+  
+     /*
      * 🔢 Los plurales usan el hueco {s} que ya había en el proyecto: el
      * componente pasa s: n === 1 ? '' : 's'. En árabe NO se pone el hueco, y
      * así t() no sustituye nada (antes se ponía y salía "رسالةs", una ese
      * latina pegada a una palabra árabe). */
+
     pageTitle: '42 Cards | Álbum de cromos de 42 Madrid',
     login42Error: 'Error en el login con 42: {error}',
     authIntraError: 'Error en la autenticación con la Intra de 42',
@@ -356,9 +319,6 @@ const translations = {
     youHaveNoDuplicates: 'No tienes repetidas.',
     youOffer: 'Ofreces',
     youOfferLabel: 'Ofreces (Tus repetidas):',
-    /* 🔑 CLAVES DE LA API PUBLICA (Nacho, 28/09)
-     * Estaban en español fijo: 338 lineas del componente sin una sola clave.
-     * El modulo de idiomas pide que TODO el texto sea traducible. */
     apiKeysTitle: '🔑 Claves de API',
     apiKeysSubtitle: 'Para consultar tu álbum o jugar desde un programa tuyo, sin navegador.',
     apiKeyCreated: 'Clave «{name}» creada',
@@ -386,15 +346,11 @@ const translations = {
     apiKeyHeaderAfter: ' de cada petición:',
     apiKeyDocsBefore: 'Todo lo que se puede pedir está en ',
     apiKeyDocsLink: 'la documentación de la API',
-    /* ⏱️ El filtro de tiempo del album (Konrad, 27/09). Lo subio con el texto
-     * en español fijo y t("Obtenidas"), que no era una clave sino la palabra
-     * suelta: t() devolvia el nombre y salia igual en los tres idiomas. */
     filterObtained: 'Obtenidas',
     filterAllDates: 'Todas las fechas',
     filterLast24h: 'Últimas 24 horas',
     filterLast7d: 'Últimos 7 días',
     filterLast30d: 'Últimos 30 días',
-    /* 🧹 Ultimos textos que quedaban en español fijo (Nacho, 28/09) */
     teamGridLabel: 'Integrantes del proyecto',
     mainActionsLabel: 'Acciones principales',
     previousMember: 'Integrante anterior',
@@ -532,11 +488,9 @@ const translations = {
     unableToComplete: 'Could not complete the request.',
     serverConnectionError: 'Could not connect to the server.',
 
-    // 🆕 Nacho, 22/09: perfil, tablon de la portada y pop-up del album.
     aboutMe: 'About me',
     accept: 'Accept',
     achievements: 'Achievements',
-    /* 🏆 Los 11 logros del perfil. Ver la nota en el bloque de español. */
     achFirstCard: 'First card',
     achFirstCardDesc: 'Get your first card',
     achCollector: 'Collector',
@@ -557,7 +511,6 @@ const translations = {
     achEarlyBird: 'Early bird',
     achEarlyBirdDesc: 'Claim your daily gift',
     achProgress: '{actual} of {objetivo}',
-    /* 🌐 Lo que se había quedado en español. Ver la nota del bloque de español. */
     pageTitle: '42 Cards | 42 Madrid trading card album',
     login42Error: '42 login error: {error}',
     authIntraError: 'Authentication error with the 42 Intra',
@@ -665,8 +618,6 @@ const translations = {
     yourData: 'Your data',
     yourDataText: 'You can take everything we store about you, or delete your account whenever you want.',
     yourRarestCard: 'Your rarest card',
-
-    // 🆕 Nacho, 22/09: tienda de sobres, chat, intercambios, regalo y pie legal.
     availablePacks: 'Available packs',
     backToChats: 'Back to the conversation list',
     backToCatalog: '← Back to the album',
@@ -719,7 +670,6 @@ const translations = {
     youHaveNoDuplicates: 'You have no duplicates.',
     youOffer: 'You offer',
     youOfferLabel: 'You offer (your duplicates):',
-    /* 🔑 API keys of the public API */
     apiKeysTitle: '🔑 API keys',
     apiKeysSubtitle: 'To read your album or play from your own program, without a browser.',
     apiKeyCreated: 'Key "{name}" created',
@@ -747,13 +697,11 @@ const translations = {
     apiKeyHeaderAfter: ' header of every request:',
     apiKeyDocsBefore: 'Everything you can request is in ',
     apiKeyDocsLink: 'the API documentation',
-    /* ⏱️ Album time filter */
     filterObtained: 'Obtained',
     filterAllDates: 'All dates',
     filterLast24h: 'Last 24 hours',
     filterLast7d: 'Last 7 days',
     filterLast30d: 'Last 30 days',
-    /* 🧹 Last strings that were still hardcoded */
     teamGridLabel: 'Project members',
     mainActionsLabel: 'Main actions',
     previousMember: 'Previous member',
@@ -894,20 +842,6 @@ const translations = {
     aboutMe: 'نبذة عني',
     accept: 'قبول',
     achievements: 'الإنجازات',
-    /* 🏆 Los 11 logros del perfil. Ver la nota en el bloque de español.
-     *
-     * ⚠️ SERGIO: esto lo he traducido yo (Nacho, 29/09) para que no se quedara
-     * en español, pero una traducción no la puedo comprobar como compruebo el
-     * código. Pásale el ojo y corrige lo que suene mal. Los huecos {n},
-     * {rareza}, {actual} y {objetivo} NO se traducen: son los números y la
-     * rareza que mete el programa.
-     *
-     * 🔍 Y hay una cosa concreta que mirar, que yo no sé resolver:
-     * 'achDistinctCardsDesc' lleva un número que cambia (10 para Coleccionista
-     * y 25 para Veterano), y en árabe el nombre contado no se dice igual según
-     * la cifra. Con un solo texto no se puede acertar en los dos casos, así que
-     * dime cómo lo dejamos: o una forma que valga para todos los números, o
-     * separamos la frase en dos claves. */
     achFirstCard: 'البطاقة الأولى',
     achFirstCardDesc: 'احصل على بطاقتك الأولى',
     achCollector: 'جامع البطاقات',
@@ -928,17 +862,6 @@ const translations = {
     achEarlyBird: 'المستيقظ مبكرًا',
     achEarlyBirdDesc: 'استلم هديتك اليومية',
     achProgress: '{actual} من {objetivo}',
-    /* 🌐 Lo que se había quedado en español. Ver la nota del bloque de español.
-     *
-     * ⚠️ SERGIO: traducido por mí (Nacho, 29/09). Repásalo. NO se traducen los
-     * huecos {login}, {name}, {count}, {max}, {mb}, {error}, {who}, {d}, {h},
-     * {m}: son datos que mete el programa.
-     *
-     * 🔢 Aquí NO va el hueco {s} de los plurales, a propósito: es una ese
-     * latina y en árabe salía pegada a la palabra ("رسالةs"). Tres claves que
-     * ya existían lo tenían y se lo he quitado: duplicates, unreadMessages y
-     * pendingTrades. Si el plural correcto necesita otra palabra y no solo una
-     * letra, dímelo y partimos la clave en dos. */
     pageTitle: '42 Cards | ألبوم بطاقات 42 مدريد',
     login42Error: 'خطأ في تسجيل الدخول بـ 42: {error}',
     authIntraError: 'خطأ في المصادقة مع إنترا 42',
@@ -1098,9 +1021,6 @@ const translations = {
     yourData: 'بياناتك',
     yourDataText: 'يمكنك تنزيل كل ما نحتفظ به عنك أو حذف حسابك متى شئت.',
     yourRarestCard: 'أندر بطاقة لديك',
-    /* ⚠️ SERGIO: las claves de la API publica. Traducidas por Nacho, repasalas.
-     * ⚠️ NO toques lo que va entre llaves ({name}, {n}, {max}, {created},
-     * {used}): son huecos que rellena el programa. */
     apiKeysTitle: '🔑 مفاتيح الواجهة البرمجية',
     apiKeysSubtitle: 'للاطّلاع على ألبومك أو اللعب من برنامجك الخاص، دون متصفح.',
     apiKeyCreated: 'تم إنشاء المفتاح «{name}»',
@@ -1128,13 +1048,11 @@ const translations = {
     apiKeyHeaderAfter: ' في كل طلب:',
     apiKeyDocsBefore: 'كل ما يمكن طلبه موجود في ',
     apiKeyDocsLink: 'توثيق الواجهة البرمجية',
-    /* ⚠️ SERGIO: el filtro de tiempo del album. Traducido por Nacho, repasalo. */
     filterObtained: 'تم الحصول عليها',
     filterAllDates: 'كل التواريخ',
     filterLast24h: 'آخر ٢٤ ساعة',
     filterLast7d: 'آخر ٧ أيام',
     filterLast30d: 'آخر ٣٠ يومًا',
-    /* ⚠️ SERGIO: traducidas por Nacho, repasalas */
     teamGridLabel: 'أعضاء المشروع',
     mainActionsLabel: 'الإجراءات الرئيسية',
     previousMember: 'العضو السابق',

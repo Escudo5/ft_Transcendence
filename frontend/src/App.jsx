@@ -357,15 +357,6 @@ function AppContent() {
 
   const codeYaProcesado = useRef(false);
 
-  /* 🌐 El título de la pestaña, en su propio efecto (Nacho, 29/09).
-   *
-   * Antes estaba dentro del efecto de abajo, que es el que canjea el código de
-   * 42. Ese efecto lleva [] a propósito: tiene que correr UNA vez. Si le
-   * metiera `t` en las dependencias, cambiar de idioma volvería a lanzar el
-   * canje del login, y eso no se toca.
-   *
-   * Así que va aparte, con [t]: el título sigue al idioma y el login se queda
-   * quieto. */
   useEffect(() => {
     document.title = t('pageTitle');
   }, [t]);

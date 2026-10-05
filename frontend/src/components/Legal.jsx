@@ -14,30 +14,7 @@ import ar from '../legal/ar';
  * Están escritas a partir de lo que el proyecto hace de verdad:
  * lo que guarda la base de datos, cómo funciona el login con 42 y qué pasa con
  * los datos de la API de la Intra.
- *
- * ⚠️ Si añadís o quitáis datos del usuario, hay que actualizar la Política de
- * Privacidad EN LOS TRES IDIOMAS. Prometer una cosa y hacer otra es peor que no
- * prometer nada.
- *
- * ──────────────────────────────────────────────────────────────────────────
- * 📄 POR QUÉ EL TEXTO NO ESTÁ AQUÍ DENTRO (Nacho, 28/09)
- *
- * Antes estaba, y en español fijo: 88 textos, unas 883 palabras. El módulo de
- * idiomas pide que TODO el texto sea traducible, así que había que sacarlo.
- *
- * Meterlo en i18n.jsx como el resto habría sido un error: son dos documentos
- * de prosa, no etiquetas de botones. Y como hay negritas DENTRO de las frases,
- * cada párrafo habría que partirlo en dos o tres claves. Salían 106 claves por
- * idioma (318 en total) y el texto legal quedaba troceado e ilegible.
- *
- * Por eso cada idioma es UN FICHERO en src/legal/, con el documento escrito
- * de corrido, y este componente solo lo dibuja. Añadir un idioma es copiar un
- * fichero, no escribir 106 claves.
  */
-
-/* Los idiomas disponibles. El de español hace de red: si algún día se añade
- * un idioma a i18n.jsx y se olvida el fichero legal, se ve en español en vez
- * de reventar con la pantalla en blanco. */
 const DOCUMENTOS = { es, en, ar };
 
 const estilos = {
@@ -81,18 +58,6 @@ const estilos = {
   enlace: { color: 'var(--accent)' },
 };
 
-/* ✍️ LAS DOS MARCAS QUE ENTIENDE EL TEXTO
- *
- *    **negrita**       ->  <strong>negrita</strong>
- *    [texto](/ruta)    ->  <a href="/ruta">texto</a>
- *
- * Se parte la frase por las dos a la vez y se va montando. Hace falta la
- * `key` en cada trozo porque React pinta una lista de elementos.
- *
- * ⚠️ NO interpreta HTML: lo que venga en el texto se escribe tal cual. Es a
- * propósito, para que un documento legal no pueda meter etiquetas en la
- * página sin que nos enteremos.
- */
 const MARCAS = /(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g;
 
 function conFormato(texto) {

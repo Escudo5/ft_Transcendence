@@ -105,16 +105,7 @@ function AreaChat({
   const meHaBloqueadoAEstudiando = chatSeleccionado.meHaBloqueado;
   const hayBloqueoActivo = yoLoHeBloqueado || meHaBloqueadoAEstudiando;
 
-  // 🔌 CONECTADO AL BACKEND (Nacho, 10/09).
-  //
-  // Las dos rutas que había aquí (/social/intercambio/proponer/ y
-  // /social/intercambio/<id>/responder/) no existían. Las de verdad cuelgan
-  // de /api/cards/, con el resto de lo que tiene que ver con cartas.
-  //
-  // Y se guarda lo que responde el servidor (en avisoIntercambio, declarado
-  // arriba con el resto de hooks), porque puede decir que no por motivos que
-  // hay que enseñar: que ya no sois amigos, que él ya no tiene esa carta
-  // repetida, o que la propuesta ha caducado.
+
   const handleEnviarPropuestaIntercambio = async ({ cartaOfrecida, cartaPedida }) => {
     setAvisoIntercambio('');
     try {
