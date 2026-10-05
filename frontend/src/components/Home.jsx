@@ -7,6 +7,7 @@ import { Avatar, Badge, Button, Card, Modal } from './ui';
 import { CLASE_RAREZA, COLOR_RAREZA } from './rarezas';
 import CreatorCard from './Album/CreatorCard';
 import { useI18n } from '../i18n';
+import ModalDetalleCarta from './Album/CatalogoComponents/ModalDetalleCarta';
 
 const INTEGRANTES_BASE = [
   { login: "ksudyn", nombre: "Konrad", avatar: "imagen", rareza: "creator" },
@@ -336,46 +337,56 @@ function Home() {
         </div>
       </section>
 
-      <AnimatePresence>
-        {integranteActivo && (
-          <motion.div
-            key={integranteActivo.login}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Modal onClose={() => setIndiceSeleccionado(null)} labelledBy="integrante-activo">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                <Button type="button" className="pagination-btn" onClick={irAnterior} aria-label={t("previousMember")}>
-                  <span aria-hidden="true">&#9664;</span>
-                </Button>
+      {/* MODAL REUTILIZANDO EL COMPONENTE DEL ÁLBUM */}
+      {integranteActivo && (
+        <AnimatePresence mode="wait">
+          <div key={integranteActivo.login} style={{ position: 'relative' }}>
+            <ModalDetalleCarta
+              carta={integranteActivo}
+              usuariosRegistrados={new Set(integrantes.map((i) => i.loginUsuario))}
+              onCerrar={() => setIndiceSeleccionado(null)}
+            />
 
-                <Card
-                  as="article"
-                  className={`home-modal-card rarity-${integranteActivo.rareza}`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Avatar src={integranteActivo.avatar !== 'imagen' ? integranteActivo.avatar : undefined} alt={integranteActivo.nombre} size="large" />
-                  <h2 id="integrante-activo" style={{ fontFamily: 'var(--font-heading)', fontSize: '1.75rem', margin: '0 0 0.5rem 0' }}>
-                    {integranteActivo.nombre}
-                  </h2>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', margin: '0 0 1.5rem 0' }}>
-                    @{integranteActivo.login}
-                  </p>
-                  <Badge tone={integranteActivo.rareza}>
-                    Rarity: {integranteActivo.rareza}
-                  </Badge>
-                </Card>
+            {/* Flecha Izquierda (Anterior) */}
+            <Button
+              type="button"
+              className="pagination-btn"
+              onClick={irAnterior}
+              aria-label={t("previousMember")}
+              style={{
+                position: 'fixed',
+                top: '50%',
+                left: 'calc(50% - 230px)', // Posicionada justo al borde izquierdo de la carta
+                transform: 'translateY(-50%)',
+                zIndex: 1100,
+                padding: '0.4rem 0.7rem',  // Botón un poco más pequeño
+                fontSize: '0.9rem',
+              }}
+            >
+              <span aria-hidden="true">&#9664;</span>
+            </Button>
 
-                <Button type="button" className="pagination-btn" onClick={irSiguiente} aria-label={t("nextMember")}>
-                  <span aria-hidden="true">&#9654;</span>
-                </Button>
-              </div>
-            </Modal>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {/* Flecha Derecha (Siguiente) */}
+            <Button
+              type="button"
+              className="pagination-btn"
+              onClick={irSiguiente}
+              aria-label={t("nextMember")}
+              style={{
+                position: 'fixed',
+                top: '50%',
+                right: 'calc(50% - 230px)', // Posicionada justo al borde derecho de la carta
+                transform: 'translateY(-50%)',
+                zIndex: 1100,
+                padding: '0.4rem 0.7rem',  // Botón un poco más pequeño
+                fontSize: '0.9rem',
+              }}
+            >
+              <span aria-hidden="true">&#9654;</span>
+            </Button>
+          </div>
+        </AnimatePresence>
+      )}
 
       <PieLegal estilo={{ marginTop: '3rem' }} />
     </main>
