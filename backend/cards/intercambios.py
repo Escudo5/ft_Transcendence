@@ -333,6 +333,9 @@ class ResponderIntercambioView(APIView):
 
 COPIAS_PARA_DESCARTAR = 4   # las que se queman por cada grupo
 COPIAS_MINIMAS_PARA_DESCARTAR = COPIAS_PARA_DESCARTAR + 1
+# ⚠️ Las rarezas salen SIEMPRE de rarezas.py. Estuvieron escritas a mano en
+# ocho sitios y al renombrarlas los ocho quedaron viejos sin dar ningún error:
+# un sobre común pasó a dar un 11% de legendarias en silencio.
 SOBRES_POR_TIER = RAREZAS_POR_SOBRE
 SOBRE_DEL_DESCARTE = 'raro'  # Compatibilidad con clientes antiguos.
 

@@ -9,6 +9,8 @@ from django.contrib.auth.admin import UserAdmin
 
 
 class ConectadoFilter(admin.SimpleListFilter):
+    # ⚠️ Filtrar por `estado` a secas ENGAÑA: nadie cierra sesión, cierran la
+    # pestaña, y queda gente en 'online' de hace días. Esto usa estado_real.
 
     title = 'conectado de verdad'
     parameter_name = 'conectado'

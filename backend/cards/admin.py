@@ -67,6 +67,8 @@ class UserCardAdmin(admin.ModelAdmin):
         return obj.card.id if obj.card else '-'
 @admin.register(Intercambio)
 class IntercambioAdmin(admin.ModelAdmin):
+    # ⚠️ Poner un intercambio en ACEPTADO desde aquí NO mueve las cartas: eso
+    # se hace en la vista. Para mirar vale; para resolver, desde la web.
     list_display = ('id', 'de', 'para', 'carta_ofrecida', 'carta_pedida', 'estado', 'created_at')
     list_filter = ('estado', 'created_at')
     search_fields = (
