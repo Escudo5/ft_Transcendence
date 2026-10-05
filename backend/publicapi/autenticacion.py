@@ -15,7 +15,13 @@ CÓMO ENTRA LA GENTE EN EL RESTO DEL PROYECTO, Y POR QUÉ AQUÍ NO VALE:
   clave en una CABECERA de la petición, así:
 
       GET /api/publica/mi-album/
-      X-API-Key: wKuKCfm-0EwZOMqZn8tu7rlkaRnIrMtHInWt07Rap_QRrmr-hJUVqA
+      X-API-Key: AQUI-VA-TU-CLAVE
+
+  (El ejemplo de arriba era una cadena con la pinta EXACTA de una clave de
+   verdad: 54 caracteres, los mismos que genera token_urlsafe(40). Se ha
+   cambiado el 5/10 por una que no se pueda confundir. Nunca metáis una clave
+   de verdad en un comentario, ni "solo de ejemplo": las claves se guardan
+   cifradas a propósito, y una pegada aquí se sube a GitHub en claro.)
 
   Una cabecera es simplemente un dato que acompaña a la petición, aparte
   de la dirección. El navegador ya manda unas cuantas sin que lo veas.
