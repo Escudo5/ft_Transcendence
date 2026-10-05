@@ -453,27 +453,7 @@ button, a, select {
   box-shadow: 0 8px 32px rgba(0, 255, 135, 0.15);
 }
 
-/* Borde Neón Giratorio
- *
- * 🔧 ARREGLO (Nacho, 24/09): esto era 200% con top/left -50%, y en la portada
- * se comía las esquinas de las cartas: salían cortadas en diagonal.
- *
- * El porqué es pura geometría. Esta caja GIRA, y al girar sus bordes rectos
- * barren la carta. Para que la cubra en CUALQUIER ángulo, el círculo que cabe
- * dentro de la caja tiene que ser más grande que el círculo que rodea a la
- * carta. O sea: min(ancho, alto) de la caja >= la diagonal de la carta.
- *
- * Con 200% no se cumplía en la portada, y con las cartas del álbum sí:
- *   portada (5 en fila, ~310x600):  radio de la caja 310  <  338 de la carta  ✗
- *   álbum   (4 columnas, ~400x600): radio de la caja 400  >  361 de la carta  ✓
- * Por eso solo se veía en la portada. El fallo ya estaba aquí; se destapó al
- * pasar la portada a CreatorCard, que trae la fila de estadísticas y hace las
- * cartas más altas.
- *
- * Con 300% sobra en los dos sitios (465 y 600 de radio), y deja margen para
- * cartas más estrechas sin que vuelva a pasar.
- *
- * ⚠️ Si alguien vuelve a bajar estos números, vuelve el corte en diagonal. */
+
 .card-item.rarity-creator::before {
   content: "";
   position: absolute;
@@ -880,24 +860,6 @@ button, a, select {
   border: 1px solid var(--border-default);
 }
 
-/* 🌟 EL INTERIOR DE LA CARTA DE CREATOR
- *
- * ARREGLO (Nacho, 24/09): el logo de la coalición salía pegado a la foto, y
- * en las demás cartas no. El porqué:
- *
- * .card-item es `display: flex` en columna con `gap: var(--space-4)`, y ese
- * hueco lo reparte entre sus HIJOS DIRECTOS. En una carta normal los hijos
- * directos son .card-header, .card-artwork, .card-body y .card-stats, así que
- * se separan solos. En CreatorCard todo eso va envuelto en un
- * .creator-card-content, o sea un único hijo: el gap de .card-item no llega
- * dentro, y como esta clase no estaba definida en ninguna hoja, sus hijos se
- * quedaban pegados unos a otros.
- *
- * Se le pone el MISMO flex y el MISMO gap que .card-item para que la carta de
- * creator se separe igual que todas las demás.
- *
- * ⚠️ Si se cambia el gap de .card-item, hay que cambiarlo aquí también. Van
- * juntos a propósito: son el mismo hueco visto desde dos niveles distintos. */
 .creator-card-content {
   display: flex;
   flex-direction: column;
@@ -914,19 +876,7 @@ button, a, select {
   pointer-events: none;
 }
 
-/* 🔢 EL CONTADOR DE REPETIDAS (el ×2, ×3) DE UNA CARTA
- *
- * ARREGLO (Nacho, 24/09): esta clase se usaba en CreatorCard.jsx pero NO
- * estaba definida en ninguna hoja de estilo. Sin CSS, el <span> del ×2 se
- * pintaba como texto normal dentro del marco: arriba a la izquierda y sin
- * formato. Por eso las cartas de creator con repetidas se veían distintas a
- * todas las demás.
- *
- * La carta normal hacía lo mismo con estilos escritos a mano en el JSX. Ahora
- * las dos usan esta clase, para que no se puedan volver a desincronizar: el
- * contador está escrito en UN sitio.
- *
- * Depende de que .card-artwork sea position: relative, que lo es (arriba). */
+
 .card-copies-badge {
   position: absolute;
   top: 8px;

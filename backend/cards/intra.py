@@ -54,8 +54,6 @@ DOS TRAMPAS COMPROBADAS CONTRA LA API DE VERDAD (15/09)
    ampliado, pero no cuesta ninguna petición de más: fill_db ya lo pide
    para cada alumno, para sacarle el título.
 """
-
-# El 42cursus. El 9 es la piscina, y NO cuenta para la carta.
 CURSUS_TRONCO = 21
 
 
@@ -72,7 +70,6 @@ def datos_del_alumno(json_api):
     carta rara antes que tumbar la carga entera del catálogo a la mitad.
     """
     if "cursus_users" in json_api:
-        # Vino de /users/<login>: el usuario arriba, los cursus dentro.
         usuario = json_api
         cursus = next(
             (c for c in json_api.get("cursus_users") or []
@@ -80,7 +77,6 @@ def datos_del_alumno(json_api):
             {},
         )
     else:
-        # Vino de /cursus_users: el cursus arriba, el usuario dentro.
         usuario = json_api.get("user") or {}
         cursus = json_api
 
@@ -89,44 +85,19 @@ def datos_del_alumno(json_api):
     return {
         "login":     usuario.get("login"),
         "id":        usuario.get("id"),
-        # 📸 La grande si existe, y si no la mediana. Lo pidió Sergio el
-        #    17/09: con la mediana se cortaban las cabezas en las cartas.
-        #    Aquí y no en fill_db, para que valga para las dos rutas de la API.
         "foto":      ((imagen.get("versions") or {}).get("large")
                       or (imagen.get("versions") or {}).get("medium")),
         "wallet":    usuario.get("wallet") or 0,
         "puntos":    usuario.get("correction_point") or 0,
-        # ℹ️ ¿La cuenta sigue activa? Es un dato fiable -la Intra sí lo
-        #    mantiene- pero YA NO DECIDE NADA: el 16/09 el equipo decidió que
-        #    entra en el álbum todo aquel a quien no le hayan cerrado el
-        #    cursus, aunque lleve tiempo sin venir. Se deja por si algún día
-        #    se quiere enseñar en la carta un "hace tiempo que no aparece".
         "activo":    bool(usuario.get("active?")),
-        # 👔 OJO: esto NO quiere decir "su carta es Staff". Quiere decir
-        #    "esta es una cuenta creada a propósito para el staff", que es
-        #    justo la que hay que IGNORAR: nivel 0, sin cursus, y entre
-        #    ellas hay bots. Para saber si la carta es Staff hay que usar
-        #    `es_alumno_del_staff` de aquí abajo, sobre el perfil ampliado.
         "cuenta_staff": bool(usuario.get("staff?")),
         "nivel":     cursus.get("level") or 0.0,
         "grade":     cursus.get("grade"),
-        # 🏁 Cuándo se cerró su cursus. Vacío mientras sigue.
         "fin":       cursus.get("end_at"),
-        # ⏳ Su fecha límite. La tiene TODO alumno vivo del tronco común,
-        #    así que tenerla NO significa haber caído.
-        #
-        #    ⚠️ Y NO SIRVE PARA FILTRAR: la Intra no la mantiene al día. Hay
-        #    176 personas en el campus con esta fecha pasada (mediana 120
-        #    días) y la cuenta perfectamente activa: congelaciones,
-        #    extensiones, gente que entregó a tiempo. Se deja porque es
-        #    información útil de la carta, pero quien decide si alguien entra
-        #    es "activo", de aquí arriba.
+
         "blackhole": cursus.get("blackholed_at"),
     }
 
-
-# El logro que le dan a un alumno cuando entra a trabajar en 42. Se llama
-# "Come to the dark side, we have cookies".
 LOGRO_STAFF = 65
 
 

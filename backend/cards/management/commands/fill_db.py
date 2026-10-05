@@ -3,19 +3,18 @@ import time
 import requests
 from django.core.management.base import BaseCommand
 from cards.models import Card
-from cards.rarezas import rareza_de          # 🎴 Nacho, 10/09 y 15/09
-from cards.intra import datos_del_alumno, es_alumno_del_staff   # 🔌 Nacho, 15/09
+from cards.rarezas import rareza_de         
+from cards.intra import datos_del_alumno, es_alumno_del_staff  
 
     # =========================================================================
     # 🛠️ FUNCIONES AUXILIARES COMPARTIDAS (Misma lógica, cero redundancia)
     # =========================================================================
-def _obtener_headers_auth():  # 1. Quitamos 'self'
+def _obtener_headers_auth():  
     """Gestiona las credenciales y devuelve los cabeceros con el Token."""
     CLIENT_ID = os.environ.get('CLIENT_ID_PABLO')
     CLIENT_SECRET = os.environ.get('CLIENT_SECRET_PABLO')
     url_token = os.environ.get('URL_TOKEN')
 
-    # 2. Cambiamos self.stdout por print normal
     print("🔑 Solicitando token de acceso...")
     
     payload_token = {
@@ -26,7 +25,6 @@ def _obtener_headers_auth():  # 1. Quitamos 'self'
     
     response_token = requests.post(url_token, data=payload_token)
     if response_token.status_code != 200:
-        # 3. Cambiamos self.stdout por print normal
         print(f"❌ Error Token: {response_token.text}")
         return None
 
@@ -37,12 +35,6 @@ class Command(BaseCommand):
     help = 'Puebla el catálogo de forma masiva filtrando los 10.000 usuarios históricos o actualiza solo a los creadores'
 
     def add_arguments(self, parser):
-        # 🔧 ARREGLO (Nacho, 24/09): solo indentación. `parser.add_argument`
-        # estaba a 12 espacios donde van 8, había espacios sueltos al final de
-        # dos líneas y a `def handle` le faltaba la línea en blanco de delante.
-        # Compilaba (un comentario no abre bloque y era la única sentencia del
-        # cuerpo), pero de milagro: en cuanto se añada un segundo argumento a
-        # 8 espacios, revienta con IndentationError.
         parser.add_argument(
             '--quick',
             action='store_true',
@@ -55,7 +47,6 @@ class Command(BaseCommand):
         if not headers:
             return
 
-        # 🏴 CASO B: FASE MASIVA HISTÓRICA POR PÁGINAS (JSON Anidado)
         mapa_coaliciones = self._pre_cargar_mapa_coaliciones(headers)
         
         self.stdout.write(self.style.WARNING("\n🚀 Descargando perfiles oficiales de 42 Madrid (Filtrando piscinas)..."))
@@ -69,7 +60,6 @@ class Command(BaseCommand):
 
 
         while True:
-            #self.stdout.write(self.style.WARNING(f"📥 Solicitando página {pagina_actual} de la lista de usuarios..."))
             
             # Endpoint oficial de cursus_users filtrando Madrid (campus 22) y el cursus principal (21)
             url_madrid = f"{os.environ.get('BASE_API')}/cursus_users?filter[cursus_id]=21&filter[campus_id]=22&page[size]={por_pagina}&page[number]={pagina_actual}&sort=id"
@@ -95,101 +85,12 @@ class Command(BaseCommand):
             for registro in usuarios_pagina:
                 self._procesar_registro_usuario(registro, mapa_coaliciones, headers,banned_logins)
 
-            # 🛑 MODO PRUEBA: Procesa los 100 primeros de la página 1 y frena.
-            # Quita este break cuando quieras lanzar la sincronización de todo el campus.
             if options.get('quick'):
                 self.stdout.write(self.style.WARNING("\n⚡ Modo rápido activado: Finalizando tras la página 1."))
                 break
             pagina_actual += 1
             time.sleep(0.5)
 
-
-    # =========================================================================
-    # 🚀 FLUJO 1: SINCRONIZACIÓN EXCLUSIVA DE CREADORES (JSON NATIVO /users/:login)
-    # =========================================================================
-    def _sincronizar_creadores_directo(self, headers):
-        """Sincroniza los creadores extrayendo los datos directamente de la raíz de /users/:login"""
-        self.stdout.write(self.style.SUCCESS("\n🛠️ Modo Creadores Activo: Procesando perfiles específicos..."))
-        
-        # ⚠️ Pon aquí vuestros 5 logins exactos de la Intra
-        logins_creadores = ["pablalva", "smarquez", "nmagro-r", "ksudyn", "osmunoz-"]
-
-        for login in logins_creadores:
-            self.stdout.write(f"🔍 Solicitando perfil directo de: {login}...")
-            url_user = f"{os.environ.get('BASE_API')}/users/{login}"
-            res_user = requests.get(url_user, headers=headers)
-            
-            if res_user.status_code != 200:
-                self.stdout.write(self.style.ERROR(f"❌ No se pudo obtener el perfil de {login}"))
-                continue
-                
-            perfil = res_user.json()
-            user_id = perfil.get("id")
-
-            if perfil.get("staff?"):
-                self.stdout.write(self.style.WARNING(f"   ⏩ Saltando a {login} (Es miembro del Staff)"))
-                continue
-
-            # Consultar su coalición real de forma individual
-            coalition = "Zefiria"
-            url_user_coal = f"{os.environ.get('BASE_API')}/users/{user_id}/coalitions"
-            res_coal = requests.get(url_user_coal, headers=headers)
-            if res_coal.status_code == 200 and res_coal.json():
-                coalition = res_coal.json()[0].get("name", "Zefiria")
-
-            # 🔌 ARREGLADO (Nacho, 15/09): aquí se llamaba a
-            # `self._parsear_datos_cursus(perfil)`, que NO EXISTE en ningún
-            # sitio del fichero. Este flujo entero reventaba con AttributeError
-            # antes de llegar a guardar nada.
-            #
-            # Ahora el trabajo lo hace cards/intra.py, que además es la misma
-            # función que usa el flujo masivo: así los dos leen igual aunque la
-            # API les devuelva el JSON con formas distintas.
-            d = datos_del_alumno(perfil)
-            nivel_cursus = d["nivel"]
-            blackhole = d["fin"] is not None
-
-            # 🎴 CAMBIO (Nacho, 10/09): la rareza sale del NIVEL, no del grade.
-            # El porqué, con los datos reales de la Intra, está en
-            # cards/rarezas.py. Resumen: Alumni no es mejor que Transcender,
-            # es alguien que se quedó parado al final del tronco común.
-            #
-            # Aquí NO se filtra a nadie: estos cinco somos los del equipo y
-            # nuestras cartas tienen que existir siempre, pase lo que pase con
-            # nuestro cursus. Sin ellas la portada da errores 404.
-            # 👔 El logro 65 va en la cuenta de alumno. `perfil` es el
-            # perfil ampliado, así que los logros ya vienen dentro.
-            del_staff = es_alumno_del_staff(perfil)
-            tier = rareza_de(d["grade"], nivel_cursus, del_staff)
-
-            # Parseo de Título (Reutilizado)
-            titulo = _parsear_titulo_usuario(perfil, login)
-
-            # Extracción de datos básicos (Campos raíz del JSON directo)
-            # La foto sale de datos_del_alumno, como todo lo demás. Sergio la
-            # quería en grande (17/09) para que no se corten las cabezas, y eso
-            # se decide en cards/intra.py, en un solo sitio para las dos rutas.
-            url_foto = d["foto"]
-            puntos_eval = perfil.get("correction_point", 0)
-            wallets = perfil.get("wallet", 0)
-
-            # 🔌 ARREGLADO (Nacho, 15/09): aquí ponía `self._(`, que tampoco
-            # existe. Era `self._guardar_o_actualizar_carta`.
-            self._guardar_o_actualizar_carta(
-                login=login, photo=url_foto, coalition=coalition, title=titulo,
-                altarians=wallets, cursus_lvl=nivel_cursus, eval_point=puntos_eval,
-                is_blackhole=blackhole, tier=tier
-            )
-            time.sleep(0.5)
-
-        self.stdout.write(self.style.SUCCESS("\n🏁 ¡Los 5 creadores han sido sincronizados con éxito!"))
-
-
-    # =========================================================================
-    # 🏴 FLUJO 2: PROCESAMIENTO GENERAL POR PÁGINAS (JSON ANIDADO /cursus_users)
-    # =========================================================================
-
-    # TODO:el grado se debe sacar del bloque general(registro) no des alumno(basico) comprobar con el script de pruebas
 
     def _procesar_registro_usuario(self, registro, mapa_coaliciones, headers,banned_logins):
         """Filtra, extrae y procesa un usuario proveniente del volcado masivo paginado."""
@@ -207,32 +108,10 @@ class Command(BaseCommand):
         if not coalition:
             return
 
-        # 👔 Nacho, 15/09: esto salta las cuentas CREADAS A PROPÓSITO para el
-        # staff (kind=admin, nivel 0, sin cursus), y está bien que las salte:
-        # entre ellas hay bots y cuentas de servicio como marvin,
-        # 42madrid_tech o madridbocal.
-        #
-        # Las cartas de Staff NO salen de aquí: salen de la cuenta de ALUMNO
-        # de esa persona, que sí tiene cursus y nivel, y se reconoce por el
-        # logro 65 más abajo. Por ejemplo bazuara (alumno, nivel 16,49) sí es
-        # carta; sultan (su cuenta de staff) no.
         if registro.get("user",{}).get("staff?"):
             self.stdout.write(self.style.WARNING(f"   ⏩ Saltando a {login_alumno} (cuenta de servicio del staff)"))
             return
         
-        # 🎴 CAMBIO (Nacho, 10/09). Dos cosas, y las dos con datos reales de la
-        # Intra detrás (el detalle está en cards/rarezas.py):
-        #
-        #   1. El FILTRO. Antes solo se saltaba a quien había caído ANTES de
-        #      junio de 2023, así que quien cayó en 2024 o 2025 entraba igual.
-        #      Ahora se salta a cualquiera cuyo cursus se haya acabado.
-        #
-        #      Se mira `end_at` y no `blackholed_at`: blackholed_at es la fecha
-        #      límite que tiene TODO alumno vivo del tronco común, así que no
-        #      dice nada sobre si sigue o no. end_at solo se rellena cuando el
-        #      cursus se acabó de verdad.
-        #
-        #   2. La RAREZA sale del nivel, no del grade.
         d = datos_del_alumno(registro)
         fin_del_cursus = d["fin"]
         nivel_cursus = round(d["nivel"], 2)
@@ -241,16 +120,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(
                 f"   ⏩ Saltando a {login_alumno} (su cursus terminó el {fin_del_cursus[:10]})"))
 
-            # 🗑️ BORRADO DE LOS QUE YA NO ESTÁN (Pablo, 16/09)
-            #
-            # A quien la Intra le ha cerrado el cursus se le quita la carta del
-            # catálogo. Y al borrarla se va TAMBIÉN de los álbumes de quien la
-            # tuviera y de las propuestas de intercambio con esa carta dentro:
-            # lo hace la base de datos sola, por las relaciones en cascada.
-            #
-            # Por eso se cuenta ANTES a cuánta gente afecta y se dice: si no,
-            # alguien abre su perfil mañana, ve que le faltan puntos y no hay
-            # forma de saber por qué.
             carta = Card.objects.filter(login=login_alumno).first()
             if carta:
                 cuantos = carta.poseedores.count()
@@ -261,71 +130,11 @@ class Command(BaseCommand):
                     + (f" · la tenían {cuantos} personas" if cuantos else "")))
             return
 
-        # ⚠️ AQUÍ HUBO UN FILTRO POR `active?` Y SE QUITÓ A PROPÓSITO (16/09).
-        #
-        # La decisión es del equipo, y es de juego, no técnica: entra en el
-        # álbum TODO AQUEL A QUIEN LA INTRA NO LE HAYA CERRADO EL CURSUS.
-        #
-        # Por el camino se probaron otras dos formas y las dos estaban mal:
-        #
-        #   1. Descartar a quien se le hubiera pasado la fecha límite. Mal:
-        #      `blackholed_at` no se mantiene al día en la API. Hay 176
-        #      personas con esa fecha pasada y la cuenta activa.
-        #
-        #   2. Descartar a quien tuviera `active?` en falso. También mal para
-        #      lo que queremos: deja fuera a 236 personas -casi todas Alumni
-        #      paradas al final del tronco común, tipo pcuadrad o aleon-ca-
-        #      que siguen VIVAS y pueden volver al campus cuando quieran. La
-        #      intra nunca les cerró el cursus, así que siguen siendo alumnos.
-        #
-        # El dato `activo` se sigue trayendo en cards/intra.py, pero ya NO
-        # decide nada: queda como información, por si algún día se quiere
-        # enseñar en la carta un "lleva tiempo sin venir".
-        #
-        # Si alguien vuelve a añadir un filtro aquí, que sea a sabiendas.
-
-        # 🚫 NIVEL 0: NO SE HACE CARTA (decisión del equipo, 21/09)
-        #
-        # POR QUÉ: en el álbum apareció `madridqa3`, que no es una persona.
-        # Es una cuenta de pruebas del campus (qa = quality assurance), con el
-        # logo de 42 de foto. Se coló porque pasa los tres filtros de arriba:
-        # no lleva "bot" en el nombre, tiene coalición de cursus (Marventis) y
-        # la Intra NO la marca como cuenta de staff. Para la API es un alumno
-        # normal.
-        #
-        # POR QUÉ ESTE CORTE Y NO UNA LISTA NEGRA: una lista con los logins
-        # conocidos hay que ir manteniéndola a mano y siempre se escapa el
-        # siguiente (madridqa4...). El nivel 0 los caza a todos y se mantiene
-        # solo.
-        #
-        # Y NO DEJA FUERA A NADIE DE VERDAD: quien acaba de entrar al tronco
-        # común tendrá su carta en la siguiente carga, en cuanto entregue su
-        # primer proyecto y suba de 0. Es lo mismo que ya se decidió con los
-        # recién salidos de la piscina: una carta de quien no ha empezado no
-        # cuenta nada.
-        #
-        # COMPROBADO antes de ponerlo: de las 824 cartas del catálogo, la
-        # ÚNICA con nivel 0 era madridqa3. Este filtro no se lleva a nadie más
-        # por delante.
-        #
-        # Va aquí y no más arriba a propósito: después del borrado de los que
-        # ya no están (para que a esos se les siga limpiando la carta) y ANTES
-        # de `_consultar_perfil_extendido`, que es una petición a la API. Así
-        # cada cuenta que se salta también ahorra una petición.
         if nivel_cursus <= 0:
             self.stdout.write(self.style.WARNING(
                 f"   ⏩ Saltando a {login_alumno} (nivel 0: aún no ha empezado "
                 f"o es una cuenta de pruebas)"))
 
-            # Y si ya tenía carta de una carga anterior, se le quita. Mismo
-            # criterio que el borrado de arriba (Pablo, 16/09): al borrarla
-            # desaparece también de los álbumes y de los intercambios, por las
-            # relaciones en cascada. Por eso se cuenta ANTES a cuánta gente
-            # afecta y se dice en voz alta.
-            #
-            # ⚠️ Esto solo puede pasarle a una cuenta que YA estaba a nivel 0
-            # cuando se cargó, porque el nivel no baja nunca. O sea: a las
-            # cuentas de pruebas, no a un alumno que fuera avanzando.
             carta = Card.objects.filter(login=login_alumno).first()
             if carta:
                 cuantos = carta.poseedores.count()
@@ -343,10 +152,6 @@ class Command(BaseCommand):
         if not perfil_completo:
             return
 
-        # 👔 La rareza se calcula AQUÍ y no antes, a propósito: el logro 65
-        # (el que dice que este alumno trabaja en el campus) solo viene en el
-        # perfil ampliado, y esa petición se hace justo arriba para sacar el
-        # título. Calcularlo antes obligaría a pedirlo dos veces.
         del_staff = es_alumno_del_staff(perfil_completo)
         tier = rareza_de(d["grade"], nivel_cursus, del_staff)
 
@@ -357,9 +162,6 @@ class Command(BaseCommand):
         self._guardar_o_actualizar_carta(
             login=login_alumno, photo=url_foto, coalition=coalition, title=titulo,
             altarians=wallets, cursus_lvl=nivel_cursus, eval_point=puntos_eval,
-            # Siempre False: aquí solo se llega si el cursus NO ha terminado.
-            # (El parámetro no se guarda en ninguna parte: el modelo Card no
-            #  tiene ese campo. Se deja para no cambiarle la firma a Pablo.)
             is_blackhole=False, tier=tier)
         time.sleep(0.5)
 
@@ -434,8 +236,6 @@ class Command(BaseCommand):
                 'altarians': altarians,
                 'cursus_lvl': cursus_lvl,
                 'eval_point': eval_point,
-                # La rareza, ya decidida arriba con el grade y el nivel que
-                # acaba de devolver la API (ver cards/rarezas.py).
                 'tier': tier,
             }
         )

@@ -17,12 +17,10 @@ class MessageAdmin(admin.ModelAdmin):
     list_filter = ('leido', 'created_at')
     search_fields = ('sender__username', 'receiver__username', 'texto')
 
-    # 🔎 El desplegable de usuario cargaría la lista entera de alumnos en cada
-    # mensaje. Con raw_id se escribe el id y se busca con la lupa.
     raw_id_fields = ('sender', 'receiver')
 
     date_hierarchy = 'created_at'
-    ordering = ('-created_at',)   # aquí interesa lo último, al revés que en el chat
+    ordering = ('-created_at',) 
 
     @admin.display(description='Mensaje')
     def vista_previa(self, mensaje):

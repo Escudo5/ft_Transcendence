@@ -15,10 +15,6 @@ urlpatterns = [
     path('sobres/abrir/<str:tipo_sobre>/', views.abrir_sobre_endpoint, name='abrir_sobre'),
     path("album/", views.album_usuario, name='album_usuario'),
 
-    # ✅ CORRECTO: Sin 'cards/' delante y colocado ANTES de <str:login>/
-    # ⚠️ La de Pablo. Se queda tal cual, no se toca. Ojo: desde un navegador
-    # con sesión da 500 (lee request.body dos veces). La que usa la pantalla
-    # es la de abajo.
     path('contract/', views.make_contract, name='make_contract'),
 
     # 🤝 CONTRATOS (nuestra version, cards/contratos.py)

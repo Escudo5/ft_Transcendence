@@ -5,9 +5,6 @@ import re
 import requests
 import os
 import uuid
-# Nacho, 1/10: con otro nombre a propósito. _generar_html_datos tiene una
-# variable local llamada `html`, y en Python eso la hace local en TODA la
-# función: un `html.escape(...)` dentro reventaría con UnboundLocalError.
 from html import escape as escapar_html
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -112,12 +109,6 @@ def login_42_callback(request):
         usuario.profile_image = datos_perfil.get("image", {}).get("versions", {}).get("medium")
         usuario.estado = 'online'  # Se acaba de conectar
 
-        # PASO 6: 🗑️ Aquí se guardaba `last_login_date` (Nacho, 18/09).
-        # Solo se escribía: ninguna decisión del proyecto dependía de su
-        # valor, y Django ya trae `last_login`, que rellena él solo al hacer
-        # login() tres líneas más abajo. De hecho la exportación del RGPD ya
-        # usaba el de Django, no el nuestro. El regalo diario se lleva en
-        # `ultimo_regalo_diario`, que sí decide.
 
         usuario.save()  # Guardamos todo en PostgreSQL
 
@@ -159,15 +150,6 @@ def me(request):
 
     u = request.user
 
-    # 🟢 La señal de vida ya NO se anota aquí (Nacho, 18/09).
-    #
-    # Estaba solo en esta vista, y el front la llama al abrir la página y
-    # poco más. Mientras tanto el chat pregunta cada 3 segundos sin marcar
-    # nada, así que a los 5 minutos aparecías desconectado escribiendo.
-    #
-    # Ahora lo hace users/middleware.py en TODAS las peticiones con sesión,
-    # con un freno de un minuto. Cuando esta vista llega, request.user ya
-    # trae la fecha nueva, así que el `estado_real` de abajo es correcto.
 
     return JsonResponse({
         'id': u.id,
@@ -204,31 +186,12 @@ def _estadisticas_coleccion(usuario):
     from cards.models import Card, UserCard
     from cards.rarezas import TODAS, puntos_de
 
-    # El orden de las rarezas ya no se escribe aquí: viene de cards/rarezas.py,
-    # que es donde se decide cuáles hay. Antes estaba copiado a mano y, al
-    # cambiar las rarezas, "tu carta más rara" dejó de reconocer la mitad.
     mis_cartas = UserCard.objects.filter(user=usuario).select_related('card')
     distintas = mis_cartas.count()
     total_catalogo = Card.objects.count()
     con_repetidas = sum(c.cantidad for c in mis_cartas)
 
-    # 🏆 TU CARTA MÁS RARA
-    #
-    # Antes solo se comparaba la RAREZA, y con un mayor estricto:
-    #
-    #     if TODAS.index(tier) > TODAS.index(mejor['tier']):
-    #
-    # O sea que la primera Legendaria que encontrara se quedaba, y ninguna otra
-    # Legendaria la podía desbancar, porque ninguna es "más" que otra. Y como
-    # la consulta no lleva orden, la base de datos las devuelve como quiere:
-    # te enseñaba una al azar de entre las de arriba.
-    #
-    # A Nacho, con 5 Legendarias, le salía la de nivel 14,59 y no la de 22,61.
-    #
-    # Ahora se desempata por NIVEL. Tiene sentido porque la rareza ya se
-    # calcula a partir del nivel (ver cards/rarezas.py): es la misma vara de
-    # medir, solo que más fina. Así "tu carta más rara" es de verdad la mejor
-    # que tienes, no una cualquiera.
+
     def cuanto_vale(uc):
         return (TODAS.index(uc.card.tier), uc.card.cursus_lvl or 0)
 
@@ -237,8 +200,6 @@ def _estadisticas_coleccion(usuario):
     puntos = 0
     for uc in mis_cartas:
         tier = uc.card.tier
-        # Solo las distintas suman: el bucle va por UserCard, que tiene una
-        # fila por carta, no una por copia.
         puntos += puntos_de(tier)
         if tier not in TODAS:
             continue
@@ -331,15 +292,6 @@ def _logros(usuario, stats):
         logro('veterano', '🏅', distintas, 25),
         logro('medio_album', '📖', int(stats['porcentaje']), 50),
         logro('completista', '👑', distintas, total_catalogo),
-        # 🎴 CAMBIO (Nacho, 10/09 y 15/09). Estos logros miraban rarezas que
-        # ya no existen: "Buscador de Alumni" se había vuelto IMPOSIBLE de
-        # conseguir, y el 15/09 el nombre volvió a cambiar (Legendaria ->
-        # Legendario) al pasar a cinco rarezas.
-        #
-        # Las rarezas salen de cards/rarezas.py, nunca escritas a mano, que es
-        # justo lo que hizo que esto se rompiera las dos veces. Si el import
-        # de arriba falla, es que alguien renombró una rareza y este fichero
-        # se enterará EN EL ARRANQUE, no cuando un usuario abra su perfil.
         logro('leyenda', '✨', 1 if LEGENDARIO in tiers else 0, 1, rareza=LEGENDARIO),
         # 👔 Nuevo con la quinta rareza: solo 9 cartas de 824.
         logro('staff', '👔', 1 if STAFF in tiers else 0, 1, rareza=STAFF),
@@ -368,17 +320,6 @@ def _perfil_publico(usuario):
         'puntos': stats['puntos'],
         'estado': usuario.estado_real,
         'is_alumni': usuario.is_alumni,
-        # 🔗 Nacho, 21/09: ¿esta cuenta entró con 42?
-        #
-        # Hace falta para el botón que lleva a su perfil de la Intra: esa
-        # dirección se arma con el login, y SOLO vale para quien entró por
-        # 42, porque ahí el username ES su login de la Intra. Quien se
-        # registra con correo tiene un nombre inventado por nosotros
-        # (_generar_username), y ese perfil no existe en la Intra.
-        #
-        # Va el sí/no y NO el id_42: el número es dato privado y por eso no
-        # sale de aquí. Saber que alguien entró con 42 no revela nada que no
-        # se vea ya en su propio nombre de usuario.
         'es_de_42': usuario.id_42 is not None,
         'miembro_desde': usuario.date_joined.date().isoformat(),
         'coleccion': stats,
@@ -665,15 +606,12 @@ def _generar_csv_datos(datos):
     organizado por secciones (datos de cuenta, álbum de cartas y sobres).
     """
     buffer = io.StringIO()
-    writer = _EscritorCsvSeguro(csv.writer(buffer))   # Nacho, 1/10: ver la clase de arriba
+    writer = _EscritorCsvSeguro(csv.writer(buffer))  
 
-    # Nacho, 1/10: el JSON y el HTML dicen cuándo se exportaron; el CSV no.
     writer.writerow(['Exportado el', datos.get('exportado_el')])
     writer.writerow([])
 
     # 1. Sección Datos de Cuenta
-    # (Nacho, 1/10: los títulos eran "=== ... ===" y, al empezar por "=", la
-    #  hoja de cálculo los leía como fórmula a CUALQUIER usuario)
     writer.writerow(['DATOS DE LA CUENTA'])
     writer.writerow(['Campo', 'Valor'])
     cuenta = datos.get('cuenta', {})
@@ -696,8 +634,6 @@ def _generar_csv_datos(datos):
     for s in datos.get('sobres', []):
         writer.writerow([s.get('tipo'), s.get('cantidad')])
 
-    # Nacho, 1/10: la marca BOM delante. Sin ella, Excel abre el UTF-8 como si
-    # fuera otra codificación y las tildes y eñes salen rotas ("Ã±").
     return '\ufeff' + buffer.getvalue()
 
 
@@ -710,10 +646,6 @@ def _generar_html_datos(datos):
     album = datos.get('album', [])
     sobres = datos.get('sobres', [])
 
-    # Nacho, 1/10: TODO dato que entra en el HTML pasa por h(). Antes iban
-    # tal cual, y una biografía "<script>...</script>" salía en el fichero como
-    # código que el navegador ejecuta al abrirlo. Va en todos, no solo en lo que
-    # escribe el usuario: los logins de las cartas vienen de la API de 42.
     def h(valor):
         return escapar_html(str(valor))
 
@@ -822,12 +754,6 @@ def descargar_mis_datos(request):
 
     u = request.user
 
-    # ⚠️ Nacho, 22/09 (recuperado el 1/10): aquí había un corte que devolvía
-    # un 400 si la cuenta no tenía correo. Se quita: ahora los datos se
-    # descargan igual y el correo es un extra para quien lo tenga (ver el
-    # paso 3). Quedarse sin poder sacar tus propios datos por no tener correo
-    # es justo lo que el RGPD no permite, y pasa de verdad: el login de 42
-    # deja el email a None cuando la Intra no devuelve ninguno.
 
     # 1. Recopilamos todos sus datos
     datos = {
@@ -866,9 +792,6 @@ def descargar_mis_datos(request):
 
     # 2. Leemos el parámetro de formato ('json' por defecto)
     fmt = request.GET.get('format', 'json').lower()
-    # Nacho, 1/10: lo que no sea csv ni html se trata como json, también en el
-    # texto del correo. Antes ?format=xml descargaba un JSON y el correo decía
-    # "archivo (XML)".
     if fmt not in ('csv', 'html'):
         fmt = 'json'
 
@@ -890,23 +813,6 @@ def descargar_mis_datos(request):
         respuesta = JsonResponse(datos, json_dumps_params={'indent': 2, 'ensure_ascii': False})
 
     # 3. 📧 EL CORREO CON LOS DATOS ADJUNTOS.
-    #
-    # ⚠️ Nacho, 22/09 (recuperado el 1/10): el correo SE SUMA a la descarga,
-    # no la sustituye.
-    #
-    # Tal como estaba, los datos SOLO llegaban por correo, y eso tenía dos
-    # problemas serios:
-    #
-    #   1. Quien no tiene correo se quedaba sin sus datos. Y eso puede
-    #      pasar: el campo admite vacío y el login de 42 lo deja a None si
-    #      la Intra no devuelve correo. Para esa persona, el derecho de
-    #      acceso del RGPD dejaba de existir.
-    #   2. Si el servidor de correo fallaba, la respuesta era un 500 y no
-    #      había forma de conseguir los datos.
-    #
-    # Así que ahora se hacen las dos cosas: el fichero se descarga siempre,
-    # y además llega una copia por correo a quien tenga. Si el correo falla,
-    # la descarga sigue funcionando: por eso fail_silently=True.
     if u.email:
         correo = EmailMessage(
             subject='Tus datos de Transcendence',
@@ -920,18 +826,8 @@ def descargar_mis_datos(request):
             from_email=None,  # Utiliza DEFAULT_FROM_EMAIL definido en settings.py
             to=[u.email],
         )
-        # Nacho, 1/10: en BYTES UTF-8, no como texto. Con texto, Django solo
-        # codifica bien los adjuntos text/* (CSV, HTML); el JSON (application/*)
-        # lo trata como binario y Python lo convertía por su cuenta: las tildes
-        # llegaban en Latin-1 y el árabe y los emojis como "\u0645...". Pasaba
-        # desde el 22/09 y solo se nota con letras fuera del ASCII.
         correo.attach(nombre_archivo, contenido.encode('utf-8'), mime_type)
         correo.send(fail_silently=True)
-
-    # 4. Y la descarga de siempre en el navegador, que es la que el front pide
-    #    con un enlace (Perfil.jsx). Devolver aquí otra cosa dejaba al usuario
-    #    mirando el fichero en una pestaña en blanco, fuera de la web.
-    #    (Nacho, 22/09; recuperado el 1/10)
     respuesta['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
     return respuesta
 
@@ -949,16 +845,6 @@ def borrar_mi_cuenta(request):
     email_usuario = usuario.email  # Guardamos el email antes de borrar nada
 
     # 1. 🖼️ EL FICHERO DEL AVATAR, A MANO.
-    #
-    # ⚠️ Nacho, 22/09: esto estaba desde el principio y se perdió al meter los
-    # correos. Lo recupero porque es justo lo que todo el mundo se deja:
-    # al borrar el usuario, Django quita la fila de la base de datos pero NO
-    # TOCA EL FICHERO DEL DISCO, así que la foto se quedaría ahí para siempre.
-    # Y en la Política de Privacidad prometemos que al borrar la cuenta no
-    # queda nada, así que hay que cumplirlo.
-    #
-    # Va lo primero, antes que nada: si fallara, la cuenta no se borra y no
-    # nos quedamos con una cuenta ida y una foto huérfana.
     if usuario.avatar:
         usuario.avatar.delete(save=False)
 
@@ -975,20 +861,6 @@ def borrar_mi_cuenta(request):
     logout(request)
 
     # 4. 📧 Y AHORA el correo de confirmación, cuando ya está todo hecho.
-    #
-    # ⚠️ Nacho, 22/09: dos cambios sobre lo que había, y los dos por el mismo
-    # motivo: que un problema del servidor de correo NO impida borrar una
-    # cuenta.
-    #
-    #   - Va DESPUÉS del borrado, no antes. Así el correo dice la verdad
-    #     ("se han eliminado") en vez de prometerlo antes de hacerlo.
-    #   - Va con fail_silently=True. Antes era False: si el servidor de
-    #     correo estaba caído, saltaba la excepción, la cuenta NO se borraba
-    #     y el usuario recibía un error 500. O sea que el derecho a borrar tus
-    #     datos se quedaba bloqueado por algo que no tiene nada que ver.
-    #
-    # El RGPD es el borrado; el correo es cortesía. Si falla la cortesía, no
-    # se cae el derecho.
     if email_usuario:
         send_mail(
             subject='Tu cuenta ha sido eliminada',

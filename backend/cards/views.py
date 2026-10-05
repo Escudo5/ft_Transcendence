@@ -83,21 +83,12 @@ def login_alumno(request, login):
 def home(request):
     return render(request,'cards/home.html')
 
-# 🎁 Los sobres. Los números ya no están aquí: viven en cards/rarezas.py,
-# junto a las rarezas, porque estaban escritos a mano y al cambiar las
-# rarezas se quedaron viejos sin que nadie se enterara (el sorteo tiene un
-# "si no hay de esa rareza, coge cualquiera" y se lo tragaba en silencio).
-#
-# Se mantiene la MISMA FORMA de siempre para no tocar nada de lo que la usa.
 CONFIGURACION_SOBRES = {
     tipo: {"probabilidades": dict(probabilidades),
            "cartas_por_sobre": CARTAS_POR_SOBRE}
     for tipo, probabilidades in PROBABILIDADES_SOBRE.items()
 }
 
-# 🤝 El orden de los contratos de Pablo: 4 cartas distintas de la misma
-# rareza -> 1 de la rareza siguiente. De menos a más rara, y sale de
-# rarezas.py para que no se pueda desincronizar otra vez.
 TIER_ORDER = list(TODAS)
 @api_view(['POST'])
 @csrf_exempt  # Permite recibir peticiones POST sin error 403 CSRF durante pruebas
@@ -166,7 +157,6 @@ def make_contract(request):
 
         result_card = random.choice(tier_cards)
 
-        # <-- Corregido (UserCard.objects.get_or_create)
         new_user_card, created = UserCard.objects.get_or_create(
             user=request.user,
             card=result_card,
@@ -300,9 +290,6 @@ def ranking(request):
     total_catalogo = Card.objects.count() or 1
     orden = request.query_params.get('orden', 'puntos')
 
-    # Traduce la rareza de cada carta a sus puntos DENTRO de la consulta, para
-    # que sume la base de datos y no nosotros. Los pares salen del diccionario
-    # de rarezas, así que añadir una rareza nueva no obliga a tocar esto.
     puntos_de_la_carta = Case(
         *[When(album__card__tier=rareza, then=Value(valor))
           for rareza, valor in PUNTOS.items()],
@@ -315,8 +302,6 @@ def ranking(request):
         .annotate(
             distintas=Count('album', distinct=True),
             copias=Coalesce(Sum('album__cantidad'), 0),
-            # Suma sobre las filas de UserCard, que hay una por carta distinta:
-            # tener 10 copias de la misma no suma diez veces.
             puntos=Coalesce(Sum(puntos_de_la_carta), 0),
         )
     )
@@ -332,7 +317,6 @@ def ranking(request):
             'posicion': posicion,
             'username': u.username,
             'nombre': u.nombre_mostrado or u.get_full_name() or u.username,
-            # .foto: enseña el avatar que haya subido y, si no tiene, el de la Intra
             'profile_image': u.foto,
             'estado': u.estado_real,
             'cartas_distintas': u.distintas,
@@ -346,17 +330,6 @@ def ranking(request):
         'cartas_en_catalogo': total_catalogo,
         'orden': orden,
         'clasificacion': clasificacion,
-        # 🏆 Nacho, 21/09: la mejor carta que EXISTE en el catálogo, para el
-        # tablón de la portada.
-        #
-        # Va aquí y no en un endpoint aparte para no añadir una cuarta
-        # petición a la portada: el ranking ya recorre el catálogo (de hecho
-        # ya devuelve cuántas cartas hay), así que el dato sale casi gratis.
-        #
-        # Usa el MISMO criterio que "tu carta más rara" del perfil: primero
-        # la rareza y, dentro de la misma, el nivel más alto. Si cada sitio
-        # ordenara a su manera, la portada y el perfil podrían decir cosas
-        # distintas de la misma colección.
         'carta_mas_alta': _mejor_carta_del_catalogo(),
     })
 
@@ -368,9 +341,6 @@ def _mejor_carta_del_catalogo():
     Devuelve None si el catálogo está vacío: la portada tiene que aguantar
     una base recién creada sin reventar.
     """
-    # El orden de TODAS va de menos a más rara, así que su posición sirve de
-    # nota: cuanto más alta, mejor carta. Se traduce dentro de la consulta
-    # para que ordene PostgreSQL y no nosotros en Python.
     nota_por_rareza = Case(
         *[When(tier=rareza, then=Value(posicion))
           for posicion, rareza in enumerate(TODAS)],
@@ -385,15 +355,6 @@ def _mejor_carta_del_catalogo():
     if carta is None:
         return None
 
-    # ⚠️ Nacho, 21/09: aquí se mandaba también la coalición y se ha quitado.
-    # El equipo decidió que no salga en el tablón de la portada, que es el
-    # único sitio que pide este dato, así que mandarla era cargar la
-    # respuesta con algo que nadie mira. Si algún día se quiere enseñar, es
-    # una línea aquí y otra en CartaMini (Home.jsx).
-    #
-    # Se devuelven los mismos campos que `carta_mas_rara` del perfil a
-    # propósito: las dos cartas van una al lado de la otra en el tablón y
-    # tienen que poder pintarse con el mismo componente.
     return {
         'login': carta.login,
         'tier': carta.tier,
@@ -435,26 +396,6 @@ def abrir_sobre_endpoint(request, tipo_sobre):
     # EL USUARIO CONECTADO SE OBTIENE DIRECTAMENTE CON request.user
     user = request.user
 
-    # 🔒 TODO JUNTO O NADA (Nacho, 10/09).
-    #
-    # Antes esto iba suelto: se restaba el sobre, luego se sorteaban las
-    # cartas y luego se guardaban, cada cosa por su lado. Dos problemas
-    # medidos, no supuestos:
-    #
-    #   1. CARTAS QUE SE PERDÍAN. Guardar una carta era leer la fila, sumarle
-    #      uno y volver a guardarla. Con dos peticiones a la vez (un doble
-    #      clic, o dos pestañas), las dos leían 1, las dos guardaban 2, y un
-    #      incremento desaparecía. Probado con 6 peticiones simultáneas y 2
-    #      sobres: en 2 de 3 rondas llegaron 9 y 8 cartas en vez de 10.
-    #
-    #   2. SOBRES QUE SE EVAPORABAN. El sobre se restaba ANTES de guardar las
-    #      cartas y sin transacción: si algo fallaba a mitad, te quedabas sin
-    #      sobre y sin cartas.
-    #
-    # La solución es la misma que ya usan el regalo diario, el intercambio y
-    # el descarte, y por eso conviene que se parezcan: transacción para que
-    # sea todo o nada, y bloqueo de fila para que la segunda petición espere
-    # a que termine la primera en vez de pisarla.
     try:
         with transaction.atomic():
             # select_for_update: la fila queda bloqueada hasta el final de la
@@ -495,8 +436,6 @@ def abrir_sobre_endpoint(request, tipo_sobre):
                     UserCard.objects.filter(pk=fila.pk).update(
                         cantidad=F('cantidad') + 1)
     except Exception as e:
-        # Si salta aquí, la transacción ya ha deshecho TODO: el sobre sigue en
-        # el inventario y no se ha guardado ninguna carta a medias.
         return Response(
             {"error": f"No se ha podido abrir el sobre: {e}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR

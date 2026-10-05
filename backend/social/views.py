@@ -145,8 +145,7 @@ class BloquearView(APIView):
         otro, error = self._buscar(request, username)
         if error:
             return error
-        # get_or_create: bloquear dos veces no da error, simplemente no
-        # hace nada la segunda. Así un doble clic no rompe la pantalla.
+
         _, creado = Bloqueo.objects.get_or_create(de=request.user, a=otro)
         return Response({
             'detail': f'Has bloqueado a {otro.username}.' if creado
@@ -187,7 +186,7 @@ class BuscarUsuariosView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated]
 
-    LIMITE = 30  # no tiene sentido volcar el campus entero en una ventanita
+    LIMITE = 30  
 
     def get(self, request):
         yo = request.user

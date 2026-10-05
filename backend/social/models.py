@@ -59,7 +59,6 @@ class Bloqueo(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        # Una sola vez por pareja y dirección: bloquear dos veces no hace nada
         unique_together = ('de', 'a')
         indexes = [
             models.Index(fields=['de', 'a']),

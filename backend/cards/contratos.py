@@ -178,20 +178,11 @@ class ContratosView(APIView):
                            f'cartas, y has elegido {total}.'},
                 status=status.HTTP_400_BAD_REQUEST)
 
-        # ⚠️ TODO dentro de la transacción, validación incluida.
-        #
-        # En la de Pablo la comprobación estaba FUERA y el descuento
-        # dentro: entre una cosa y otra, otra peticion podia cambiar las
-        # cantidades. Validar y gastar tienen que ir juntos y con la fila
-        # bloqueada, o la comprobacion no vale de nada.
         with transaction.atomic():
             filas = list(
                 UserCard.objects.select_for_update()
                 .filter(user=request.user, card_id__in=pedido)
                 .select_related('card')
-                # Siempre en el mismo orden: si dos peticiones bloquean
-                # las mismas filas en orden distinto, se quedan esperando
-                # la una a la otra y PostgreSQL corta una por interbloqueo.
                 .order_by('card_id')
             )
             por_id = {f.card_id: f for f in filas}
@@ -202,7 +193,6 @@ class ContratosView(APIView):
                 if fila is None:
                     return Response({'detail': 'Alguna de esas cartas no está en tu álbum.'},
                                     status=status.HTTP_400_BAD_REQUEST)
-                # La regla de Pablo: siempre te queda una
                 if fila.cantidad - cuantas < 1:
                     return Response(
                         {'detail': f'De {fila.card.login} tienes {fila.cantidad} '
@@ -229,10 +219,7 @@ class ContratosView(APIView):
                 return Response({'detail': f'No hay ninguna carta {sube_a} en el catálogo.'},
                                 status=status.HTTP_400_BAD_REQUEST)
 
-            # ---- A partir de aquí ya no se puede fallar: se gasta y se da ----
             for id_carta, cuantas in pedido.items():
-                # F(): la resta la hace la base de datos en una sola orden,
-                # así no hay ningún momento con el número viejo en la mano.
                 UserCard.objects.filter(pk=por_id[id_carta].pk).update(
                     cantidad=F('cantidad') - cuantas)
 
@@ -248,8 +235,6 @@ class ContratosView(APIView):
             'rareza_entregada': rareza,
             'rareza_recibida': sube_a,
             'carta': _carta_json(premio),
-            # Para que la pantalla pueda enseñar "¡nueva!" y no confundir
-            # una carta que ya tenías con una que te faltaba
             'era_nueva': creada,
         }, status=status.HTTP_200_OK)
 

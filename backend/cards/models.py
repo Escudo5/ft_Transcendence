@@ -14,37 +14,16 @@ class Card(models.Model):
     altarians = models.IntegerField(default=0)                            # Tus wallets de la intra
     cursus_lvl = models.FloatField(default=0.0)
     eval_point = models.IntegerField(default=0)
-    
-    # 📸 ARREGLADO: max_length=500 para evitar que el CDN de 42 rompa el límite de caracteres
     photo = models.URLField(max_length=500, blank=True, null=True)
+    
     
 
     # ==========================================
     # PARTE NO VISIBLE
     # ==========================================
-    # ⚠️ Nacho, 15/09: el valor por defecto era "Bronce", una rareza que no
-    # existe desde hace días. Nunca dio error porque nadie lo comprobaba.
     tier = models.CharField(max_length=50, default=JUNIOR)
-
-    # 🗑️ Aquí estuvieron `grade` y `es_staff` entre el 15/09 y el 18/09.
-    # Los quitó Pablo y el equipo lo dio por bueno. Lo que hay que saber:
-    #
-    # LA RAREZA SIGUE SALIENDO BIEN. `fill_db` y `login_card` cogen el grade
-    # de la API en el momento de la carga y llaman a `rareza_de(grade,
-    # nivel, es_staff)` (ver cards/rarezas.py). Lo que ya no se hace es
-    # GUARDARLO, porque en la web no se pinta en ningún sitio.
-    #
-    # ⚠️ EL PRECIO, para que nadie se lo encuentre por sorpresa: sin el
-    # grade guardado no se puede rehacer la rareza de las cartas que ya
-    # están en la base. Por eso el 18/09 se borró `recalcular_rarezas`, que
-    # existía justo para eso. Si algún día se mueve un corte de rareza
-    # (por ejemplo Legendario de 14 a 15), hay que volver a cargar el
-    # catálogo entero: ~824 alumnos, y el límite de la API son 1200
-    # peticiones por hora.
-
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # 🛠️ ARREGLADO: Cambiado 'self.name' por 'self.login' para evitar que explote Django
     def __str__(self) -> str:
         return f"Carta de {self.login}"
 
@@ -80,10 +59,6 @@ class UserPack(models.Model):
     tipo_sobre = models.CharField(max_length=20, choices=TIPOS_SOBRE)
     cantidad = models.PositiveIntegerField(default=0)
 
-    # 🗑️ Aquí había `last_daily`, quitado el 18/09. Se escribía al entregar
-    # el regalo y NO lo leía nadie: quien decide si te toca regalo es
-    # `CustomUser.ultimo_regalo_diario` (ver cards/views.py). Dos campos
-    # para lo mismo, y uno de ellos solo escribía.
 
     class Meta:
         unique_together = ('user', 'tipo_sobre')

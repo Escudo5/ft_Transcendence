@@ -332,23 +332,7 @@ class ResponderIntercambioView(APIView):
 # =====================================================================
 
 COPIAS_PARA_DESCARTAR = 4   # las que se queman por cada grupo
-
-# Las que hay que TENER para poder quemar un grupo. No son las mismas: de cada
-# carta te queda siempre una, así que para quemar 4 hacen falta 5.
-#
-# ⚠️ Nacho, 11/09: esto existe porque ayer cambié la regla y actualicé el POST
-# y la pantalla de Sergio, pero me dejé este GET diciendo que con 4 valía. No
-# reventaba nada (hoy nadie llama al GET), pero la misma ruta afirmaba una cosa
-# y hacía otra. Ahora las dos miran la misma constante.
 COPIAS_MINIMAS_PARA_DESCARTAR = COPIAS_PARA_DESCARTAR + 1
-
-# ⚠️ Nacho, 10/09: esto lo escribió Sergio con las rarezas de ayer (Junior,
-# Senior, Alumni, Blackhole) y yo las cambié el mismo día, así que 44 de las
-# 54 cartas daban "no pertenece a la calidad del sobre". Su código está bien;
-# solo se le quedó viejo el diccionario.
-#
-# Ahora sale de cards/rarezas.py, que es donde se decide qué rarezas hay, para
-# que no se pueda volver a desincronizar.
 SOBRES_POR_TIER = RAREZAS_POR_SOBRE
 SOBRE_DEL_DESCARTE = 'raro'  # Compatibilidad con clientes antiguos.
 
@@ -429,13 +413,6 @@ class DescartarView(APIView):
                 if fila is None:
                     return Response({'detail': 'No tienes una de las cartas seleccionadas.'},
                                     status=status.HTTP_400_BAD_REQUEST)
-                # ⚠️ Nacho, 10/09: antes esto era `< copias_necesarias`, así que
-                # con 4 copias justas podías quemarlas todas y LA CARTA
-                # DESAPARECÍA de tu álbum: perdías sus puntos y te volvía a
-                # faltar. Nadie quiere eso, y menos sin avisar.
-                #
-                # Ahora hace falta una copia más, que es la regla que ya tenía
-                # el contrato de Pablo: entregas sobrantes, nunca la última.
                 if fila.cantidad - copias_necesarias < 1:
                     return Response(
                         {'detail': f'De {fila.card.login} tienes {fila.cantidad} copias '
@@ -451,10 +428,6 @@ class DescartarView(APIView):
             for fila in filas:
                 fila.cantidad -= COPIAS_PARA_DESCARTAR * grupos_por_carta[fila.card_id]
                 if fila.cantidad == 0:
-                    # Con la comprobación de arriba esto ya NO puede pasar:
-                    # siempre queda al menos una copia. Se deja como red de
-                    # seguridad por si alguien cambia la regla y se olvida de
-                    # esto, pero si algún día salta, es que hay un fallo.
                     fila.delete()
                 else:
                     fila.save(update_fields=['cantidad'])
@@ -466,8 +439,6 @@ class DescartarView(APIView):
             pack.save(update_fields=['cantidad'])
 
         return Response({
-            # Nacho: decía "te has llevado 1 sobres raro". Con un solo sobre
-            # queda raro y se ve en pantalla.
             'mensaje': f'Has descartado {COPIAS_PARA_DESCARTAR * sobres_creados} copias '
                        f'y te has llevado {sobres_creados} '
                        f'sobre{"" if sobres_creados == 1 else "s"} {tipo_sobre}.',

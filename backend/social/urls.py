@@ -10,13 +10,6 @@ from .views import (
     BloquearView,
 )
 
-# 🤝 RUTAS DE AMISTADES
-#
-# Este fichero FALTABA. Las cinco vistas estaban escritas desde agosto pero no
-# había forma de llegar a ellas: en Django, una vista sin ruta es código
-# muerto. Por eso el sistema de amigos "no funcionaba" aunque estuviera hecho.
-#
-# Todo cuelga de /api/social/ (ver backend/app/urls.py).
 
 urlpatterns = [
     # --- Solicitudes ---
