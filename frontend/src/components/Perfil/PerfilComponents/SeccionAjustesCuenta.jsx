@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Button, Card, SecondaryButton, TextField } from '../../ui';
 import { useI18n } from '../../../i18n';
 
+// ⚠️ NO TRADUCIR: users/views.py:944 compara con esta cadena exacta. Traducida,
+// nadie podría borrar su cuenta y no daría error. La frase que la rodea sí se
+// traduce (typeToConfirm, más abajo).
 const FRASE_BORRADO = 'BORRAR MI CUENTA';
 
 async function obtenerCsrfToken(apiBaseUrl) {
