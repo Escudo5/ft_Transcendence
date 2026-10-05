@@ -1,7 +1,11 @@
+import math
+
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from rest_framework import permissions, status
+from rest_framework.exceptions import Throttled
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
 from social.models import FriendRequest
@@ -9,6 +13,31 @@ from social.models import FriendRequest
 from .models import Message
 
 User = get_user_model()
+
+
+class LimiteEnvioChat(UserRateThrottle):
+    """
+    🚦 Un tope de mensajes por minuto al ESCRIBIR (Nacho, 5/10).
+
+    Nada impedía que un script metiera mil mensajes en un bucle. El número
+    (60/min, en settings.py) es holgado a propósito: un mensaje por segundo es
+    más de lo que teclea cualquiera, así que no corta a una persona de verdad.
+
+    ⚠️ SOLO CUENTA LOS POST, y eso es lo importante: el GET de la conversación
+    lo pide el front cada 3 segundos (20 por minuto). Si compartieran el cupo,
+    al que estuviera con el chat abierto le quedarían 40 mensajes en vez de 60,
+    y se le acabarían sin haber escrito tanto.
+
+    Se cuenta por usuario, no por IP: en 42 todo el campus sale por la misma
+    línea y compartiríais el mismo cubo (ver publicapi/limites.py, que explica
+    esto para la API pública).
+    """
+    scope = 'chat_envio'
+
+    def allow_request(self, request, view):
+        if request.method != 'POST':
+            return True
+        return super().allow_request(request, view)
 
 
 # =====================================================================
@@ -57,8 +86,23 @@ class ConversacionView(APIView):
     En el GET se admite ?desde=<id> para pedir solo lo nuevo. El front
     pregunta cada pocos segundos, y sin eso estaría descargando la
     conversación entera una y otra vez.
+
+    ⚠️ EL ?desde= FILTRA POR id (id > desde), NO POR FECHA. El front tiene que
+    guardar el id más alto que ha RECIBIDO, nunca el del mensaje que acaba de
+    enviar: si guarda el suyo, se salta los del otro con id menor y esos
+    mensajes se quedan en la base sin llegar a pintarse nunca. Pasó, y está
+    explicado en ChatSocial.jsx (donde se envía).
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [LimiteEnvioChat]
+
+    def throttled(self, request, wait):
+        """El 429 con un mensaje que se pueda leer, en vez del de fábrica."""
+        segundos = math.ceil(wait) if wait else 60
+        raise Throttled(detail=(
+            f'Estás enviando mensajes demasiado rápido. '
+            f'Espera {segundos} segundos.'
+        ), wait=segundos)
 
     def _buscar_otro(self, request, username):
         """Devuelve (usuario, respuesta_de_error). Solo una de las dos."""

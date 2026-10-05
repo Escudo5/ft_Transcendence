@@ -241,10 +241,24 @@ function ChatSocial() {
         const nuevosMensajes = datosRespuesta.mensajes || [];
         if (!nuevosMensajes.length) return;
 
-        ultimoMensajeIdRef.current = nuevosMensajes[nuevosMensajes.length - 1].id;
-        setMensajes((prevMensajes) =>
-          idUltimo ? [...prevMensajes, ...nuevosMensajes] : nuevosMensajes
+        // La referencia se mueve al id más alto RECIBIDO, no al último de la
+        // lista: el servidor ordena por fecha y el filtro va por id, y aunque
+        // en la práctica coinciden, así no depende de que coincidan.
+        ultimoMensajeIdRef.current = Math.max(
+          ultimoMensajeIdRef.current || 0,
+          ...nuevosMensajes.map((m) => m.id)
         );
+
+        setMensajes((prevMensajes) => {
+          if (!idUltimo) return nuevosMensajes;
+          // Sin repetir: tu propio mensaje ya se pintó al enviarlo y vuelve a
+          // llegar en este refresco. Y ordenados por id, porque el tuyo se
+          // pintó antes de que llegara el del otro aunque sea posterior.
+          const yaEstan = new Set(prevMensajes.map((m) => m.id));
+          const aAñadir = nuevosMensajes.filter((m) => !yaEstan.has(m.id));
+          if (!aAñadir.length) return prevMensajes;
+          return [...prevMensajes, ...aAñadir].sort((a, b) => a.id - b.id);
+        });
       } catch (err) {
         console.error('Error al cargar la conversación:', err);
         setError(t('serverError'));
@@ -358,8 +372,22 @@ function ChatSocial() {
         return;
       }
 
+      // Se pinta ya, para verlo al instante sin esperar al refresco.
       setMensajes((prevMensajes) => [...prevMensajes, datosRespuesta]);
-      ultimoMensajeIdRef.current = datosRespuesta.id;
+
+      // ⚠️ AQUÍ ESTABA EL FALLO DE LOS MENSAJES PERDIDOS, y por eso NO se
+      // toca la referencia (Nacho, 5/10).
+      //
+      // Había un `ultimoMensajeIdRef.current = datosRespuesta.id`. El refresco
+      // pide ?desde=<referencia> y el servidor filtra id > desde, así que al
+      // apuntar el id DE TU MENSAJE te saltabas los del otro con id menor:
+      //
+      //   vais por el 98 · el otro manda el 99 · tú mandas el 100
+      //   la referencia salta a 100 · el 99 no vuelve NUNCA
+      //
+      // Quedaba guardado en la base y no se pintaba. Dejándola en el último id
+      // RECIBIDO, el siguiente refresco trae el 99 y el 100, y el de arriba se
+      // encarga de no repetir el tuyo y de ordenarlos.
       setBorrador('');
     } catch (err) {
       console.error('Error al enviar el mensaje:', err);

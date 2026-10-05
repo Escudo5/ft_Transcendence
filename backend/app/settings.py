@@ -152,6 +152,10 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "api_lectura": "60/min",     # consultar: 1 por segundo de media
         "api_escritura": "20/min",   # crear o borrar: cuesta más, se aprieta
+        # 💬 Mandar mensajes de chat. Holgado a propósito: un mensaje por
+        # segundo es más de lo que escribe nadie, así que no corta a una
+        # persona de verdad, pero sí a un script en bucle. Ver chat/views.py.
+        "chat_envio": "60/min",
     },
 }
 
