@@ -2,7 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from cards.views import crear_carta, lista_cartas, home, login_alumno
+from cards.views import login_alumno
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -23,10 +23,25 @@ urlpatterns = [
     # con una clave en vez de con la cookie del navegador.
     path('api/publica/', include('publicapi.urls')),
 
-    # 🖥️ Vistas directas que teníais para pruebas en el navegador
-    path('home/', home, name='home'),
-    path('crear/', crear_carta, name='crear_carta'),
-    path('catalogo/', lista_cartas, name='lista_cartas'),
+    # 🗑️ AQUÍ HABÍA TRES RUTAS DE ANTES DE REACT, y se han quitado (5/10).
+    #
+    #     path('home/',     home,          name='home')
+    #     path('crear/',    crear_carta,   name='crear_carta')
+    #     path('catalogo/', lista_cartas,  name='lista_cartas')
+    #
+    # Eran las pantallas que Django pintaba solo, al principio del proyecto,
+    # antes de que el front fuera React. Llevaban a tres plantillas HTML que
+    # Pablo borró el 5/10 (commit cbe78d8) junto con los comentarios, pero las
+    # rutas se quedaron: las tres respondían 500 (TemplateDoesNotExist).
+    #
+    # Se quitan en vez de devolver las plantillas porque no las usaba NADIE:
+    # ni el front (comprobado) ni el resto del backend. Y `crear_carta` encima
+    # llamaba a `redirect` sin importarlo, así que su POST ya estaba roto
+    # desde siempre.
+    #
+    # ⚠️ Las direcciones /catalogo y /crear SIGUEN EXISTIENDO, pero son del
+    # front (React las enruta en App.jsx). Lo que se ha quitado son las de
+    # Django, en el puerto 8000.
 ]
 
 # 🖼️ Para que se vean los avatares que sube la gente.

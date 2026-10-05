@@ -3,11 +3,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework import status
-from django.shortcuts import render,get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.permissions import IsAuthenticated
 from .models import Card
-from .forms import CardForm
 from users.models import CustomUser
 from .serializers import CardSerializer, UserCardSerializer
 import random
@@ -29,21 +27,6 @@ class HealthCheckView(APIView):
 class CardListCreateView(generics.ListCreateAPIView):
     queryset = Card.objects.all().order_by("-created_at")
     serializer_class = CardSerializer
-
-def crear_carta(request):
-    if request.method == 'POST':
-        form = CardForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('crear_carta')
-    else:
-        form = CardForm()
-    return render(request,'cards/crear_carta.html',{'form':form})
-
-# Create your views here.
-def lista_cartas(request):
-    cartas = Card.objects.all()
-    return render(request,'cards/lista_cartas.html',{'cartas':cartas})
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])  # Exige que el usuario esté autenticado
@@ -80,8 +63,24 @@ def login_alumno(request, login):
             {"error": f"No se encontró ninguna carta para el login: {login}"}, 
             status=status.HTTP_404_NOT_FOUND
         )
-def home(request):
-    return render(request,'cards/home.html')
+
+
+# 🗑️ AQUÍ ESTABAN crear_carta, lista_cartas Y home, y se han quitado (5/10).
+#
+# Eran las tres pantallas que Django pintaba solo al principio del proyecto,
+# antes de que el front fuera React. Pintaban tres plantillas HTML que Pablo
+# borró el 5/10 (commit cbe78d8), pero las vistas y sus rutas se quedaron, así
+# que /home/, /crear/ y /catalogo/ del puerto 8000 respondían 500.
+#
+# Comprobado antes de borrarlas: no las llamaba el front, no las llamaba el
+# resto del backend, no las tocaba ningún test, y no queda ninguna plantilla
+# .html en el proyecto. `crear_carta` además usaba `redirect` sin importarlo,
+# o sea que su POST llevaba roto desde siempre.
+#
+# Con ellas se han ido dos imports que ya no usaba nadie: `render` y
+# `get_object_or_404` (este último ya estaba sin usar), y `CardForm`. Eso deja
+# cards/forms.py sin usar: se deja en su sitio, que lo decida el equipo en la
+# limpieza.
 
 CONFIGURACION_SOBRES = {
     tipo: {"probabilidades": dict(probabilidades),
