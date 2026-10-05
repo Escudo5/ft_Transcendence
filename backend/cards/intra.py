@@ -95,6 +95,8 @@ def datos_del_alumno(json_api):
         "grade":     cursus.get("grade"),
         "fin":       cursus.get("end_at"),
 
+        # ⚠️ NO vale para filtrar: la Intra no la mantiene al día (hay 176
+        # personas con fecha pasada y la cuenta activa). El corte es "fin".
         "blackhole": cursus.get("blackholed_at"),
     }
 

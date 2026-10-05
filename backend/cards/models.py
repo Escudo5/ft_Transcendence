@@ -21,6 +21,8 @@ class Card(models.Model):
     # ==========================================
     # PARTE NO VISIBLE
     # ==========================================
+    # ⚠️ El default sale de rarezas.py, nunca escrito a mano: era 'Bronce',
+    # una rareza que dejó de existir, y nadie se enteró hasta semanas después.
     tier = models.CharField(max_length=50, default=JUNIOR)
     created_at = models.DateTimeField(auto_now_add=True)
 
