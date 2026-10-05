@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import Card
 from users.models import CustomUser
 from .serializers import CardSerializer, UserCardSerializer
@@ -20,13 +20,37 @@ from .rarezas import CARTAS_POR_SOBRE, PROBABILIDADES_SOBRE, PUNTOS, TODAS
 from django.utils import timezone
 
 class HealthCheckView(APIView):
+    """
+    Dice si el backend está vivo. No devuelve ningún dato.
+
+    ⚠️ ES LA ÚNICA VISTA DE ESTE FICHERO QUE SE QUEDA ABIERTA, y a propósito:
+    una comprobación de salud que exige sesión no sirve para comprobar nada.
+    No expone nada: solo responde {"status": "ok"}.
+    """
+    permission_classes = [AllowAny]
+
     def get(self, request):
         return Response({"status": "ok"})
 
 
-class CardListCreateView(generics.ListCreateAPIView):
+class CardListView(generics.ListAPIView):
+    """
+    El catálogo entero. Solo lectura y solo con sesión.
+
+    ⚠️ ARREGLO (Nacho, 5/10): esto era `CardListCreateView(ListCreateAPIView)`
+    y NO declaraba permisos, así que DRF le ponía AllowAny. Resultado:
+    CUALQUIERA, sin estar registrado, podía mandar un POST aquí y METER UNA
+    CARTA en el catálogo. Comprobado antes de arreglarlo: el POST sin sesión
+    llegaba al serializador y solo fallaba por la longitud del login.
+    Y el GET enseñaba las 824 cartas a cualquiera.
+    Son dos cambios:
+      - ListCreateAPIView -> ListAPIView: ya no admite POST. Nadie lo usaba
+        (el front no llama a /api/cards/; las cartas las crea `fill_db`).
+      - permission_classes explícito, no heredado.
+    """
     queryset = Card.objects.all().order_by("-created_at")
     serializer_class = CardSerializer
+    permission_classes = [IsAuthenticated]
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])  # Exige que el usuario esté autenticado
@@ -47,6 +71,14 @@ def album_usuario(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])  # Decorador necesario para Django REST Framework
+# ⚠️ ARREGLO (Nacho, 5/10): le faltaba el permiso, así que DRF le ponía
+# AllowAny y la carta de cualquier alumno (login, coalición, nivel, puntos de
+# evaluación y saldo) se podía pedir sin estar registrado.
+#
+# Ponerlo NO rompe nada: el único sitio que lo llama es Home.jsx, y a la
+# portada no se llega sin sesión (RUTAS_PUBLICAS en App.jsx son solo
+# /privacidad y /terminos). Comprobado.
+@permission_classes([IsAuthenticated])
 def login_alumno(request, login):
     try:
         # 1. Busca la carta del alumno en PostgreSQL por su login

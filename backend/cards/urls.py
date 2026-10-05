@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CardListCreateView, HealthCheckView, abrir_sobre_endpoint, album_usuario, make_contract
+from .views import CardListView, HealthCheckView, abrir_sobre_endpoint, album_usuario, make_contract
 from . import views
 from .intercambios import (
     IntercambiosView, RepetidasView, ResponderIntercambioView, DescartarView,
@@ -8,7 +8,8 @@ from .contratos import ContratosView
 
 urlpatterns = [
     path("health/", HealthCheckView.as_view(), name="health"),
-    path("", CardListCreateView.as_view(), name="cards-list-create"), # Corresponde a /api/cards/
+    # Corresponde a /api/cards/. Solo lectura desde el 5/10: ver CardListView.
+    path("", CardListView.as_view(), name="cards-list"),
     path('ranking/', views.ranking, name='ranking'),
     path('sobres/', views.mis_sobres, name='mis_sobres'),
     path('sobres/reclamar/', views.reclamar_regalo_diario, name='reclamar_regalo_diario'),

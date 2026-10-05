@@ -871,8 +871,29 @@ def borrar_mi_cuenta(request):
         )
 
     return JsonResponse({'mensaje': f'La cuenta de {nombre} se ha borrado correctamente.'})
+
+
 def list_users(request):
-    """Devuelve usuarios de la base de datos para pintarlos en el front."""
+    """
+    Devuelve usuarios de la base de datos para pintarlos en el front.
+
+    Lo usa el álbum (Catalogo.jsx) para poner el nombre de verdad debajo de
+    las cartas de quien además está registrado en la web.
+
+    ⚠️ ARREGLO (Nacho, 5/10): ESTO NO PEDÍA SESIÓN. Era la única de las doce
+    vistas de este fichero que no la comprobaba, así que cualquiera que llegara
+    al puerto, sin estar registrado, se bajaba de TODOS los usuarios: su
+    nombre y apellidos de verdad, su foto, y si estaba conectado en ese
+    momento. Probado por los dos puertos antes de arreglarlo: 200 los dos.
+    (El correo y el id_42 nunca han salido de aquí; eso estaba bien.)
+
+    Ponerlo no rompe nada: el único sitio que la llama es Catalogo.jsx, y al
+    álbum no se llega sin sesión (RUTAS_PUBLICAS en App.jsx son solo
+    /privacidad y /terminos). Comprobado.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)
+
     users = CustomUser.objects.all().order_by('username')
     logins = request.GET.get('logins')
 

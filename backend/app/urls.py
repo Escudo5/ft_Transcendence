@@ -2,14 +2,23 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from cards.views import login_alumno
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     
     # 🃏 RUTAS DE LAS CARTAS (Todo lo que empiece por api/cards/)
     path("api/cards/", include("cards.urls")),
-    path("api/cards/<str:login>",login_alumno,name="login_alumno"),
+    # 🗑️ AQUÍ HABÍA UNA RUTA REPETIDA, y se ha quitado (5/10):
+    #
+    #     path("api/cards/<str:login>", login_alumno, name="login_alumno")
+    #
+    # Era la MISMA que la última de cards/urls.py, pero sin la barra final, y
+    # hacía que login_alumno estuviera declarada dos veces con el mismo nombre.
+    #
+    # Quitarla no rompe nada: el único sitio que la llama es Home.jsx y pone la
+    # barra (Home.jsx:124). Y aunque alguien la pidiera sin barra, APPEND_SLASH
+    # está activo y CommonMiddleware la redirige a la versión con barra.
+    # Las dos cosas comprobadas.
     # 👥 RUTAS DE LOS USUARIOS (Todo lo que empiece por api/users/)
     path('api/users/', include('users.urls')),
 

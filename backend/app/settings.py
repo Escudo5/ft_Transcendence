@@ -129,6 +129,25 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # pida expresamente uno de estos dos límites. Mientras nadie los pida, es
 # como si no existieran. Por eso la API pública se enchufa vista a vista,
 # en publicapi/, y no toca ni una línea del resto del backend.
+#
+# ──────────────────────────────────────────────────────────────────────
+# 📌 REVISADO EL 5/10 Y SE MANTIENE LA DECISIÓN. Se planteó añadir aquí
+# DEFAULT_PERMISSION_CLASSES para cerrar de golpe dos endpoints que
+# estaban abiertos, y se descartó: no hace falta tocar el defecto.
+#
+# Medido vista a vista preguntándole a Django: de las 45 rutas del
+# proyecto, SOLO DOS heredaban el permiso por defecto. Las otras 43 lo
+# declaran ellas o lo sacan de su mixin, así que el cambio global no las
+# habría tocado. Para dos vistas no merece la pena un cambio que afecta a
+# todo: se les ha puesto el permiso a ellas (cards/views.py).
+#
+# ⚠️ Y si algún día se pone de verdad, DOS TRAMPAS que ya están medidas:
+#   1. publicapi/documentacion.py lee REST_FRAMEWORK['DEFAULT_THROTTLE_RATES']
+#      directamente. Si se reescribe este diccionario sin esa clave, la
+#      portada de la API revienta con un KeyError.
+#   2. publicapi/documentacion.py decide si una ventanilla "pide clave"
+#      mirando si AllowAny está en sus permission_classes. HealthCheckView
+#      se quedaría cerrada y habría que ponerle AllowAny a mano.
 REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "api_lectura": "60/min",     # consultar: 1 por segundo de media
