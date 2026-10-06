@@ -72,6 +72,52 @@ def _pide_clave(vista):
     return permissions.AllowAny not in getattr(vista, 'permission_classes', [])
 
 
+# Qué poner en el hueco de los ejemplos. Tiene que ser un valor que la ruta
+# ACEPTE de verdad, no una etiqueta: <int:pk> no casa con 'ID'.
+EJEMPLOS_DE_HUECO = {
+    'id': '1',          # <int:pk> -> un número o la ruta no casa
+    'login': 'LOGIN',   # <str:login> -> cualquier texto vale
+}
+
+
+def _hueco_con_valor(ruta):
+    """
+    Cambia los huecos por un valor de ejemplo QUE LA RUTA ACEPTE:
+    <login> -> LOGIN   y   <id> -> 1
+
+    ⚠️ ESTO NO ES COSMÉTICO, ARREGLA UN ENLACE ROTO (Nacho, 6/10).
+
+    Esta página la pide el navegador como HTML, así que DRF la pinta con su
+    página navegable. Y esa página convierte en ENLACE toda dirección que
+    encuentra en el JSON, cortándola en el primer carácter que no vale en una
+    URL. El '<' no vale. Así que de este ejemplo:
+
+        curl ... https://…/api/publica/alumnos/<login>/
+
+    DRF sacaba un enlace a  /api/publica/alumnos/ , y eso NO es una ruta: solo
+    existe alumnos/<str:login>/. Un enlace de la documentación que daba 404.
+
+    Los otros dos huecos se salvaban por casualidad: al cortarlos quedaba una
+    ruta que sí existe (intercambios/ y claves/ contestan 401).
+
+    ⚠️ Y AQUÍ ESTÁ LA TRAMPA, que me costó un intento: no basta con quitarle
+    los picos al hueco. Poniendo 'ID' se arreglaba alumnos/ pero se rompían
+    claves/ID/ e intercambios/ID/, porque esas rutas son <int:pk> y no casan
+    con texto. Tiene que ser un NÚMERO.
+
+    Así los ejemplos además se pueden copiar y pegar de verdad, que es para lo
+    que están. Con <login> dentro no se podían.
+
+    El campo 'ruta' de la documentación SIGUE con <login> y <id>, que se leen
+    mejor: esa no es una dirección completa y DRF no la enlaza (comprobado).
+    """
+    return re.sub(
+        r'<([a-z_]+)>',
+        lambda m: EJEMPLOS_DE_HUECO.get(m.group(1), m.group(1).upper()),
+        ruta,
+    )
+
+
 def _ejemplo_curl(base, ruta, metodo, cuerpo, con_clave=True):
     """Un ejemplo que se puede copiar y pegar tal cual en la terminal."""
     trozos = ['curl -k']
@@ -82,7 +128,7 @@ def _ejemplo_curl(base, ruta, metodo, cuerpo, con_clave=True):
     if cuerpo:
         trozos.append('-H "Content-Type: application/json"')
         trozos.append(f"-d '{json.dumps(cuerpo, ensure_ascii=False)}'")
-    trozos.append(f'{base}{ruta}')
+    trozos.append(f'{base}{_hueco_con_valor(ruta)}')
     return ' '.join(trozos)
 
 
