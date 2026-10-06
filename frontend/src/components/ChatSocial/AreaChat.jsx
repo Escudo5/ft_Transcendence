@@ -53,6 +53,45 @@ function AreaChat({
   const finDeLaListaRef = useRef(null);
   const [modalIntercambioAbierto, setModalIntercambioAbierto] = useState(false);
 
+  /* 📜 EL SCROLL AUTOMÁTICO, QUE ANTES TE ARRASTRABA ABAJO (Nacho, 6/10)
+   *
+   * Aquí había un `scrollIntoView` que bajaba al último mensaje CADA VEZ que
+   * cambiaba la lista, sin mirar dónde estabas. Si te ibas hacia arriba a leer
+   * y el otro escribía, te devolvía abajo de un tirón (y con 'smooth', medio
+   * segundo peleando contra tu dedo).
+   *
+   * Ahora solo baja si YA estabas abajo, o si el mensaje nuevo es tuyo (lo
+   * acabas de escribir y esperas verlo). Si estabas leyendo arriba, no te mueve
+   * y aparece un botón para bajar cuando quieras.
+   *
+   * ⚠️ POR QUÉ LA POSICIÓN SE APUNTA AL HACER SCROLL Y NO DENTRO DEL EFECTO:
+   * el efecto corre DESPUÉS de pintar el mensaje nuevo, así que ahí el alto ya
+   * ha crecido. Midiendo en ese momento, un mensaje largo daría "no estabas
+   * abajo" aunque lo estuvieras, y no bajaría. Por eso se guarda en una
+   * referencia cada vez que el usuario mueve el scroll, que es ANTES.
+   */
+  const contenedorMensajesRef = useRef(null);
+  const estabaAbajoRef = useRef(true);   // al abrir una conversación, abajo
+  const [hayMensajesNuevosAbajo, setHayMensajesNuevosAbajo] = useState(false);
+
+  // Cuánto puedes haberte separado del final y seguir contando como "abajo".
+  // Sin margen, un píxel de diferencia ya contaría como que estás leyendo.
+  const MARGEN_ABAJO = 100;
+
+  const bajarAlFinal = () => {
+    finDeLaListaRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setHayMensajesNuevosAbajo(false);
+  };
+
+  const alHacerScroll = () => {
+    const caja = contenedorMensajesRef.current;
+    if (!caja) return;
+    const abajo = caja.scrollHeight - caja.scrollTop - caja.clientHeight <= MARGEN_ABAJO;
+    estabaAbajoRef.current = abajo;
+    // Si bajas tú a mano, el aviso ya no hace falta.
+    if (abajo) setHayMensajesNuevosAbajo(false);
+  };
+
   // ⚠️ Este useState tiene que estar AQUÍ ARRIBA, con los demás, y no abajo
   // junto a las funciones que lo usan.
   //
@@ -67,8 +106,18 @@ function AreaChat({
   // una buena noticia o un no con su motivo.
   const [avisoIntercambio, setAvisoIntercambio] = useState('');
 
+  // Al cambiar de conversación se empieza abajo, como siempre.
   useEffect(() => {
-    finDeLaListaRef.current?.scrollIntoView({ behavior: 'smooth' });
+    estabaAbajoRef.current = true;
+    setHayMensajesNuevosAbajo(false);
+  }, [chatSeleccionado?.login]);
+
+  useEffect(() => {
+    if (!mensajes.length) return;
+
+    const ultimo = mensajes[mensajes.length - 1];
+    if (ultimo.mio || estabaAbajoRef.current) bajarAlFinal();
+    else setHayMensajesNuevosAbajo(true);
   }, [mensajes]);
 
   if (!chatSeleccionado) {
@@ -188,8 +237,14 @@ function AreaChat({
         </div>
       </div>
 
-      {/* HISTORIAL DE MENSAJES */}
-      <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
+      {/* HISTORIAL DE MENSAJES
+          position: relative para que el botón de "mensajes nuevos" se coloque
+          respecto a esta caja y no respecto a la pantalla. */}
+      <div
+        ref={contenedorMensajesRef}
+        onScroll={alHacerScroll}
+        style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', position: 'relative' }}
+      >
         {mensajes.length === 0 ? (
           <div style={{ textAlign: 'center', marginTop: '3rem', color: '#8b92b0' }}>
             <p>{t('noMessagesYet')}</p>
@@ -290,6 +345,35 @@ function AreaChat({
         )}
         <div ref={finDeLaListaRef} />
       </div>
+
+      {/* 📨 Solo sale si ha llegado algo mientras leías hacia arriba. Va fuera
+          de la caja que hace scroll, para que se quede quieto y no suba con
+          los mensajes. */}
+      {hayMensajesNuevosAbajo && (
+        <button
+          type="button"
+          onClick={bajarAlFinal}
+          style={{
+            position: 'absolute',
+            bottom: '6.5rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 5,
+            padding: '0.45rem 1rem',
+            borderRadius: '999px',
+            border: '1px solid var(--accent)',
+            background: 'var(--surface-raised)',
+            color: 'var(--accent)',
+            fontFamily: 'var(--font-body)',
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
+          }}
+        >
+          {t('newMessagesBelow')}
+        </button>
+      )}
 
       {/* AVISOS DE BLOQUEO O CAJA DE TEXTO + BOTÓN INTERCAMBIO */}
       {yoLoHeBloqueado ? (
