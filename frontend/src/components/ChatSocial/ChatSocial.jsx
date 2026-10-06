@@ -20,12 +20,12 @@ const TEXTO_ESTADO = {
 const LARGO_MAXIMO = 1000;
 
 
-function obtenerFotoPerfil(usuario) {
+function obtenerFotoPerfil(usuario,ancho="75px",alto="75px") {
   return (
     <img
       src={usuario.profile_image}
       alt={usuario.username}
-      style={{ width: '75px', height: '75px', borderRadius: '50%', objectFit: 'cover' }}
+      style={{ width: ancho, height: alto, borderRadius: '50%', objectFit: 'cover' }}
     />
   );
 }
@@ -35,7 +35,7 @@ function adaptarAmigo(usuario) {
     id: usuario.id,
     login: usuario.username,
     nombre: usuario.nombre,
-    avatar: obtenerFotoPerfil(usuario),
+    avatar: obtenerFotoPerfil(usuario,"50px","50px"),
     estado: TEXTO_ESTADO[usuario.estado] || usuario.estado,
     bloqueado: usuario.bloqueado || false,
     meHaBloqueado: usuario.me_ha_bloqueado || false,
@@ -47,7 +47,7 @@ function adaptarSolicitud(solicitud) {
     id: solicitud.id,
     login: solicitud.sender.username,
     nombre: solicitud.sender.nombre,
-    avatar: obtenerFotoPerfil(solicitud.sender),
+    avatar: obtenerFotoPerfil(solicitud.sender,"75px","75px"),
   };
 }
 
@@ -56,7 +56,7 @@ function adaptarCandidato(usuarioCandidato) {
     id: usuarioCandidato.id,
     login: usuarioCandidato.username,
     nombre: usuarioCandidato.nombre,
-    avatar: obtenerFotoPerfil(usuarioCandidato),
+    avatar: obtenerFotoPerfil(usuarioCandidato,"75px","75px"),
   };
 }
 

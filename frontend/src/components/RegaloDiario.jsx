@@ -30,7 +30,9 @@ const estilos = {
     width: '58px',
     height: '58px',
     borderRadius: '50%',
-    border: '1px solid var(--border-default)',
+    borderWidth: '1px',          // 👈 En lugar de border
+    borderStyle: 'solid',        // 👈
+    borderColor: 'var(--border-default)', // 👈
     background: 'var(--surface-raised)',
     color: 'var(--text-primary)',
     fontSize: '1.6rem',

@@ -15,6 +15,11 @@ export default defineConfig({
     https: true,     // 👈 3. Activamos HTTPS
     host: true,      // Permite que se pueda acceder desde fuera del contenedor
     port: 3000,
+    hmr: {
+      host: 'transcendence.42.fr',
+      port: 3000,
+      protocol: 'wss',
+    },
     proxy: {
       '/api': {
         target: 'https://backend:8000/',
