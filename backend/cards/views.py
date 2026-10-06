@@ -3,16 +3,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework import status
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import Card
 from users.models import CustomUser
 from .serializers import CardSerializer, UserCardSerializer
 import random
-from django.contrib.auth import get_user_model
 from .models import Card, UserCard, UserPack
-from django.http import JsonResponse
-import json
 from django.db import transaction
 from django.db.models import Case, Count, F, IntegerField, Sum, Value, When
 from django.db.models.functions import Coalesce
@@ -120,88 +116,27 @@ CONFIGURACION_SOBRES = {
     for tipo, probabilidades in PROBABILIDADES_SOBRE.items()
 }
 
-TIER_ORDER = list(TODAS)
-@api_view(['POST'])
-@csrf_exempt  # Permite recibir peticiones POST sin error 403 CSRF durante pruebas
-def make_contract(request):
-    # 1. Validar autenticación
-    if not request.user.is_authenticated:  # <-- Corregido (is_authenticated)
-        return JsonResponse({'error': 'Usuario no logueado.'}, status=401)
-    
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Método no permitido.'}, status=405)
+# 🗑️ AQUÍ ESTABAN make_contract Y TIER_ORDER, y se han quitado (6/10).
+#
+# Era la versión de Pablo del contrato (4 repetidas de la misma rareza -> 1 de
+# la siguiente), colgando de /api/cards/contract/. Hacía LA MISMA REGLA que
+# cards/contratos.py, que es la que usa la pantalla (Contratos.jsx) y la única
+# que se ha llamado nunca.
+#
+# No eran intercambiables, aunque lo pareciera: la suya esperaba el campo
+# `card` en el cuerpo y la nueva espera `carta`. Y el front manda `carta`.
+#
+# Se quitan ahora porque Pablo ya está de vuelta y lo ha decidido el equipo
+# (antes se dejaron a propósito: él estaba ausente desde el 7/09 y no se le
+# podía consultar). Tener dos endpoints para lo mismo es justo lo que se
+# pregunta en una evaluación.
+#
+# Comprobado antes de borrarlas: no las llamaba el front, ni el resto del
+# backend, ni ningún test. TIER_ORDER solo lo usaba make_contract.
+#
+# Si hiciera falta recuperarlas, están en el historial: antes del commit de
+# este cambio, en este mismo fichero.
 
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'JSON inválido.'}, status=400)
-
-    cartas = data.get('cartas', [])
-    cartas_len = sum(item.get('cantidad', 0) for item in cartas)
-    
-    # 2. Validar que la suma total de cartas a usar sea exactamente 4
-    if cartas_len != 4:
-        return JsonResponse({'error': 'Número de cartas inválido.'}, status=400)
-
-    # 3. Agrupar cantidades por card_id (evita fallos si mandan la misma carta dos veces)
-    cartas_agrupadas = {}
-    for item in cartas:
-        c_id = item.get('card')
-        c_cant = item.get('cantidad', 0)
-        cartas_agrupadas[c_id] = cartas_agrupadas.get(c_id, 0) + c_cant
-
-    tier_base = None
-
-    # 4. Validar inventario, regla del resguardo y coherencia de tiers
-    for card_id, card_cuantity in cartas_agrupadas.items():
-        user_card = UserCard.objects.filter(user=request.user, card_id=card_id).first()
-        
-        if not user_card:
-            return JsonResponse({'error': f'La carta con ID {card_id} no se encuentra en el álbum.'}, status=400)
-        
-        if (user_card.cantidad - card_cuantity) < 1:
-            return JsonResponse({'error': 'No te puedes quedar con menos de 1 carta en tu inventario.'}, status=400)
-        
-        card_tier = user_card.card.tier
-        if tier_base is None:
-            tier_base = card_tier
-        elif card_tier != tier_base:
-            return JsonResponse({'error': 'Los tier de las cartas deben ser todos iguales.'}, status=400)
-
-    # 5. Calcular el siguiente tier
-    actual_index = TIER_ORDER.index(tier_base)
-    if actual_index == len(TIER_ORDER) - 1:
-        return JsonResponse({'error': 'No se puede hacer un contrato con el tier más alto.'}, status=400)
-    
-    result_tier = TIER_ORDER[actual_index + 1]
-
-    # 6. Transacción atómica: restar cartas viejas y otorgar la nueva
-    with transaction.atomic():
-        for card_id, card_cuantity in cartas_agrupadas.items():
-            user_card = UserCard.objects.get(user=request.user, card_id=card_id)
-            user_card.cantidad -= card_cuantity
-            user_card.save()
-
-        tier_cards = list(Card.objects.filter(tier=result_tier))
-        if not tier_cards:
-            return JsonResponse({'error': f'No hay cartas disponibles en el tier {result_tier}.'}, status=400)  # <-- Corregido (f-string)
-
-        result_card = random.choice(tier_cards)
-
-        new_user_card, created = UserCard.objects.get_or_create(
-            user=request.user,
-            card=result_card,
-            defaults={'cantidad': 1}
-        )
-        if not created:
-            new_user_card.cantidad += 1
-            new_user_card.save()
-
-    return JsonResponse({
-        'mensaje': '¡Contrato realizado con éxito!',
-        'carta_obtenida': CardSerializer(result_card).data
-    }, status=200)
-        
 def open_pack(tipo_sobre):
     """
     Selecciona 5 cartas aleatorias de la base de datos basándose 

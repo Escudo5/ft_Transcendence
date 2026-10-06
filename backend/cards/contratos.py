@@ -2,18 +2,21 @@
 🤝 CONTRATOS: 4 cartas de la misma rareza -> 1 carta de la rareza siguiente
 
 ═══════════════════════════════════════════════════════════════════════
-ESTO ES UNA VERSIÓN NUEVA. LA DE PABLO SIGUE INTACTA.
+ESTA ES LA ÚNICA VERSIÓN. LA DE PABLO SE QUITÓ EL 6/10.
 ═══════════════════════════════════════════════════════════════════════
 
-Pablo escribió `make_contract` en cards/views.py y esa función no se
-toca: sigue ahí y sigue colgando de /api/cards/contract/. Esta es
-nuestra versión, en su propio fichero y en su propia ruta
-(/api/cards/contratos/), que es la que usa la pantalla.
+Durante un mes hubo DOS: `make_contract` en cards/views.py, colgando de
+/api/cards/contract/, y esta. Se hizo así porque Pablo estaba ausente
+desde el 7 de septiembre y no se le podía consultar, y no queríamos
+borrarle su trabajo a sus espaldas.
 
-Se hizo así porque Pablo lleva ausente desde el 7 de septiembre y no se
-le puede consultar. Cuando vuelva, decide él: o se queda esta, o se
-lleva estos arreglos a la suya, o lo que le parezca. Mientras tanto,
-nadie ha perdido su trabajo.
+El 6 de octubre, con Pablo de vuelta, el equipo decidió quitar la suya:
+hacían LA MISMA REGLA, la pantalla (Contratos.jsx) solo ha llamado nunca
+a esta, y tener dos endpoints para lo mismo es justo lo que se pregunta
+en una evaluación. Lo que arregla esta respecto a la suya está más abajo.
+
+Si hiciera falta recuperarla, está en el historial de cards/views.py,
+antes del commit que la quitó.
 
 ═══════════════════════════════════════════════════════════════════════
 QUÉ SE ARREGLA RESPECTO A LA SUYA (todo comprobado, no supuesto)

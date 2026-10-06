@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CardListView, HealthCheckView, abrir_sobre_endpoint, album_usuario, make_contract
+from .views import CardListView, HealthCheckView, abrir_sobre_endpoint, album_usuario
 from . import views
 from .intercambios import (
     IntercambiosView, RepetidasView, ResponderIntercambioView, DescartarView,
@@ -16,7 +16,9 @@ urlpatterns = [
     path('sobres/abrir/<str:tipo_sobre>/', views.abrir_sobre_endpoint, name='abrir_sobre'),
     path("album/", views.album_usuario, name='album_usuario'),
 
-    path('contract/', views.make_contract, name='make_contract'),
+    # 🗑️ Aquí estaba path('contract/', views.make_contract): la versión de
+    # Pablo del contrato, que hacía lo mismo que 'contratos/' de abajo y que
+    # no llamaba nadie. Ver el comentario en views.py (6/10).
 
     # 🤝 CONTRATOS (nuestra version, cards/contratos.py)
     path('contratos/', ContratosView.as_view(), name='contratos'),
