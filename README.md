@@ -31,6 +31,19 @@ A collectible card trading platform featuring real-time public data from 42 Madr
 - [Docker](https://www.docker.com/) & Docker Compose (v2+)
 - [Git](https://git-scm.com/)
 - Ports `3000`, `4173`, `8000`, and `5432` free on your machine.
+- **A `transcendence.42.fr` entry in your `/etc/hosts`** (see below). This is
+  required even if you only run the project on a single machine, because the
+  frontend dev server (`frontend/vite.config.js`) points its hot-reload socket
+  at that name. Without the entry the application still works, but the browser
+  console shows `[vite] failed to connect to websocket`.
+
+```bash
+# Add this line with: sudo nano /etc/hosts   (note the trailing "s" in hosts)
+127.0.0.1   transcendence.42.fr
+```
+
+Check it worked with `ping -c1 transcendence.42.fr`, not by looking at the
+file: editing the wrong path (`/etc/host`) silently creates a new, useless file.
 
 ### Environment Setup (`.env`)
 Before starting the application, copy the environment template and provide your 42 Intra API credentials:
@@ -42,7 +55,7 @@ cp .env.example .env
 Set the following variables inside `.env` (the template marks the ones you must fill in with `RELLENAR`, Spanish for "fill in"):
 - `CLIENT_ID_NACHO` and `CLIENT_SECRET_NACHO`: credentials of the 42 application used for the **web login**. Obtained from `profile.intra.42.fr` -> **Settings** -> **API** -> your application.
 - `CLIENT_ID_PABLO` and `CLIENT_SECRET_PABLO`: credentials of the 42 application used by the **card sync scripts** (`make start`, `make sync-quick`, `make sync-full`). Without them the application starts, but no cards are loaded.
-- `FORTYTWO_REDIRECT_URI`: already set to `https://localhost:3000` in the template. It must match **letter by letter** the address you open in the browser and the redirect URI registered in your 42 application, with no path and no trailing slash.
+- `FORTYTWO_REDIRECT_URI`: already set to `https://localhost:3000` in the template. It must match **letter by letter** three things at once: the address you type in the browser, this variable, and the redirect URI registered in your 42 application. No path, no trailing slash. The frontend sends whatever is in the address bar (`window.location.origin`, in `App.jsx`), so if this says `localhost` and you open the site under a different name, 42 answers `redirect uri is not valid` and explains nothing further.
 - `EMAIL_HOST_USER` and `EMAIL_HOST_PASSWORD` (optional): a Gmail account with an app password, used to send the GDPR confirmation emails. If they are left empty, everything still works; the emails are simply not sent.
 
 ### Quick Start
@@ -54,6 +67,62 @@ make start
 
 Then open your browser and navigate to:
 👉 **[https://localhost:3000](https://localhost:3000)**
+
+The certificate is self-signed, so the browser warns you once. Accept it and
+continue.
+
+### Running it from several machines (this is how we demo it)
+
+The setup above only works on the machine that starts the containers. To let
+several people in — which is how the project is shown during evaluation — every
+browser has to send 42 **exactly the same** `redirect_uri`, so they all need to
+reach the site under one shared name. We use `transcendence.42.fr`.
+
+Four things have to agree, or the 42 login fails:
+
+**1. `/etc/hosts` on every machine**
+
+| Machine | Line to add |
+| :--- | :--- |
+| The one running the containers | `127.0.0.1   transcendence.42.fr` |
+| Every other machine | `<IP of the host machine>   transcendence.42.fr` |
+
+Keep only one active line and comment the rest with `#`. Verify with
+`ping -c1 transcendence.42.fr`.
+
+**2. Four variables in `.env`**
+
+```bash
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,transcendence.42.fr
+CORS_ALLOWED_ORIGINS=https://localhost:3000,https://transcendence.42.fr:3000
+CSRF_TRUSTED_ORIGINS=https://localhost:3000,https://transcendence.42.fr:3000
+FORTYTWO_REDIRECT_URI=https://transcendence.42.fr:3000
+```
+
+**3. The 42 application**: add `https://transcendence.42.fr:3000` as a redirect
+URI in `profile.intra.42.fr` -> Settings -> API. It accepts several, one per
+line, so the `localhost` one can stay.
+
+**4. Recreate the containers**
+
+```bash
+docker compose up -d --force-recreate
+```
+
+`docker compose restart` is not enough: Docker reads the `.env` when it
+**creates** a container, not when it restarts one.
+
+> ⚠️ **Everyone then opens the site by name, including the machine that hosts
+> it.** If the host opens `https://localhost:3000` it will send `localhost` as
+> the redirect and the 42 login will fail for that person only — which is
+> confusing to debug.
+>
+> The trade-off: while `FORTYTWO_REDIRECT_URI` points at the shared name,
+> `localhost` stops working for the **42 login**. Email and password login
+> keeps working from anywhere.
+
+Switching to a different host machine later is just moving one `#` in the
+`/etc/hosts` of each machine. No code, no `.env`, no Intra changes.
 
 ### Makefile Commands Reference
 
