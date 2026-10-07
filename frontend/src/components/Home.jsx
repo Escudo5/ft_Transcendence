@@ -117,69 +117,94 @@ function Home() {
   const [usuariosRegistrados, setUsuariosRegistrados] = useState(new Set());
   const [tablon, setTablon] = useState(null);
 
-  useEffect(() => {
-    const controller = new AbortController();
+useEffect(() => {
+  const controller = new AbortController();
 
-    async function cargarUsuarios() {
-      try {
-        const registradosSet = new Set();
+  async function cargarDatos() {
+    try {
+      const registradosSet = new Set();
+      const cardsMap = new Map();
 
-        const respuestas = await Promise.all(
-          INTEGRANTES_BASE.map(async (user) => {
-            const response = await fetch(`${cardsEndpoint}/${encodeURIComponent(user.login)}/`, {
-              credentials: 'include',
-              signal: controller.signal,
-            });
+      // 1. Petición en paralelo: Traemos tanto la lista de usuarios web como la lista de todas las cartas
+      const [resWeb, resCards] = await Promise.all([
+        fetch('/api/users/list', { credentials: 'include', signal: controller.signal }),
+        fetch(cardsEndpoint, { credentials: 'include', signal: controller.signal })
+      ]);
 
-            if (!response.ok) {
-              return {
-                ...user,
-                loginUsuario: user.login,
-                nombreCoalicion: '',
-                urlFoto: user.avatar !== 'imagen' ? user.avatar : null,
-                tituloPersonalizado: user.nombre,
-                categoriaTier: 'Creator',
-                rarezaCss: user.rareza,
-                nivelFormateado: 0,
-                puntosEvaluacion: 0,
-                saldoAltarians: 0,
-                cantidadCopias: 1,
-              };
-            }
+      // Procesamos los usuarios registrados
+      if (resWeb.ok) {
+        const dataWeb = await resWeb.json();
+        const listaUsuariosWeb = dataWeb.users || [];
+        listaUsuariosWeb.forEach(u => {
+          registradosSet.add(u.login || u.username || u);
+        });
+      }
+      setUsuariosRegistrados(registradosSet);
 
-            const cardDb = await response.json();
-            // Solo si la API responde correctamente agregamos su login al Set de registrados
-            registradosSet.add(user.login);
+      // Procesamos la lista de cartas general
+      if (resCards.ok) {
+        const dataCards = await resCards.json();
+        // Dependiendo de si Django devuelve un array directo o paginado ({ results: [...] })
+        const listaCartas = Array.isArray(dataCards) ? dataCards : (dataCards.cards || dataCards.results || []);
+        
+        listaCartas.forEach(card => {
+          const loginCard = card.login || card.user?.login;
+          if (loginCard) {
+            cardsMap.set(loginCard, card);
+          }
+        });
+      }
 
-            return {
-              ...user,
-              idInstancia: cardDb.id || user.login,
-              loginUsuario: cardDb.login || user.login,
-              nombreCoalicion: cardDb.coalition || '',
-              urlFoto: getUserImage(cardDb) || (user.avatar !== 'imagen' ? user.avatar : null),
-              tituloPersonalizado: cardDb.title || user.nombre,
-              categoriaTier: cardDb.tier || 'Creator',
-              rarezaCss: CLASE_RAREZA[cardDb.tier] || user.rareza,
-              nivelFormateado: parseFloat(Number(cardDb.cursus_lvl ?? 0).toFixed(2)),
-              puntosEvaluacion: cardDb.eval_point ?? 0,
-              saldoAltarians: cardDb.altarians ?? 0,
-              cantidadCopias: 1,
-            };
-          }),
-        );
+      // 2. Combinamos todo de forma local (¡Cero peticiones individuales y cero 404!)
+      const respuestas = INTEGRANTES_BASE.map((user) => {
+        const cardDb = cardsMap.get(user.login);
 
-        setIntegrantes(respuestas);
-        setUsuariosRegistrados(registradosSet);
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('No se pudieron cargar las cartas:', error);
+        // Si la carta no existe en la base de datos (porque la borraron o nunca se creó)
+        if (!cardDb) {
+          return {
+            ...user,
+            loginUsuario: user.login,
+            nombreCoalicion: '',
+            urlFoto: user.avatar !== 'imagen' ? user.avatar : null,
+            tituloPersonalizado: user.nombre,
+            categoriaTier: 'Creator',
+            rarezaCss: user.rareza,
+            nivelFormateado: 0,
+            puntosEvaluacion: 0,
+            saldoAltarians: 0,
+            cantidadCopias: 1,
+          };
         }
+
+        // Si la carta existe, mapeamos sus datos reales
+        return {
+          ...user,
+          idInstancia: cardDb.id || user.login,
+          loginUsuario: cardDb.login || user.login,
+          nombreCoalicion: cardDb.coalition || '',
+          urlFoto: getUserImage(cardDb) || (user.avatar !== 'imagen' ? user.avatar : null),
+          tituloPersonalizado: cardDb.title || user.nombre,
+          categoriaTier: cardDb.tier || 'Creator',
+          rarezaCss: CLASE_RAREZA[cardDb.tier] || user.rareza,
+          nivelFormateado: parseFloat(Number(cardDb.cursus_lvl ?? 0).toFixed(2)),
+          puntosEvaluacion: cardDb.eval_point ?? 0,
+          saldoAltarians: cardDb.altarians ?? 0,
+          cantidadCopias: 1,
+        };
+      });
+
+      setIntegrantes(respuestas);
+
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error('Error al cargar los datos:', error);
       }
     }
+  }
 
-    cargarUsuarios();
-    return () => controller.abort();
-  }, [cardsEndpoint]);
+  cargarDatos();
+  return () => controller.abort();
+}, [cardsEndpoint]);
 
   useEffect(() => {
     const controller = new AbortController();
