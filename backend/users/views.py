@@ -12,6 +12,7 @@ from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.shortcuts import redirect
 from django.contrib.auth import login, logout
+from django.contrib.sessions.models import Session
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
@@ -1049,10 +1050,25 @@ def login_email(request):
     })
 
 
+def _cerrar_todas_sus_sesiones(usuario):
+    """
+    Borra las sesiones de esta persona en TODOS los navegadores, no solo en el
+    que pulsa "cerrar sesión". El id del usuario va codificado dentro de cada
+    sesión, así que no se puede filtrar con una consulta: hay que abrirlas.
+    """
+    suyas = [
+        sesion.session_key
+        for sesion in Session.objects.filter(expire_date__gte=timezone.now())
+        if sesion.get_decoded().get('_auth_user_id') == str(usuario.pk)
+    ]
+    Session.objects.filter(session_key__in=suyas).delete()
+
+
 @csrf_exempt
 def logout_view(request):
-    """Cierra la sesión (borra la cookie) y deja al alumno como 'offline'."""
+    """Cierra la sesión en todos sus navegadores y deja al alumno como 'offline'."""
     if request.user.is_authenticated:
         CustomUser.objects.filter(pk=request.user.pk).update(estado='offline')
+        _cerrar_todas_sus_sesiones(request.user)
     logout(request)
     return JsonResponse({'status': 'ok', 'mensaje': 'Sesión cerrada. ¡Hasta mañana!'})

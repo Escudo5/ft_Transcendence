@@ -135,6 +135,31 @@ function AppContent() {
     }
   }, []);
 
+  // Si se cierra la sesión en otro navegador, este se entera solo y vuelve a
+  // la pantalla de acceso: lo pregunta cada 30 segundos y al volver a la pestaña.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    async function seguimosDentro() {
+      try {
+        const res = await fetch(`${apiBaseUrl}/users/me/`, { credentials: 'include' });
+        if (res.status === 401) setIsAuthenticated(false);
+      } catch {
+        // Sin conexión no se sabe si hay sesión: no se echa a nadie por eso
+      }
+    }
+
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') seguimosDentro();
+    };
+    const reloj = setInterval(seguimosDentro, 30000);
+    document.addEventListener('visibilitychange', alVolver);
+    return () => {
+      clearInterval(reloj);
+      document.removeEventListener('visibilitychange', alVolver);
+    };
+  }, [isAuthenticated, apiBaseUrl]);
+
   if (loading) {
     return (
       <>
