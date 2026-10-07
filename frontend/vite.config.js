@@ -24,11 +24,11 @@ export default defineConfig({
     // Django. Con `preflightContinue` el middleware deja pasar y el OPTIONS
     // sigue su camino hasta el backend. (Nacho, 7/10)
     cors: { preflightContinue: true },
-    hmr: {
-      host: 'transcendence.42.fr',
-      port: 3000,
-      protocol: 'wss',
-    },
+    // hmr: {
+    //   host: 'transcendence.42.fr',
+    //   port: 3000,
+    //   protocol: 'wss',
+    // },
     proxy: {
       '/api': {
         target: 'https://backend:8000/',
