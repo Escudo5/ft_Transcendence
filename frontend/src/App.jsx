@@ -59,6 +59,12 @@ const router = createBrowserRouter([
     path: "/terminos",
     element: <Legal tipo="terminos" />,
   },
+  {
+    // Cualquier dirección que no exista vuelve a la portada, en vez de la
+    // página de error de React Router y sus errores en la consola
+    path: "*",
+    element: <Navigate to="/home" replace />,
+  },
 ]);
 
 // Direcciones que se pueden ver sin haber iniciado sesión. Las legales tienen
