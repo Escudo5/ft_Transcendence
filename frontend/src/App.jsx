@@ -4,7 +4,6 @@ import { MotionConfig } from 'framer-motion';
 import DotField from "./components/Componentes/Fondo_animado";
 import Acceso from './components/Acceso';
 import RegaloDiario from './components/RegaloDiario';
-import AvisoMensajes from './components/ChatSocial/AvisoMensajes';
 import Home from './components/Home';
 import Catalogo from './components/Album/Catalogo';
 import Perfil from './components/Perfil/Perfil';
@@ -204,10 +203,6 @@ function AppContent() {
       {/* 🎁 Flota por encima de todas las pantallas: el regalo debe poder
           recogerse estés donde estés, no solo en la portada */}
       <RegaloDiario />
-      {/* 💬 Igual que el regalo: avisa de los mensajes sin leer estés en la
-          pantalla que estés. Sin esto, alguien te escribe mientras estás en
-          el álbum y no te enteras hasta que abres el chat por tu cuenta. */}
-      <AvisoMensajes />
       {/* ⚠️ `future` NO es decorativo: sin él, React Router escribe un aviso en
           la consola en CADA carga de página ("React Router Future Flag
           Warning: ... v7_startTransition"), y el subject pide que no aparezca

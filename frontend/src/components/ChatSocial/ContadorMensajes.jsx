@@ -12,11 +12,8 @@ import { useEffect, useState } from 'react';
  * responder. Las dos vienen de la misma petición, así que los intercambios no
  * cuestan ni una petición más.
  *
- * Se usa en el botón de ChatSocial de la portada. Está aparte del aviso
- * flotante (AvisoMensajes.jsx) porque son dos sitios distintos con el mismo
- * dato: en la portada el aviso va pegado a su botón, que es donde uno lo
- * busca; en el resto de pantallas no hay botón al que pegarlo, así que allí
- * flota en una esquina.
+ * Se usa en el botón de ChatSocial de la portada. Dentro del chat, cada
+ * persona de la lista lleva su propia bolita (ListaChats.jsx).
  *
  * ⚠️ Quien lo use tiene que ponerle 'position: relative' al elemento de
  * alrededor, o la bolita se irá a la esquina de la página.
@@ -60,7 +57,7 @@ export default function ContadorMensajes() {
 
   return (
     <span
-      title={t('pendingTitle', { items: trozos.join(' y ') })}
+      title={t('pendingTitle', { items: trozos.join(t('listAnd')) })}
       style={{
         position: 'absolute',
         top: '-8px',

@@ -181,18 +181,12 @@ class SinLeerView(APIView):
     GET /api/chat/sin-leer/
 
     Todo lo que te está esperando en el chat: mensajes sin leer y
-    propuestas de intercambio sin responder. Es lo que alimenta el aviso
-    que flota por encima de todas las pantallas.
+    propuestas de intercambio sin responder. Alimenta la bolita roja del
+    botón del chat en la portada y la de cada persona en la lista del chat.
 
-    Va aparte de /conversaciones/ a propósito: esto se pregunta cada pocos
-    segundos desde cualquier página, así que tiene que ser barato. Son dos
-    consultas de contar, sin traerse ni un mensaje ni una foto.
-
-    ⚠️ POR QUÉ LOS INTERCAMBIOS SE CUENTAN AQUÍ Y NO EN SU PROPIA RUTA:
-    porque las propuestas viven DENTRO del chat, así que el aviso te tiene
-    que llevar al mismo sitio. Metiéndolas aquí no hace falta ni una
-    petición más (esta ya se hace cada 10 segundos), ni un segundo globo
-    flotante peleándose con el primero por el mismo rincón de la pantalla.
+    Va aparte de /conversaciones/ a propósito: esto se pregunta cada 10
+    segundos, así que tiene que ser barato. Son dos consultas de contar,
+    sin traerse ni un mensaje ni una foto.
     """
     permission_classes = [permissions.IsAuthenticated]
 

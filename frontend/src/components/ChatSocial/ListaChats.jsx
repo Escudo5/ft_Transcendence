@@ -134,7 +134,7 @@ function ListaChats({
                   <div style={{ position: 'relative', flexShrink: 0 }}>
                     <div className="avatar-header">{amigoActual.avatar}</div>
                     
-                    {/* INDICADOR DE MENSAJES SIN LEER */}
+                    {/* MENSAJES SIN LEER + INTERCAMBIOS SIN RESPONDER */}
                     {amigoActual.sinLeer > 0 && (
                       <span
                         style={{

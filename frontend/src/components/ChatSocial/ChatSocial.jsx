@@ -60,6 +60,16 @@ function adaptarCandidato(usuarioCandidato) {
   };
 }
 
+// La bolita de cada persona cuenta lo que te espera de ella: sus mensajes sin
+// leer y sus propuestas de intercambio sin responder.
+function pendientesPorPersona(datosSinLeer) {
+  const pendientes = { ...(datosSinLeer.por_persona || {}) };
+  for (const [login, n] of Object.entries(datosSinLeer.intercambios_por_persona || {})) {
+    pendientes[login] = (pendientes[login] || 0) + n;
+  }
+  return pendientes;
+}
+
 async function pedirTokenCSRF() {
   const respuesta = await fetch(`${API}/users/csrf/`, { credentials: 'include' });
   const datos = await respuesta.json();
@@ -104,7 +114,7 @@ function ChatSocial() {
       let mapaMensajesSinLeer = {};
       if (resSinLeer.ok) {
         const datosSinLeer = await resSinLeer.json();
-        mapaMensajesSinLeer = datosSinLeer.por_persona || {};
+        mapaMensajesSinLeer = pendientesPorPersona(datosSinLeer);
       }
 
       const listaAmigosServidor = await resAmigos.json();
@@ -132,34 +142,6 @@ function ChatSocial() {
     recargarDatosSociales();
   }, []);
 
-  // ABRIR DIRECTAMENTE LA CONVERSACIÓN DE QUIEN NOS ESPERA
-  // El aviso flotante manda aquí con ?con=<login>. Sin esto te dejaba en la
-  // lista de chats y tenías que adivinar quién te habia escrito o propuesto
-  // un cambio, que es justo lo que el aviso venía a evitar.
-  //
-  // Espera a que estén cargados los amigos, porque el chat necesita el objeto
-  // entero del amigo (nombre, foto, si está bloqueado), no solo su login.
-  // Se hace una sola vez: si luego eliges otra conversación a mano, no te la
-  // cambia de debajo.
-  const yaAbiertoDeLaUrl = useRef(false);
-  useEffect(() => {
-    if (yaAbiertoDeLaUrl.current || !amigos.length) return;
-
-    const quien = new URLSearchParams(window.location.search).get('con');
-    if (!quien) return;
-
-    const amigo = amigos.find(
-      (a) => a.login.toLowerCase() === quien.toLowerCase()
-    );
-    if (amigo) {
-      setChatSeleccionado(amigo);
-      yaAbiertoDeLaUrl.current = true;
-      // Se limpia el ?con= de la barra de direcciones para que al recargar no
-      // vuelva a forzar esa conversación. replaceState no recarga la página.
-      window.history.replaceState({}, '', '/chatsocial');
-    }
-  }, [amigos]);
-
   useEffect(() => {
     let estaMontado = true;
     const intervaloSinLeer = setInterval(async () => {
@@ -167,7 +149,7 @@ function ChatSocial() {
         const respuesta = await fetch(`${API}/chat/sin-leer/`, { credentials: 'include' });
         if (!estaMontado || !respuesta.ok) return;
         const datos = await respuesta.json();
-        const mapaSinLeer = datos.por_persona || {};
+        const mapaSinLeer = pendientesPorPersona(datos);
         setAmigos((prevAmigos) =>
           prevAmigos.map((amigo) => ({
             ...amigo,
