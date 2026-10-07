@@ -341,14 +341,8 @@ function ChatSocial() {
       const datosRespuesta = await respuesta.json().catch(() => ({}));
 
       if (!respuesta.ok) {
-        // Cuando el servidor rechazaba el mensaje, se pintaba igual en la
-        // pantalla y se borraba el cuadro de texto. O sea que veías tu mensaje
-        // enviado y el otro no lo recibía nunca, sin ningún aviso. Y el
-        // servidor rechaza mensajes por motivos de verdad: si os habéis
-        // bloqueado, si ya no sois amigos, o si pasa de 1000 caracteres.
-        //
-        // Ahora se enseña el motivo que dé el servidor y NO se borra lo
-        // escrito, para que no haya que teclearlo otra vez.
+        // Se enseña el motivo del servidor (bloqueo, ya no sois amigos, más de
+        // 1000 caracteres) y NO se borra lo escrito, para poder reintentarlo.
         setError(datosRespuesta.detail || datosRespuesta.error
                  || t('messageSendError'));
         return;
@@ -357,19 +351,10 @@ function ChatSocial() {
       // Se pinta ya, para verlo al instante sin esperar al refresco.
       setMensajes((prevMensajes) => [...prevMensajes, datosRespuesta]);
 
-      // ⚠️ AQUÍ ESTABA EL FALLO DE LOS MENSAJES PERDIDOS, y por eso NO se
-      // toca la referencia (Nacho, 5/10).
-      //
-      // Había un `ultimoMensajeIdRef.current = datosRespuesta.id`. El refresco
-      // pide ?desde=<referencia> y el servidor filtra id > desde, así que al
-      // apuntar el id DE TU MENSAJE te saltabas los del otro con id menor:
-      //
-      //   vais por el 98 · el otro manda el 99 · tú mandas el 100
-      //   la referencia salta a 100 · el 99 no vuelve NUNCA
-      //
-      // Quedaba guardado en la base y no se pintaba. Dejándola en el último id
-      // RECIBIDO, el siguiente refresco trae el 99 y el 100, y el de arriba se
-      // encarga de no repetir el tuyo y de ordenarlos.
+      // ⚠️ NO tocar ultimoMensajeIdRef aquí. Apuntar el id de TU mensaje hacía
+      // que el refresco (?desde=<id>) se saltara los del otro con id menor:
+      // el otro manda el 99, tú el 100, la referencia salta a 100 y el 99 se
+      // queda en la base sin pintarse nunca.
       setBorrador('');
     } catch (err) {
       console.error('Error al enviar el mensaje:', err);

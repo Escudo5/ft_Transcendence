@@ -165,35 +165,16 @@ export default function ClavesApi() {
 
   return (
     <Card>
-      {/* ♿ EL BOTÓN QUE ABRE LA SECCIÓN (Nacho, 6/10)
-          Dos arreglos, y los dos solo se notan si no usas el ratón:
-
-          1. AQUÍ HABÍA `all: unset`, Y SE COMÍA EL FOCO. `all` resetea TODAS
-             las propiedades CSS, y entre ellas el contorno. styles.css:174
-             define `:focus-visible { outline: 2px solid }`, pero un estilo en
-             línea gana a una regla de hoja de estilos, así que al llegar aquí
-             con el tabulador no se veía NADA: ni borde ni cambio. Y es el
-             control que abre toda la sección de claves.
-
-             Se quita y se resetea SOLO lo que hacía falta para que el <button>
-             no parezca un botón. Así la regla global vuelve a aplicar, y lo
-             hace bien: `:focus-visible` sale con el teclado y NO con el ratón.
-             (Devolver el contorno a mano con onFocus habría salido también al
-              hacer clic, que no es lo que queremos.)
-
-             ⚠️ Era el único `all: unset` del front. Si alguien lo vuelve a
-             poner en un botón, se lleva el foco por delante otra vez.
-
-          2. Faltaba `aria-expanded`. El `▾ / ▸` es solo un dibujo: un lector de
-             pantalla no tiene forma de saber si la sección está abierta o
-             cerrada. Con esto lo dice. */}
+      {/* ♿ ⚠️ Nada de `all: unset` aquí: borra el contorno de :focus-visible
+          (styles.css) y con el teclado no se ve qué está seleccionado. Se
+          resetea solo lo justo. aria-expanded dice si la sección está abierta. */}
       <button
         type="button"
         onClick={() => setAbierto(!abierto)}
         aria-expanded={abierto}
         aria-controls="panel-claves-api"
         style={{
-          appearance: 'none',   // lo ponia el `all: unset` que habia aqui
+          appearance: 'none',
           background: 'none', border: 'none', padding: 0, margin: 0,
           font: 'inherit', color: 'inherit', textAlign: 'left',
           cursor: 'pointer', display: 'flex', width: '100%',

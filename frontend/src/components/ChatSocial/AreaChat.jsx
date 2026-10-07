@@ -53,22 +53,13 @@ function AreaChat({
   const finDeLaListaRef = useRef(null);
   const [modalIntercambioAbierto, setModalIntercambioAbierto] = useState(false);
 
-  /* 📜 EL SCROLL AUTOMÁTICO, QUE ANTES TE ARRASTRABA ABAJO (Nacho, 6/10)
+  /* 📜 SCROLL AUTOMÁTICO: solo baja al mensaje nuevo si ya estabas abajo o si
+   * el mensaje es tuyo. Si estabas leyendo arriba no te mueve, y sale un botón
+   * para bajar.
    *
-   * Aquí había un `scrollIntoView` que bajaba al último mensaje CADA VEZ que
-   * cambiaba la lista, sin mirar dónde estabas. Si te ibas hacia arriba a leer
-   * y el otro escribía, te devolvía abajo de un tirón (y con 'smooth', medio
-   * segundo peleando contra tu dedo).
-   *
-   * Ahora solo baja si YA estabas abajo, o si el mensaje nuevo es tuyo (lo
-   * acabas de escribir y esperas verlo). Si estabas leyendo arriba, no te mueve
-   * y aparece un botón para bajar cuando quieras.
-   *
-   * ⚠️ POR QUÉ LA POSICIÓN SE APUNTA AL HACER SCROLL Y NO DENTRO DEL EFECTO:
-   * el efecto corre DESPUÉS de pintar el mensaje nuevo, así que ahí el alto ya
-   * ha crecido. Midiendo en ese momento, un mensaje largo daría "no estabas
-   * abajo" aunque lo estuvieras, y no bajaría. Por eso se guarda en una
-   * referencia cada vez que el usuario mueve el scroll, que es ANTES.
+   * ⚠️ La posición se apunta AL HACER SCROLL, no dentro del efecto: el efecto
+   * corre después de pintar el mensaje nuevo, con el alto ya crecido, y un
+   * mensaje largo daría "no estabas abajo" aunque lo estuvieras.
    */
   const contenedorMensajesRef = useRef(null);
   const estabaAbajoRef = useRef(true);   // al abrir una conversación, abajo

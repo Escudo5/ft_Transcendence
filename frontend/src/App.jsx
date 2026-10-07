@@ -105,9 +105,6 @@ function AppContent() {
             return response.json();
           })
           .then((data) => {
-            // Aquí había un console.log que imprimía la respuesta entera del
-            // login (nombre, correo, sobres...) en la consola del navegador,
-            // en cada entrada. Fuera: el subject pide la consola limpia.
             if (data.error) {
               alert(t('login42Error', { error: data.error }));
               setIsAuthenticated(false);
@@ -215,15 +212,9 @@ function AppContent() {
           recogerse estés donde estés, no solo en la portada. Solo con sesión:
           en las páginas legales sin sesión no sirve y preguntaba (401) */}
       {isAuthenticated && <RegaloDiario />}
-      {/* ⚠️ `future` NO es decorativo: sin él, React Router escribe un aviso en
-          la consola en CADA carga de página ("React Router Future Flag
-          Warning: ... v7_startTransition"), y el subject pide que no aparezca
-          ningún warning en la consola del navegador.
-
-          La bandera va aquí y no en createBrowserRouter: en react-router-dom
-          6.22 quien lee `v7_startTransition` es RouterProvider (comprobado en
-          su dist/index.js). Lo único que cambia es que las navegaciones pasan
-          por React.startTransition, que es como se comportará la v7. */}
+      {/* ⚠️ `future` no es decorativo: sin él React Router escribe un warning en
+          la consola en cada carga. Va aquí y no en createBrowserRouter porque
+          en esta versión quien lee v7_startTransition es RouterProvider. */}
       <RouterProvider router={router} future={{ v7_startTransition: true }} />
     </MotionConfig>
   );

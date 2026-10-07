@@ -1,14 +1,7 @@
 /* 📄 LOS DOCUMENTOS LEGALES EN ARABE
  *
- * ⚠️ SERGIO: ESTO HAY QUE REPASARLO, NO ESCRIBIRLO.
- *
- * Lo he traducido yo (Nacho, 28/09) para que no se quedara en español, pero
- * una traduccion no la puedo comprobar como compruebo el codigo: el codigo
- * compila o no compila, y una frase torcida no la ve nadie hasta que la lee
- * alguien que sepa arabe. Y esto ademas es texto legal.
- *
- * Asi que pasalo por encima y corrige lo que suene mal. Es mucho menos
- * trabajo que escribirlo de cero, y mientras tanto la web no se ve en español.
+ * ⚠️ PENDIENTE DE REPASAR por alguien que sepa árabe: es texto legal y la
+ * traducción no la ha revisado nadie nativo.
  *
  * Mismo formato que es.js:
  *    **negrita**       ->  <strong>negrita</strong>
