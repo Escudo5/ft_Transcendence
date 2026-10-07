@@ -84,7 +84,24 @@ const FondoTiendaSobres = ({
       return;
     }
 
-    renderer.setSize(width, height,false);
+    // ⚠️ El tercer parámetro de setSize es `updateStyle`, y vale true por
+    // defecto. Es el que le pone al <canvas> su tamaño en CSS; sin él, el
+    // canvas se queda del tamaño de su memoria interna, que es el de aquí
+    // MULTIPLICADO por el pixelRatio de abajo. Resultado: el fondo sale
+    // cortado (en pantallas finas sale al doble y se ve un cuarto; con la
+    // calidad 'medium', que usa 0.65, sale más pequeño que la pantalla y
+    // queda medio hueco en negro).
+    //
+    // Costaba de ver porque al redimensionar la ventana se arreglaba solo:
+    // el handleResize de más abajo llama a setSize SIN este parámetro, o sea
+    // con el true por defecto, y repara lo que rompe el montaje. Por eso
+    // abrir o cerrar las herramientas del navegador lo "arreglaba".
+    //
+    // El setPixelRatio de la línea siguiente NO lo deshace: por dentro llama
+    // a setSize(_width, _height, false), y ese false solo evita escribir el
+    // estilo, nunca lo borra. Así que el canvas acaba con la memoria interna
+    // a width*pixelRatio y el CSS a width, que es lo correcto.
+    renderer.setSize(width, height);
     renderer.setPixelRatio(settings.pixelRatio);
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
