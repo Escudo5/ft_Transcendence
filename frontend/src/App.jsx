@@ -280,7 +280,6 @@ import RegaloDiario from './components/RegaloDiario';
 import AvisoMensajes from './components/ChatSocial/AvisoMensajes';
 import Home from './components/Home';
 import Catalogo from './components/Album/Catalogo';
-import CrearCarta from './components/CrearCarta';
 import Perfil from './components/Perfil/Perfil';
 import Ranking from './components/Clasificacion/Ranking';
 import Legal from './components/Legal';
@@ -301,10 +300,6 @@ const router = createBrowserRouter([
   {
     path: "/catalogo",
     element: <Catalogo />,
-  },
-  {
-    path: "/crear",
-    element: <CrearCarta />,
   },
   {
     path: "/chatsocial",
