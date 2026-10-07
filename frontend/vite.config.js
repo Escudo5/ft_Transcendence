@@ -25,6 +25,16 @@ export default defineConfig({
         target: 'https://backend:8000/',
         secure: false,
       },
+      // 🎨 Las páginas que pinta Django (la documentación de la API pública en
+      // /api/publica/, y el /admin/) piden sus CSS y JS a /static/. Sin esta
+      // línea esas peticiones no llegan al backend: las contesta Vite con el
+      // index.html de React, y el navegador rechaza el HTML donde esperaba
+      // CSS ("su tipo MIME, text/html, no es text/css"). La página sale sin
+      // estilos y la consola se llena de errores. (Nacho, 7/10)
+      '/static': {
+        target: 'https://backend:8000/',
+        secure: false,
+      },
     },      // Forzamos a Vite a escuchar en el puerto 3000 (el de la Intra)
     watch: {
       usePolling: true, // Asegura que los cambios de código se actualicen al momento en Docker
@@ -61,6 +71,11 @@ export default defineConfig({
     port: 4173,
     proxy: {
       '/api': {
+        target: 'https://backend:8000/',
+        secure: false,
+      },
+      // El mismo motivo que arriba: ver el comentario del proxy de `server`.
+      '/static': {
         target: 'https://backend:8000/',
         secure: false,
       },
