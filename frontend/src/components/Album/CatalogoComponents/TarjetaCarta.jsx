@@ -79,7 +79,7 @@ export default function TarjetaCarta({ carta, onSeleccionarCarta }) {
             className="card-photo"
             src={carta.urlFoto}
             alt={carta.loginUsuario}
-            style={{ height: 'fit', maxWidth: '100px', objectFit: 'cover', objectPosition: 'center top', borderRadius: '0.05px' }}
+            style={{ height: '100%', maxWidth: '100px', objectFit: 'cover', objectPosition: 'center top', borderRadius: '0.05px' }}
           />
         ) : (
           <div className="artwork-symbol">👤</div>
