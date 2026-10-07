@@ -104,11 +104,6 @@ def login_alumno(request, login):
 # resto del backend, no las tocaba ningún test, y no queda ninguna plantilla
 # .html en el proyecto. `crear_carta` además usaba `redirect` sin importarlo,
 # o sea que su POST llevaba roto desde siempre.
-#
-# Con ellas se han ido dos imports que ya no usaba nadie: `render` y
-# `get_object_or_404` (este último ya estaba sin usar), y `CardForm`. Eso deja
-# cards/forms.py sin usar: se deja en su sitio, que lo decida el equipo en la
-# limpieza.
 
 CONFIGURACION_SOBRES = {
     tipo: {"probabilidades": dict(probabilidades),
