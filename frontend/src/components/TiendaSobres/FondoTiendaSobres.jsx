@@ -40,8 +40,8 @@ const FondoTiendaSobres = ({
     if (!containerRef.current || !webGLSupported) return;
 
     const container = containerRef.current;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    const width = container.clientWidth || window.innerWidth;
+    const height = container.clientHeight || window.innerHeight;
 
     const scene = new THREE.Scene();
     sceneRef.current = scene;
@@ -84,7 +84,7 @@ const FondoTiendaSobres = ({
       return;
     }
 
-    renderer.setSize(width, height);
+    renderer.setSize(width, height,false);
     renderer.setPixelRatio(settings.pixelRatio);
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
@@ -289,7 +289,7 @@ const FondoTiendaSobres = ({
       }
       if (rendererRef.current) {
         rendererRef.current.dispose();
-        rendererRef.current.forceContextLoss();
+        //rendererRef.current.forceContextLoss();
         if (container.contains(rendererRef.current.domElement)) {
           container.removeChild(rendererRef.current.domElement);
         }
