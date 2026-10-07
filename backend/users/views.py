@@ -140,6 +140,16 @@ def csrf_token_view(request):
     return JsonResponse({'csrfToken': get_token(request)})
 
 
+@require_GET
+def sesion(request):
+    """
+    ¿Hay sesión abierta? Contesta SIEMPRE 200: que no la haya no es un error,
+    y un 401 dejaría una línea roja en la consola del navegador en la pantalla
+    de acceso, que es lo primero que ve cualquiera.
+    """
+    return JsonResponse({'autenticado': request.user.is_authenticated})
+
+
 def me(request):
     """
     ¿Quién soy? Devuelve el perfil del alumno con la sesión abierta.

@@ -1,5 +1,6 @@
 """
-Pruebas del cierre de sesión: cerrar sesión en un navegador la cierra en todos.
+Pruebas de la sesión: cerrar sesión en un navegador la cierra en todos, y
+preguntar si hay sesión no da error cuando no la hay.
 
 Se ejecutan con:   docker compose exec backend python manage.py test users
 Usan una base de datos aparte: no tocan ni un dato de la de verdad.
@@ -12,6 +13,7 @@ User = get_user_model()
 
 ME = '/api/users/me/'
 LOGOUT = '/api/users/logout/'
+SESION = '/api/users/sesion/'
 
 
 class CerrarSesionEnTodosLosNavegadores(TestCase):
@@ -54,3 +56,27 @@ class CerrarSesionEnTodosLosNavegadores(TestCase):
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertEqual(self.firefox.get(ME).status_code, 200)
+
+
+class PreguntarSiHaySesion(TestCase):
+    """Siempre 200: un 401 sería una línea roja en la consola del navegador."""
+
+    def test_sin_sesion_dice_que_no_sin_dar_error(self):
+        respuesta = Client().get(SESION)
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.json(), {'autenticado': False})
+
+    def test_con_sesion_dice_que_si(self):
+        navegador = Client()
+        navegador.force_login(User.objects.create_user(username='ana', email='ana@x.com', password='x'))
+
+        respuesta = navegador.get(SESION)
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.json(), {'autenticado': True})
+
+    def test_no_se_la_traga_la_ruta_de_los_perfiles(self):
+        # '<str:username>/' atrapa cualquier texto: si /sesion/ fuera detrás,
+        # respondería el perfil de un usuario llamado "sesion" (un 401 o 404)
+        self.assertNotIn(Client().get(SESION).status_code, (401, 404))

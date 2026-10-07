@@ -123,11 +123,14 @@ function AppContent() {
       }
     } else {
       // 🔵 CASO 2: Entrada directa sin código -> Verificamos si Django tiene sesión guardada
-      fetch(`${apiBaseUrl}/users/me/`, { credentials: 'include' })
-        .then((res) => {
+      // /sesion/ y no /me/: contesta 200 aunque no haya sesión, así la
+      // pantalla de acceso no deja un 401 en rojo en la consola
+      fetch(`${apiBaseUrl}/users/sesion/`, { credentials: 'include' })
+        .then((res) => (res.ok ? res.json() : { autenticado: false }))
+        .then((datos) => {
           // Si no hay sesión ya no expulsamos a la Intra sin preguntar: mostramos
           // la pantalla de acceso para que elija entre entrar con 42 o con email
-          setIsAuthenticated(res.ok);
+          setIsAuthenticated(datos.autenticado === true);
         })
         .catch(() => setIsAuthenticated(false))
         .finally(() => setLoading(false));
@@ -141,8 +144,10 @@ function AppContent() {
 
     async function seguimosDentro() {
       try {
-        const res = await fetch(`${apiBaseUrl}/users/me/`, { credentials: 'include' });
-        if (res.status === 401) setIsAuthenticated(false);
+        const res = await fetch(`${apiBaseUrl}/users/sesion/`, { credentials: 'include' });
+        if (!res.ok) return;
+        const datos = await res.json();
+        if (datos.autenticado === false) setIsAuthenticated(false);
       } catch {
         // Sin conexión no se sabe si hay sesión: no se echa a nadie por eso
       }
@@ -201,8 +206,9 @@ function AppContent() {
       <LanguageSelector />
       <DotField style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }} />
       {/* 🎁 Flota por encima de todas las pantallas: el regalo debe poder
-          recogerse estés donde estés, no solo en la portada */}
-      <RegaloDiario />
+          recogerse estés donde estés, no solo en la portada. Solo con sesión:
+          en las páginas legales sin sesión no sirve y preguntaba (401) */}
+      {isAuthenticated && <RegaloDiario />}
       {/* ⚠️ `future` NO es decorativo: sin él, React Router escribe un aviso en
           la consola en CADA carga de página ("React Router Future Flag
           Warning: ... v7_startTransition"), y el subject pide que no aparezca

@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    login_42_callback, list_users, me, logout_view, csrf_token_view,
+    login_42_callback, list_users, me, sesion, logout_view, csrf_token_view,
     register, login_email, perfil_usuario, editar_mi_perfil,
     descargar_mis_datos, borrar_mi_cuenta, mi_avatar,
 )
@@ -15,6 +15,8 @@ urlpatterns = [
     path('csrf/', csrf_token_view, name='csrf_token'),
     # ¿Quién soy? El front lo usa para saber si hay una sesión abierta
     path('me/', me, name='me'),
+    # ¿Hay sesión? Siempre 200, para no ensuciar la consola sin sesión
+    path('sesion/', sesion, name='sesion'),
     # Lista de usuarios para mostrar fotos y datos en el front
     path('list/', list_users, name='list_users'),
     # Cerrar sesión y pasar a 'offline'
