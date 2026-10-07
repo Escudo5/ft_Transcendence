@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import PieLegal from './PieLegal';
 import ContadorMensajes from './ChatSocial/ContadorMensajes';
-import { Avatar, Badge, Button, Card, Modal } from './ui';
+import { Button } from './ui';
 import { CLASE_RAREZA, COLOR_RAREZA } from './rarezas';
 import CreatorCard from './Album/CreatorCard';
 import { useI18n } from '../i18n';
@@ -113,6 +113,8 @@ function Home() {
 
   const [indiceSeleccionado, setIndiceSeleccionado] = useState(null);
   const [integrantes, setIntegrantes] = useState(INTEGRANTES_BASE);
+  // Guardará de forma explícita solo los logins que la API confirme que existen
+  const [usuariosRegistrados, setUsuariosRegistrados] = useState(new Set());
   const [tablon, setTablon] = useState(null);
 
   useEffect(() => {
@@ -120,6 +122,8 @@ function Home() {
 
     async function cargarUsuarios() {
       try {
+        const registradosSet = new Set();
+
         const respuestas = await Promise.all(
           INTEGRANTES_BASE.map(async (user) => {
             const response = await fetch(`${cardsEndpoint}/${encodeURIComponent(user.login)}/`, {
@@ -144,6 +148,8 @@ function Home() {
             }
 
             const cardDb = await response.json();
+            // Solo si la API responde correctamente agregamos su login al Set de registrados
+            registradosSet.add(user.login);
 
             return {
               ...user,
@@ -163,6 +169,7 @@ function Home() {
         );
 
         setIntegrantes(respuestas);
+        setUsuariosRegistrados(registradosSet);
       } catch (error) {
         if (error.name !== 'AbortError') {
           console.error('No se pudieron cargar las cartas:', error);
@@ -343,7 +350,7 @@ function Home() {
           <div key={integranteActivo.login} style={{ position: 'relative' }}>
             <ModalDetalleCarta
               carta={integranteActivo}
-              usuariosRegistrados={new Set(integrantes.map((i) => i.loginUsuario))}
+              usuariosRegistrados={usuariosRegistrados}
               onCerrar={() => setIndiceSeleccionado(null)}
             />
 
@@ -356,10 +363,10 @@ function Home() {
               style={{
                 position: 'fixed',
                 top: '50%',
-                left: 'calc(50% - 230px)', // Posicionada justo al borde izquierdo de la carta
+                left: 'calc(50% - 230px)',
                 transform: 'translateY(-50%)',
                 zIndex: 1100,
-                padding: '0.4rem 0.7rem',  // Botón un poco más pequeño
+                padding: '0.4rem 0.7rem',
                 fontSize: '0.9rem',
               }}
             >
@@ -375,10 +382,10 @@ function Home() {
               style={{
                 position: 'fixed',
                 top: '50%',
-                right: 'calc(50% - 230px)', // Posicionada justo al borde derecho de la carta
+                right: 'calc(50% - 230px)',
                 transform: 'translateY(-50%)',
                 zIndex: 1100,
-                padding: '0.4rem 0.7rem',  // Botón un poco más pequeño
+                padding: '0.4rem 0.7rem',
                 fontSize: '0.9rem',
               }}
             >
