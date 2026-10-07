@@ -1,25 +1,15 @@
 """
-🧪 PRUEBAS DEL CHAT (Nacho, 5/10)
+🧪 PRUEBAS DEL CHAT
 
-Estas pruebas nacen de dos preguntas que hizo Pablo, y las dos merecían una
-respuesta medida y no una opinión:
+  1. Mensajes perdidos si los dos escriben a la vez: el fallo estaba en el
+     front (ChatSocial.jsx); aquí se fija el comportamiento del servidor en el
+     que se apoya el arreglo, para que nadie lo cambie sin darse cuenta.
+  2. Un "<script>" en un mensaje NO es un agujero: el servidor lo guarda y lo
+     devuelve tal cual, como JSON, y React lo escapa al pintarlo.
 
-  1. "Si los dos escribimos a la vez se pierden mensajes." -> ERA VERDAD. El
-     fallo estaba en el front y aquí se fija el comportamiento del servidor en
-     el que se apoya el arreglo, para que nadie lo cambie sin darse cuenta.
-
-  2. "¿Y si alguien mete <script>alert('Hacked')</script>?" -> NO es un
-     agujero, y aquí queda demostrado por qué: el servidor guarda y devuelve el
-     texto TAL CUAL (que es lo correcto, no hay que mutilar lo que escribe
-     nadie) y lo entrega como JSON, nunca como HTML. Quien lo pinta es React,
-     que convierte el '<' en '&lt;' antes de que llegue al navegador.
-
-⚠️ POR QUÉ NO HAY NINGÚN "SANEADO" DE HTML, Y NO SE DEBE AÑADIR:
-   filtrar o escapar el texto al guardarlo rompería mensajes legítimos — quien
-   escriba "2 < 3" o "pan & circo" vería su mensaje mutilado — y nos daría una
-   falsa sensación de seguridad. Lo que protege es cómo se PINTA, no cómo se
-   guarda. Si algún día alguien usa dangerouslySetInnerHTML en el front, esa
-   línea es el agujero, no esto.
+⚠️ NO AÑADIR "SANEADO" DE HTML AL GUARDAR: rompería mensajes legítimos
+   ("2 < 3", "pan & circo") y no protege nada. Lo que protege es cómo se
+   PINTA: el agujero sería un dangerouslySetInnerHTML en el front.
 
 Se ejecutan con:   docker compose exec backend python manage.py test chat
 Usan una base de datos aparte: no tocan ni un dato de la de verdad.

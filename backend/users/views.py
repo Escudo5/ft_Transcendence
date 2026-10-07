@@ -247,23 +247,12 @@ def _logros(usuario, stats):
     Cada logro lleva su progreso, para que en pantalla se vea lo que falta y no
     solo un sí o un no.
 
-    ──────────────────────────────────────────────────────────────────────────
-    🌐 AQUÍ NO HAY TEXTO (Nacho, 29/09)
+    🌐 Aquí no hay texto: sale solo el DATO (qué logro, cuánto llevas, cuánto
+    falta) y el texto lo pone el front desde i18n.jsx, en los tres idiomas.
 
-    Antes cada logro traía su nombre y su descripción escritos en español
-    dentro de este fichero, y el front los pintaba tal cual. Así que con la web
-    en inglés o en árabe el panel de logros salía en español: se nos quedó
-    fuera al cerrar el módulo de idiomas, y el subject pide que TODO el texto
-    sea traducible.
-
-    Ahora de aquí sale solo el DATO (qué logro es, cuánto llevas, cuánto falta)
-    y el texto lo pone el front desde i18n.jsx, que es donde vive todo lo que
-    el usuario lee.
-
-    ⚠️ Si añades un logro, hace falta su línea en el mapa LOGROS de
-    components/Perfil/Perfil.jsx y sus claves en i18n.jsx EN LOS TRES IDIOMAS.
-    Si te olvidas, en pantalla sale el nombre de la clave en crudo: se ve a la
-    primera, no falla en silencio.
+    ⚠️ Si añades un logro, hace falta su línea en DICCIONARIO_LOGROS de
+    components/Perfil/PerfilComponents/LogrosPerfil.jsx y sus claves en
+    i18n.jsx EN LOS TRES IDIOMAS. Si falta, en pantalla sale la clave en crudo.
     """
     from cards.models import UserCard
     from cards.rarezas import LEGENDARIO, TRANSCENDER, STAFF
@@ -577,18 +566,18 @@ def mi_avatar(request):
 # cumple.
 #
 # El módulo de "GDPR compliance" del subject pide CUATRO cosas, y están las
-# cuatro (Nacho, 1/10: actualizado; antes ponía que los correos faltaban):
+# cuatro:
 #   ✔ que el usuario pueda pedir sus datos      -> descargar_mis_datos
 #   ✔ borrado con confirmación                  -> borrar_mi_cuenta
 #   ✔ exportarlos en formato legible            -> JSON, CSV o HTML (?format=)
 #   ✔ correos de confirmación de las operaciones -> al descargar y al borrar
-#     (servidor SMTP con las credenciales del .env, desde el 21-22/09)
+#     (servidor SMTP con las credenciales del .env)
 # =====================================================================
 
 class _EscritorCsvSeguro:
     """
     Envuelve al csv.writer para que ninguna celda se pueda ejecutar como
-    fórmula (Nacho, 1/10, sobre el CSV de Óscar).
+    fórmula.
 
     Excel y LibreOffice tratan como fórmula cualquier celda que empiece por
     = + - @ (o por tabulador o retorno de carro). Una biografía que empiece
@@ -742,16 +731,10 @@ def descargar_mis_datos(request):
     Devuelve TODO lo que guardamos de esta persona en el formato solicitado (JSON por defecto,
     o bien CSV o HTML), y ADEMÁS le manda una copia por correo si tiene uno.
 
-    Las dos cosas a la vez y no una u otra, a propósito (Nacho, 22/09):
-
-      - La descarga es el derecho de acceso del RGPD y tiene que funcionar
-        siempre, también para quien no tenga correo.
-      - El correo es la confirmación: sirve para que te enteres si alguien
-        que no eres tú se ha bajado tus datos.
-
-    El correo va con fail_silently: si el servidor de correo está caído, te
-    descargas los datos igual. (Recuperado el 1/10: lo había borrado el
-    commit de la exportación en CSV y HTML.)
+    Las dos cosas a la vez, a propósito: la descarga es el derecho de acceso y
+    tiene que funcionar siempre, también sin correo; el correo es el aviso de
+    que alguien se ha bajado tus datos. Va con fail_silently: si el servidor
+    de correo está caído, te descargas los datos igual.
 
     Formatos aceptados vía parametro GET 'format':
       - format=json (por defecto): Genera el JSON original estructurado.
@@ -888,19 +871,12 @@ def list_users(request):
     """
     Devuelve usuarios de la base de datos para pintarlos en el front.
 
-    Lo usa el álbum (Catalogo.jsx) para poner el nombre de verdad debajo de
-    las cartas de quien además está registrado en la web.
+    La usan el álbum (Catalogo.jsx) y la portada (Home.jsx) para saber quién,
+    de los que tienen carta, está además registrado en la web.
 
-    ⚠️ ARREGLO (Nacho, 5/10): ESTO NO PEDÍA SESIÓN. Era la única de las doce
-    vistas de este fichero que no la comprobaba, así que cualquiera que llegara
-    al puerto, sin estar registrado, se bajaba de TODOS los usuarios: su
-    nombre y apellidos de verdad, su foto, y si estaba conectado en ese
-    momento. Probado por los dos puertos antes de arreglarlo: 200 los dos.
-    (El correo y el id_42 nunca han salido de aquí; eso estaba bien.)
-
-    Ponerlo no rompe nada: el único sitio que la llama es Catalogo.jsx, y al
-    álbum no se llega sin sesión (RUTAS_PUBLICAS en App.jsx son solo
-    /privacidad y /terminos). Comprobado.
+    ⚠️ Con sesión: sin esta comprobación cualquiera, sin registrarse, se bajaba
+    el nombre, la foto y el estado de TODOS los usuarios. El correo y el id_42
+    no salen nunca de aquí.
     """
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Tienes que iniciar sesión.'}, status=401)

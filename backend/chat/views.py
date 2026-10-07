@@ -17,20 +17,12 @@ User = get_user_model()
 
 class LimiteEnvioChat(UserRateThrottle):
     """
-    🚦 Un tope de mensajes por minuto al ESCRIBIR (Nacho, 5/10).
+    🚦 Tope de mensajes por minuto al ESCRIBIR (60/min, en settings.py), para
+    que un script no meta mil mensajes en un bucle. Por usuario y no por IP:
+    en 42 todo el campus sale por la misma.
 
-    Nada impedía que un script metiera mil mensajes en un bucle. El número
-    (60/min, en settings.py) es holgado a propósito: un mensaje por segundo es
-    más de lo que teclea cualquiera, así que no corta a una persona de verdad.
-
-    ⚠️ SOLO CUENTA LOS POST, y eso es lo importante: el GET de la conversación
-    lo pide el front cada 3 segundos (20 por minuto). Si compartieran el cupo,
-    al que estuviera con el chat abierto le quedarían 40 mensajes en vez de 60,
-    y se le acabarían sin haber escrito tanto.
-
-    Se cuenta por usuario, no por IP: en 42 todo el campus sale por la misma
-    línea y compartiríais el mismo cubo (ver publicapi/limites.py, que explica
-    esto para la API pública).
+    ⚠️ SOLO CUENTA LOS POST: el front pide la conversación cada 3 segundos y,
+    si compartieran cupo, al que tuviera el chat abierto le quedarían 40.
     """
     scope = 'chat_envio'
 

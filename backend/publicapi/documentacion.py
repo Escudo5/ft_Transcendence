@@ -85,31 +85,15 @@ def _hueco_con_valor(ruta):
     Cambia los huecos por un valor de ejemplo QUE LA RUTA ACEPTE:
     <login> -> LOGIN   y   <id> -> 1
 
-    ⚠️ ESTO NO ES COSMÉTICO, ARREGLA UN ENLACE ROTO (Nacho, 6/10).
+    ⚠️ NO ES COSMÉTICO: la página navegable de DRF convierte en enlace cada
+    dirección del JSON y la corta en el primer carácter no válido ('<'), así
+    que .../alumnos/<login>/ salía como .../alumnos/, que da 404.
 
-    Esta página la pide el navegador como HTML, así que DRF la pinta con su
-    página navegable. Y esa página convierte en ENLACE toda dirección que
-    encuentra en el JSON, cortándola en el primer carácter que no vale en una
-    URL. El '<' no vale. Así que de este ejemplo:
+    ⚠️ El id tiene que ser un NÚMERO, no 'ID': claves/<id>/ e intercambios/<id>/
+    son <int:pk> y no casan con texto.
 
-        curl ... https://…/api/publica/alumnos/<login>/
-
-    DRF sacaba un enlace a  /api/publica/alumnos/ , y eso NO es una ruta: solo
-    existe alumnos/<str:login>/. Un enlace de la documentación que daba 404.
-
-    Los otros dos huecos se salvaban por casualidad: al cortarlos quedaba una
-    ruta que sí existe (intercambios/ y claves/ contestan 401).
-
-    ⚠️ Y AQUÍ ESTÁ LA TRAMPA, que me costó un intento: no basta con quitarle
-    los picos al hueco. Poniendo 'ID' se arreglaba alumnos/ pero se rompían
-    claves/ID/ e intercambios/ID/, porque esas rutas son <int:pk> y no casan
-    con texto. Tiene que ser un NÚMERO.
-
-    Así los ejemplos además se pueden copiar y pegar de verdad, que es para lo
-    que están. Con <login> dentro no se podían.
-
-    El campo 'ruta' de la documentación SIGUE con <login> y <id>, que se leen
-    mejor: esa no es una dirección completa y DRF no la enlaza (comprobado).
+    El campo 'ruta' sigue con <login> y <id>: no es una dirección completa y
+    DRF no la enlaza.
     """
     return re.sub(
         r'<([a-z_]+)>',
