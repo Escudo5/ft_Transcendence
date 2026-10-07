@@ -8,17 +8,7 @@ urlpatterns = [
     
     # 🃏 RUTAS DE LAS CARTAS (Todo lo que empiece por api/cards/)
     path("api/cards/", include("cards.urls")),
-    # 🗑️ AQUÍ HABÍA UNA RUTA REPETIDA, y se ha quitado (5/10):
-    #
-    #     path("api/cards/<str:login>", login_alumno, name="login_alumno")
-    #
-    # Era la MISMA que la última de cards/urls.py, pero sin la barra final, y
-    # hacía que login_alumno estuviera declarada dos veces con el mismo nombre.
-    #
-    # Quitarla no rompe nada: el único sitio que la llama es Home.jsx y pone la
-    # barra (Home.jsx:124). Y aunque alguien la pidiera sin barra, APPEND_SLASH
-    # está activo y CommonMiddleware la redirige a la versión con barra.
-    # Las dos cosas comprobadas.
+
     # 👥 RUTAS DE LOS USUARIOS (Todo lo que empiece por api/users/)
     path('api/users/', include('users.urls')),
 
@@ -31,32 +21,9 @@ urlpatterns = [
     # 🔑 API PÚBLICA: la ventanilla para programas de fuera, que entran
     # con una clave en vez de con la cookie del navegador.
     path('api/publica/', include('publicapi.urls')),
-
-    # 🗑️ AQUÍ HABÍA TRES RUTAS DE ANTES DE REACT, y se han quitado (5/10).
-    #
-    #     path('home/',     home,          name='home')
-    #     path('crear/',    crear_carta,   name='crear_carta')
-    #     path('catalogo/', lista_cartas,  name='lista_cartas')
-    #
-    # Eran las pantallas que Django pintaba solo, al principio del proyecto,
-    # antes de que el front fuera React. Llevaban a tres plantillas HTML que
-    # Pablo borró el 5/10 (commit cbe78d8) junto con los comentarios, pero las
-    # rutas se quedaron: las tres respondían 500 (TemplateDoesNotExist).
-    #
-    # Se quitan en vez de devolver las plantillas porque no las usaba NADIE:
-    # ni el front (comprobado) ni el resto del backend. Y `crear_carta` encima
-    # llamaba a `redirect` sin importarlo, así que su POST ya estaba roto
-    # desde siempre.
-    #
-    # ⚠️ Las direcciones /catalogo y /crear SIGUEN EXISTIENDO, pero son del
-    # front (React las enruta en App.jsx). Lo que se ha quitado son las de
-    # Django, en el puerto 8000.
 ]
 
-# 🖼️ Para que se vean los avatares que sube la gente.
-#
-# Esto solo funciona en modo desarrollo (DEBUG), que es como trabajáis y como
-# se hace la evaluación. En un servidor de verdad estas fotos las serviría
-# nginx directamente, porque Django sirviendo ficheros es lento.
+# 🖼️ Las fotos de perfil que sube la gente. Solo en DEBUG (desarrollo y
+# evaluación); en un servidor de verdad las serviría nginx.
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

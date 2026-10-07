@@ -31,59 +31,40 @@ class HealthCheckView(APIView):
 
 class CardListView(generics.ListAPIView):
     """
-    El catálogo entero. Solo lectura y solo con sesión.
+    El catálogo entero, solo lectura y solo con sesión. Lo usa la portada
+    (Home.jsx) para sacar las cartas de los creadores.
 
-    ⚠️ ARREGLO (Nacho, 5/10): esto era `CardListCreateView(ListCreateAPIView)`
-    y NO declaraba permisos, así que DRF le ponía AllowAny. Resultado:
-    CUALQUIERA, sin estar registrado, podía mandar un POST aquí y METER UNA
-    CARTA en el catálogo. Comprobado antes de arreglarlo: el POST sin sesión
-    llegaba al serializador y solo fallaba por la longitud del login.
-    Y el GET enseñaba las 824 cartas a cualquiera.
-    Son dos cambios:
-      - ListCreateAPIView -> ListAPIView: ya no admite POST. Nadie lo usaba
-        (el front no llama a /api/cards/; las cartas las crea `fill_db`).
-      - permission_classes explícito, no heredado.
+    ⚠️ permission_classes va explícito: sin él DRF pone AllowAny, y cuando esto
+    admitía POST cualquiera, sin registrarse, podía meter cartas.
     """
     queryset = Card.objects.all().order_by("-created_at")
     serializer_class = CardSerializer
     permission_classes = [IsAuthenticated]
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])  # Exige que el usuario esté autenticado
+@permission_classes([IsAuthenticated])
 def album_usuario(request):
     """
     Devuelve las cartas del usuario que tiene la sesión activa (request.user).
     """
-    # 1. Django obtiene el usuario directamente de la sesión/token
     usuario = request.user
 
-    # 2. Obtenemos todas sus cartas optimizando la consulta SQL
     album_cartas = UserCard.objects.filter(user=usuario).select_related('card')
 
-    # 3. Serializamos la lista completa
     serializer = UserCardSerializer(album_cartas, many=True)
 
-    # 4. Devolvemos la respuesta
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-@api_view(['GET'])  # Decorador necesario para Django REST Framework
-# ⚠️ ARREGLO (Nacho, 5/10): le faltaba el permiso, así que DRF le ponía
-# AllowAny y la carta de cualquier alumno (login, coalición, nivel, puntos de
-# evaluación y saldo) se podía pedir sin estar registrado.
-#
-# Ponerlo NO rompe nada: el único sitio que lo llama es Home.jsx, y a la
-# portada no se llega sin sesión (RUTAS_PUBLICAS en App.jsx son solo
-# /privacidad y /terminos). Comprobado.
+@api_view(['GET'])
+# ⚠️ Con sesión: sin esto DRF la deja abierta y cualquiera, sin registrarse,
+# veía la carta (nivel, puntos, saldo) de cualquier alumno.
 @permission_classes([IsAuthenticated])
 def login_alumno(request, login):
     try:
-        # 1. Busca la carta del alumno en PostgreSQL por su login
         card = Card.objects.get(login=login)
-        
-        # 2. Transforma el objeto de PostgreSQL a formato JSON
+
         serializer = CardSerializer(card)
-        
-        # 3. Retorna la respuesta con los datos serializados
+
         return Response(serializer.data, status=status.HTTP_200_OK)
         
     except Card.DoesNotExist:
@@ -93,44 +74,11 @@ def login_alumno(request, login):
         )
 
 
-# 🗑️ AQUÍ ESTABAN crear_carta, lista_cartas Y home, y se han quitado (5/10).
-#
-# Eran las tres pantallas que Django pintaba solo al principio del proyecto,
-# antes de que el front fuera React. Pintaban tres plantillas HTML que Pablo
-# borró el 5/10 (commit cbe78d8), pero las vistas y sus rutas se quedaron, así
-# que /home/, /crear/ y /catalogo/ del puerto 8000 respondían 500.
-#
-# Comprobado antes de borrarlas: no las llamaba el front, no las llamaba el
-# resto del backend, no las tocaba ningún test, y no queda ninguna plantilla
-# .html en el proyecto. `crear_carta` además usaba `redirect` sin importarlo,
-# o sea que su POST llevaba roto desde siempre.
-
 CONFIGURACION_SOBRES = {
     tipo: {"probabilidades": dict(probabilidades),
            "cartas_por_sobre": CARTAS_POR_SOBRE}
     for tipo, probabilidades in PROBABILIDADES_SOBRE.items()
 }
-
-# 🗑️ AQUÍ ESTABAN make_contract Y TIER_ORDER, y se han quitado (6/10).
-#
-# Era la versión de Pablo del contrato (4 repetidas de la misma rareza -> 1 de
-# la siguiente), colgando de /api/cards/contract/. Hacía LA MISMA REGLA que
-# cards/contratos.py, que es la que usa la pantalla (Contratos.jsx) y la única
-# que se ha llamado nunca.
-#
-# No eran intercambiables, aunque lo pareciera: la suya esperaba el campo
-# `card` en el cuerpo y la nueva espera `carta`. Y el front manda `carta`.
-#
-# Se quitan ahora porque Pablo ya está de vuelta y lo ha decidido el equipo
-# (antes se dejaron a propósito: él estaba ausente desde el 7/09 y no se le
-# podía consultar). Tener dos endpoints para lo mismo es justo lo que se
-# pregunta en una evaluación.
-#
-# Comprobado antes de borrarlas: no las llamaba el front, ni el resto del
-# backend, ni ningún test. TIER_ORDER solo lo usaba make_contract.
-#
-# Si hiciera falta recuperarlas, están en el historial: antes del commit de
-# este cambio, en este mismo fichero.
 
 def open_pack(tipo_sobre):
     """
@@ -158,7 +106,6 @@ def open_pack(tipo_sobre):
             raise ValueError("No hay cartas registradas en la base de datos.")
             
         carta_aleatoria = random.choice(cartas_del_tier)
-        # DEVOLVEMOS EL OBJETO CARD DIRECTAMENTE (sin instanciar Serializer aquí)
         cartas_seleccionadas.append(carta_aleatoria)
         
     return cartas_seleccionadas
@@ -167,8 +114,7 @@ def open_pack(tipo_sobre):
 # =====================================================================
 # 🎁 REGALO DIARIO
 # Cada persona recibe 3 sobres comunes al día. NO se acumulan: si pasas
-# tres días sin entrar, al volver recibes 2, no seis. Así entrar cada día
-# tiene sentido.
+# tres días sin entrar, al volver recibes 3, no nueve.
 # El día cambia a medianoche, hora de Madrid (la zona horaria del proyecto).
 # =====================================================================
 SOBRES_REGALO_DIARIO = 3
@@ -234,16 +180,10 @@ def ranking(request):
 
     Dos formas de mirarla, y las dos dicen algo distinto:
 
-      ?orden=coleccion  (por defecto)  quién lleva más cartas distintas
-      ?orden=puntos                    quién tiene las cartas más raras
+      ?orden=puntos     (por defecto)  quién tiene las cartas más raras
+      ?orden=coleccion                 quién lleva más cartas distintas
 
-    Se pueden ir muy lejos la una de la otra, y esa es la gracia: alguien con
-    200 comunes va por delante en colección, y alguien con 30 legendarias por
-    delante en puntos. Lo que valen las cartas está en cards/rarezas.py.
-
-    Antes había un campo 'elo' que no ordenaba nada porque era 1000 para todo
-    el mundo. Se borró del proyecto el 18/09: no hay juego, y los puntos ya
-    hacían su trabajo mejor.
+    Lo que valen las cartas está en cards/rarezas.py.
 
     ⚠️ TODO en UNA consulta, con anotaciones. Calcular los puntos en Python
     obligaría a recorrer el álbum de cada usuario: 50 consultas en vez de una.
@@ -341,7 +281,6 @@ def mis_sobres(request):
     return Response({'sobres': inventario, 'total': sum(inventario.values())})
 
 
-# Usamos los decoradores de Django REST Framework para asegurar autenticación
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def abrir_sobre_endpoint(request, tipo_sobre):
@@ -354,7 +293,6 @@ def abrir_sobre_endpoint(request, tipo_sobre):
             status=status.HTTP_400_BAD_REQUEST
         )
         
-    # EL USUARIO CONECTADO SE OBTIENE DIRECTAMENTE CON request.user
     user = request.user
 
     try:
@@ -381,19 +319,15 @@ def abrir_sobre_endpoint(request, tipo_sobre):
 
             cartas_tocadas = open_pack(tipo_sobre)
 
-            # Se ordenan por id antes de guardar. Parece un detalle tonto y no
-            # lo es: si dos peticiones tocan las mismas dos cartas en orden
-            # distinto, cada una puede quedarse esperando a la fila que tiene
-            # la otra, y PostgreSQL corta una con un error de interbloqueo.
-            # Yendo todas en el mismo orden, eso no puede pasar.
+            # ⚠️ Por id, y no es un detalle: si dos peticiones bloquean las
+            # mismas cartas en orden distinto, PostgreSQL corta una por
+            # interbloqueo. En el mismo orden eso no puede pasar.
             for carta in sorted(cartas_tocadas, key=lambda c: c.id):
                 fila, creada = UserCard.objects.get_or_create(
                     user=user, card=carta, defaults={'cantidad': 1})
                 if not creada:
-                    # F('cantidad') + 1 NO lee el valor aquí: manda a la base
-                    # de datos un "suma uno a lo que haya" en una sola orden.
-                    # Por eso no se puede perder un incremento: no hay ningún
-                    # momento en que tengamos el número viejo en la mano.
+                    # F() suma en la propia base de datos, sin leer el valor
+                    # antes: así no se puede perder un incremento.
                     UserCard.objects.filter(pk=fila.pk).update(
                         cantidad=F('cantidad') + 1)
     except Exception as e:
@@ -403,7 +337,6 @@ def abrir_sobre_endpoint(request, tipo_sobre):
         )
 
 
-    # 5. Formatear la respuesta JSON para React
     datos_cartas = []
     for c in cartas_tocadas:
         datos_cartas.append({
