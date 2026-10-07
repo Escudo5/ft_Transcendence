@@ -15,6 +15,15 @@ export default defineConfig({
     https: true,     // 👈 3. Activamos HTTPS
     host: true,      // Permite que se pueda acceder desde fuera del contenedor
     port: 3000,
+    // 🔀 Que las peticiones OPTIONS lleguen al backend.
+    //
+    // Vite trae un middleware de CORS que va ANTES del proxy y que contesta
+    // él mismo a cualquier OPTIONS con un 204 vacío, sin reenviarlo. Por eso
+    // el botón OPTIONS de la documentación de la API daba un error de
+    // JavaScript: recibía un 204 sin cuerpo donde esperaba la respuesta de
+    // Django. Con `preflightContinue` el middleware deja pasar y el OPTIONS
+    // sigue su camino hasta el backend. (Nacho, 7/10)
+    cors: { preflightContinue: true },
     hmr: {
       host: 'transcendence.42.fr',
       port: 3000,
