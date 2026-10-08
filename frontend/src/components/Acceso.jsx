@@ -233,7 +233,9 @@ const enviar = async (ruta, cuerpo) => {
 	  
       // CAMBIO CLAVE: Como el servidor ahora devuelve 200 siempre, 
       // comprobamos explícitamente si success es falso o si viene un mensaje de error
-      if (respuesta.success === false || respuesta.error) {
+      // (Nacho, 8/10) Y !res.ok: si llega algo que no es JSON (403 de CSRF, 500,
+      // backend caído) `respuesta` viene vacía y sin esto se entraba sin sesión.
+      if (!res.ok || respuesta.success === false || respuesta.error) {
 		  const mensajeError = respuesta.error || respuesta.detail || t('unableToComplete');
         
         if (respuesta.campos) setErrores(respuesta.campos);
