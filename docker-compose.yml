@@ -28,7 +28,7 @@ services:
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-secret-key-change-me}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
-      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0,10.19.247.102}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
       POSTGRES_DB: ${POSTGRES_DB:-transcendence}
       POSTGRES_USER: ${POSTGRES_USER:-transcendence}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-transcendence}
@@ -57,7 +57,10 @@ services:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://10.19.247.102:8000/api}
+      VITE_API_URL: ${VITE_API_URL:-/api}
+      # El botón "Entrar con 42" usa el mismo ID que el backend: se copia de
+      # CLIENT_ID_NACHO del .env para no tenerlo escrito en dos sitios.
+      VITE_FORTYTWO_CLIENT_ID: ${CLIENT_ID_NACHO}
     depends_on:
       - backend
 

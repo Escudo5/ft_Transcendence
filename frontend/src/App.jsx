@@ -79,7 +79,11 @@ function AppContent() {
 
   // 1. Corregido: sin la barra '/' al final para coincidir 1:1 con el .env de Django y la Intra
   const redirectUri = window.location.origin;
-  const URL_LOGIN_42 = `https://api.intra.42.fr/oauth/authorize?client_id=u-s4t2ud-85745739c040c37d065eeef72dafbd19dea1e46b50172daac4f20c1907d34b47&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=public`;
+  // El ID de la aplicación de 42 viene del .env (CLIENT_ID_NACHO, que el
+  // docker-compose pasa como VITE_FORTYTWO_CLIENT_ID): es el mismo que usa el
+  // backend al canjear el código, y si no coinciden el login falla.
+  const clientId42 = import.meta.env.VITE_FORTYTWO_CLIENT_ID;
+  const URL_LOGIN_42 = `https://api.intra.42.fr/oauth/authorize?client_id=${encodeURIComponent(clientId42)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=public`;
   const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
 
   const codeYaProcesado = useRef(false);

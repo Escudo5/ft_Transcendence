@@ -127,7 +127,7 @@ useEffect(() => {
 
       // 1. Petición en paralelo: Traemos tanto la lista de usuarios web como la lista de todas las cartas
       const [resWeb, resCards] = await Promise.all([
-        fetch('/api/users/list', { credentials: 'include', signal: controller.signal }),
+        fetch(`${apiBaseUrl}/users/list`, { credentials: 'include', signal: controller.signal }),
         fetch(cardsEndpoint, { credentials: 'include', signal: controller.signal })
       ]);
 
@@ -204,7 +204,7 @@ useEffect(() => {
 
   cargarDatos();
   return () => controller.abort();
-}, [cardsEndpoint]);
+}, [apiBaseUrl, cardsEndpoint]);
 
   useEffect(() => {
     const controller = new AbortController();
