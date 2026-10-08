@@ -216,7 +216,7 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
     return csrfToken;
   };
 
-  const enviar = async (ruta, cuerpo) => {
+const enviar = async (ruta, cuerpo) => {
     setEnviando(true);
     setErrores({});
     setAvisoGeneral('');
@@ -228,12 +228,16 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
         body: JSON.stringify(cuerpo),
       });
+      
       const respuesta = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        // El backend nos dice qué campo concreto falla; si no, mensaje general
+	  
+      // CAMBIO CLAVE: Como el servidor ahora devuelve 200 siempre, 
+      // comprobamos explícitamente si success es falso o si viene un mensaje de error
+      if (respuesta.success === false || respuesta.error) {
+		  const mensajeError = respuesta.error || respuesta.detail || t('unableToComplete');
+        
         if (respuesta.campos) setErrores(respuesta.campos);
-        setAvisoGeneral(respuesta.campos ? '' : respuesta.error || t('unableToComplete'));
+        setAvisoGeneral(respuesta.campos ? '' : mensajeError);
         return;
       }
 
@@ -249,7 +253,8 @@ function Acceso({ apiBaseUrl, urlLogin42, onAutenticado }) {
   const enviarRegistro = (e) => {
     e.preventDefault();
     const fallos = validarRegistro(datos, t);
-    if (Object.keys(fallos).length) return setErrores(fallos);
+    if (Object.keys(fallos).length) {
+		return setErrores(fallos)};
     enviar('register', { nombre: datos.nombre, email: datos.email, password: datos.password });
   };
 

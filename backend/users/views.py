@@ -975,7 +975,7 @@ def register(request):
             errores['password'] = ' '.join(e.messages)
 
     if errores:
-        return JsonResponse({'error': 'Revisa los datos.', 'campos': errores}, status=400)
+        return JsonResponse({'error': 'Revisa los datos.', 'campos': errores}, status=200)
 
     # 5. Creamos la cuenta
     usuario = CustomUser(
@@ -1008,19 +1008,24 @@ def login_email(request):
     password = datos.get('password') or ''
 
     if not email or not password:
-        return JsonResponse({'error': 'Escribe tu correo y tu contraseña.'}, status=400)
+        return JsonResponse({
+            'success': False, 
+            'error': 'Escribe tu correo y tu contraseña.'
+        }, status=200) # <--- Cambiado a 200
 
     usuario = CustomUser.objects.filter(email=email).first()
 
-    # 🛡️ A proposito NO decimos si lo que falla es el correo o la contraseña:
-    # eso le diria a un atacante que correos existen en la base de datos.
-    # Nota: las cuentas de 42 no tienen contraseña utilizable, asi que
-    # check_password devuelve False para ellas y no se puede entrar por aqui.
     if usuario is None or not usuario.check_password(password):
-        return JsonResponse({'error': 'Correo o contraseña incorrectos.'}, status=401)
+        return JsonResponse({
+            'success': False, 
+            'error': 'Correo o contraseña incorrectos.'
+        }, status=200) # <--- Cambiado a 200
 
     if not usuario.is_active:
-        return JsonResponse({'error': 'Esta cuenta está desactivada.'}, status=403)
+        return JsonResponse({
+            'success': False, 
+            'error': 'Esta cuenta está desactivada.'
+        }, status=200) # <--- Cambiado a 200
 
     usuario.estado = 'online'
     usuario.save()
@@ -1028,12 +1033,13 @@ def login_email(request):
     login(request, usuario, backend='django.contrib.auth.backends.ModelBackend')
 
     return JsonResponse({
+        'success': True, # <--- Añadido para el éxito
         'status': 'usuario_existente',
         'username': usuario.username,
         'email': usuario.email,
         'mensaje': f'¡Bienvenido de nuevo, {usuario.first_name or usuario.username}!',
         'sobres_disponibles_hoy': SOBRES_DIARIOS,
-    })
+    }, status=200)
 
 
 def _cerrar_todas_sus_sesiones(usuario):
