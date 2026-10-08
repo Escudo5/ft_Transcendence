@@ -100,7 +100,7 @@ The lines you must fill in are marked `RELLENAR` ("fill in"):
 
 | Variable | What it is for | Required? |
 | :--- | :--- | :--- |
-| `CLIENT_ID_NACHO`, `CLIENT_SECRET_NACHO` | The 42 application used by the **web login** (42 OAuth). | Only for the 42 login. Email login works without them. |
+| `CLIENT_ID_NACHO`, `CLIENT_SECRET_NACHO` | The 42 application used by the **web login** (42 OAuth). Docker Compose also passes the UID to the frontend for the "Log in with 42" button, so it is written in one place only. | Only for the 42 login. Email login works without them. |
 | `CLIENT_ID_PABLO`, `CLIENT_SECRET_PABLO` | The 42 application used by the **card sync** commands (`make start`, `make sync-quick`, `make sync-full`). It can be the same application as above. | Without them the app starts, but the card catalogue stays empty. |
 | `FORTYTWO_REDIRECT_URI` | Already set to `https://localhost:3000`. | Must match three things **letter by letter**: the address in the browser, this variable and the redirect URI registered in your 42 application. No trailing slash. |
 | `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | A Gmail account and an app password, used for the GDPR emails. | Optional. If left empty, nothing breaks: the emails are simply not sent. |
@@ -109,8 +109,9 @@ Everything else in the template (database, Django, CORS/CSRF origins,
 `VITE_API_URL=/api`) works as it is on a single machine.
 
 > ⚠️ Docker reads `.env` only when it **creates** a container. After editing
-> it, run `docker compose up -d --force-recreate`; `docker compose restart` is
-> not enough.
+> it, or after pulling a change to `docker-compose.yml`, run
+> `docker compose up -d --force-recreate`; `docker compose restart` is not
+> enough.
 >
 > `.env` is ignored by Git and must never be committed. Only `.env.example`
 > is in the repository.
@@ -676,27 +677,20 @@ across repeated runs. This is comparable in scope to the other Major modules.
 
 ### AI Usage
 
-AI assistants (chat assistants and coding agents) were used during the
-project, always with a team member reviewing, testing and committing the
-result. What they were used for:
+AI assistants were used for three tasks, always with a team member reviewing
+and testing the result:
 
-- **Writing and refactoring code with a team member:** backend views and their
-  tests, frontend components and styles. Every change was read, tested and
-  committed by the person responsible for that part, who must be able to
-  explain it.
-- **Debugging:** reading error messages, browser console output and server
-  logs to find the cause of a bug.
-- **Code review:** checking changes before merging them into `lab/db/test`,
-  looking for edge cases, race conditions and security issues.
-- **Translations:** first drafts of the English and Arabic interface texts and
-  of the legal pages, then reviewed by the team.
+- **Merging code and branches:** integrating the feature branches into
+  `lab/db/test`, resolving conflicts, and checking after each merge that every
+  teammate's changes were still in place and still worked together.
+- **Refactoring:** reorganizing existing backend and frontend code without
+  changing its behavior. For example, moving values that were written by hand
+  in the code to `.env`, and removing dead code and outdated comments.
 - **Documentation:** code comments and this README, checked against the code.
-- **Subject compliance:** cross-checking the project against the subject and
-  the evaluation sheet.
 
-What the team decided, not the AI: the product idea, the game rules
-(rarities, points, packs, trades, contracts, discards), the choice of modules
-and the priorities.
+The product idea, the game rules (rarities, points, packs, trades, contracts,
+discards), the choice of modules and the priorities were decided by the team.
+Every team member must be able to explain the code of their part.
 
 ---
 
